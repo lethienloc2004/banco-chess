@@ -1,5 +1,5 @@
 # Cloudflare Worker for Bàn Cờ: serves the app (dist/) and the online game server.
-# Setup steps are in README.md ("Triển khai lên Cloudflare").
+# Easiest setup: run `npm run setup` (it fills in this file). Details: README.md.
 name = "ban-co"
 main = "server/index.ts"
 compatibility_date = "2025-09-01"
@@ -25,11 +25,10 @@ new_sqlite_classes = ["GameRoom", "Lobby"]
 [[d1_databases]]
 binding = "DB"
 database_name = "ban-co"
-# Replace with the id printed by: npx wrangler d1 create ban-co
-database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
 [vars]
+# Filled in by `npm run setup`, or edit by hand:
 # OAuth client id for "Sign in with Google" (leave empty to disable Google login).
 GOOGLE_CLIENT_ID = ""
 # Comma-separated Google emails that become admins when they sign in.

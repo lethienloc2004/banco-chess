@@ -89,53 +89,94 @@ Cloudflare Worker (server/index.ts): API, đăng nhập, phục vụ app
 
 Chế độ chơi với máy và 2 người chạy hoàn toàn trên trình duyệt, không cần máy chủ.
 
-## 🚀 Chạy trên máy
+## 🚀 Bắt đầu nhanh
 
-Cần [Node.js](https://nodejs.org) 20 trở lên.
+Cần cài [Node.js](https://nodejs.org) bản 20 trở lên. Tải code về bằng nút **Code → Download ZIP** hoặc `git clone`, rồi mở terminal trong thư mục đó.
+
+### 1. Chơi thử trên máy: 2 lệnh, không cần cấu hình
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars   # bí mật cho máy chủ chạy thử
-npm run build                     # build app vào dist/
-npm run dev:server                # máy chủ game + app tại http://localhost:8787
 ```
-
-Muốn sửa giao diện với tính năng tự tải lại trang, chạy thêm `npm run dev` (Vite, http://localhost:5173). Vite chuyển tiếp `/api` sang máy chủ ở cổng 8787.
 
 ```bash
-npm test             # luật cờ (perft), luật chiếu dai, đăng nhập, bot
-npm run test:server  # kiểm tra máy chủ: phòng, ghép trận, xếp hạng, quản trị (cần npm run dev:server)
+npm start
 ```
 
-Khi chạy thử trên máy, trong **Cài đặt** có nút "Đăng nhập quản trị (chỉ khi phát triển)" để vào trang quản trị mà không cần Google. Nút này chỉ hiện khi biến `DEV=1` có trong `.dev.vars`.
+Mở **http://localhost:8787**. Có đủ tất cả: chơi với máy, chơi online, ghép trận và trang quản trị.
+Muốn thử trang quản trị, vào **Cài đặt → Đăng nhập quản trị (chỉ khi phát triển)**. Muốn thử chơi online, mở thêm một cửa sổ ẩn danh làm người chơi thứ hai.
 
-## ☁️ Triển khai lên Cloudflare (miễn phí)
+### 2. Đưa lên mạng thành bản của riêng bạn (miễn phí)
 
-1. Tạo tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up), rồi đăng nhập trên máy:
-   ```bash
-   npx wrangler login
-   ```
-2. Tạo cơ sở dữ liệu:
-   ```bash
-   npx wrangler d1 create ban-co
-   ```
-   Lệnh này in ra `database_id`. Dán giá trị đó vào `wrangler.toml`, thay cho dòng `00000000-...`.
-3. Đặt khóa bí mật để ký phiên đăng nhập (một chuỗi ngẫu nhiên dài):
-   ```bash
-   npx wrangler secret put AUTH_SECRET
-   ```
-4. *(Tùy chọn)* Đăng nhập Google:
-   - Tạo **OAuth Client ID** loại *Web application* tại [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-   - Thêm tên miền của app vào *Authorized JavaScript origins*.
-   - Điền `GOOGLE_CLIENT_ID` trong `wrangler.toml`.
-5. **Quản trị viên:** điền email Google của bạn vào `ADMIN_EMAILS` trong `wrangler.toml` (nhiều email thì cách nhau bằng dấu phẩy). Đăng nhập Google bằng email đó là thành quản trị viên. Sau đó bạn có thể cấp quyền cho người khác ngay trong trang quản trị.
-6. Triển khai:
-   ```bash
-   npm run deploy
-   ```
-   App và máy chủ chạy tại `https://ban-co.<tên-bạn>.workers.dev`.
+Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up) miễn phí. Sau đó chọn **một** trong hai cách.
 
-**Tự động deploy từ GitHub:** thêm 2 secret `CLOUDFLARE_API_TOKEN` (token có quyền *Edit Cloudflare Workers* và *D1*) và `CLOUDFLARE_ACCOUNT_ID` vào **Settings → Secrets and variables → Actions**. Từ đó, mỗi lần push lên `main`, GitHub Actions sẽ chạy test rồi deploy.
+#### Cách A: một lệnh, trả lời 3 câu hỏi *(khuyên dùng)*
+
+```bash
+npm run setup
+```
+
+| Câu hỏi | Điền gì | Ví dụ |
+|---|---|---|
+| **Tên app** | Tên dùng trong địa chỉ web: chữ thường, số, dấu gạch ngang | `co-tuong-cua-toi` |
+| **Email quản trị** | Email Google của bạn. Đăng nhập bằng email này là có trang quản trị | `ban@gmail.com` |
+| **Google Client ID** | Có thể bỏ trống (bấm Enter). Chỉ cần nếu muốn có nút "Đăng nhập Google", xem [mục bên dưới](#đăng-nhập-google-tùy-chọn) | `1234-abc.apps.googleusercontent.com` |
+
+Phần còn lại script tự làm:
+- Mở trình duyệt để bạn đăng nhập Cloudflare.
+- Tạo cơ sở dữ liệu.
+- Tạo khóa bí mật ngẫu nhiên.
+- Build và đưa app lên mạng.
+- In ra link dạng `https://co-tuong-cua-toi.<tài-khoản>.workers.dev`.
+
+Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại những gì đã có và **không** làm người chơi bị đăng xuất.
+
+#### Cách B: nút bấm, không cần cài gì trên máy
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/ban-co)
+
+1. Bấm nút trên và đăng nhập Cloudflare. Cloudflare sẽ tạo một bản sao của dự án trên GitHub của bạn, kèm cơ sở dữ liệu.
+2. Khi được hỏi **AUTH_SECRET**, điền một chuỗi ngẫu nhiên dài bất kỳ, ví dụ gõ bừa khoảng 40 ký tự. Đừng chia sẻ chuỗi này cho ai.
+3. Muốn làm quản trị viên: trong bản sao trên GitHub của bạn, sửa file `wrangler.toml`, điền email vào dòng `ADMIN_EMAILS = ""` rồi commit. Cloudflare sẽ tự deploy lại.
+
+> Nút này là tính năng của Cloudflare. Nếu bước tự tạo cơ sở dữ liệu báo lỗi, hãy dùng Cách A.
+
+### 3. Tùy chỉnh và cập nhật
+
+| Muốn… | Làm thế nào |
+|---|---|
+| Thêm / bớt quản trị viên | Sửa `ADMIN_EMAILS` trong `wrangler.toml` rồi `npm run deploy`. Hoặc vào **Trang quản trị → Người chơi → Cấp quyền quản trị** |
+| Bật đăng nhập Google | Điền `GOOGLE_CLIENT_ID` trong `wrangler.toml` (hoặc chạy lại `npm run setup`) |
+| Nút GitHub trong app trỏ về repo của bạn | Sửa `"repository"` trong `package.json` |
+| Dùng tên miền riêng | Cloudflare Dashboard → **Workers & Pages** → app của bạn → **Settings → Domains & Routes** |
+| Cập nhật code mới lên mạng | `npm run deploy` |
+| Tự deploy mỗi khi push lên GitHub | Thêm 2 secret `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID` vào **Settings → Secrets and variables → Actions** của repo. Token tạo tại [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) bằng mẫu *Edit Cloudflare Workers*, thêm quyền *D1 Edit* |
+
+#### Đăng nhập Google (tùy chọn)
+
+1. Vào [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) → **Create credentials → OAuth client ID** → chọn loại **Web application**.
+2. Ở **Authorized JavaScript origins**, thêm link app của bạn, ví dụ `https://co-tuong-cua-toi.ten-ban.workers.dev`. Muốn đăng nhập khi chạy thử trên máy thì thêm cả `http://localhost:8787`.
+3. Copy **Client ID**, điền vào `GOOGLE_CLIENT_ID` trong `wrangler.toml`, rồi chạy `npm run deploy`.
+
+#### Gặp lỗi?
+
+| Hiện tượng | Cách xử lý |
+|---|---|
+| App báo "Không kết nối được máy chủ" | Máy chủ chưa có khóa bí mật: chạy lại `npm run setup` |
+| Không thấy biểu tượng khiên 🛡️ | Bạn phải **đăng nhập Google** bằng đúng email trong `ADMIN_EMAILS`, và email đó đã được deploy (`npm run deploy`) |
+| Nút "Đăng nhập Google" không hiện | `GOOGLE_CLIENT_ID` đang trống |
+| Bấm đăng nhập Google báo lỗi | Link app chưa có trong *Authorized JavaScript origins* |
+| `npm run setup` báo lỗi đăng nhập | Chạy `npx wrangler login` rồi chạy lại setup |
+
+Gói miễn phí của Cloudflare thường đủ cho một cộng đồng nhỏ. Giới hạn cụ thể xem tại [trang giá Workers](https://developers.cloudflare.com/workers/platform/pricing/).
+
+### Dành cho người đóng góp code
+
+```bash
+npm run dev          # Vite tự tải lại khi sửa giao diện (http://localhost:5173), chạy cùng: npm run dev:server
+npm test             # luật cờ (perft), chiếu dai, đăng nhập, bot, script cài đặt
+npm run test:server  # kiểm tra máy chủ: phòng, ghép trận, xếp hạng, quản trị (khi npm start đang chạy)
+```
 
 ## 🧠 Cấu trúc mã nguồn
 
@@ -153,6 +194,7 @@ server/
   admin.ts        API quản trị
   auth.ts         Ký phiên (HMAC) và xác minh Google ID token
 migrations/       Lược đồ cơ sở dữ liệu D1
+scripts/          npm start (chạy trên máy) và npm run setup (cài lên Cloudflare)
 tests/            Perft chuẩn, luật, đăng nhập, bot; tests/e2e: kiểm tra máy chủ
 ```
 
@@ -226,11 +268,13 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
 - Many board/piece colour themes plus a custom colour picker, sound, dark mode, Vietnamese / English, PWA.
 
 ```bash
-npm install && cp .dev.vars.example .dev.vars && npm run build && npm run dev:server
+npm install
+npm start          # play locally at http://localhost:8787
+npm run setup      # put your own copy online on Cloudflare: answers 3 questions, does the rest
 ```
 
-See **Triển khai lên Cloudflare** above for deployment (D1 database, `AUTH_SECRET`, optional Google client id,
-`ADMIN_EMAILS`, then `npm run deploy`).
+Or use the **Deploy to Cloudflare** button above. Details (Google sign-in, admins, custom domain, troubleshooting)
+are in the *Bắt đầu nhanh* section.
 
 All code is original (no chess libraries). Techniques from the [Chess Programming Wiki](https://www.chessprogramming.org);
 chess piece-square tables based on Tomasz Michniewski's *Simplified Evaluation Function*; perft reference numbers from

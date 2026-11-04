@@ -169,6 +169,8 @@ export default {
     const url = new URL(req.url);
     if (url.pathname.startsWith('/api/')) {
       if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+      // A fresh deployment without the session secret: tell the app instead of failing obscurely.
+      if (!env.AUTH_SECRET) return fail(503, 'not-configured');
       try {
         return await handleApi(req, env, url);
       } catch (err) {

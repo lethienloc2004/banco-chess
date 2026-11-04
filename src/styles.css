@@ -637,3 +637,5 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 .replay-nav .btn { padding: 6px 12px; }
 .replay-ply { min-width: 120px; text-align: center; font: 600 13px ui-monospace, Menlo, monospace; color: var(--text); }
 .replay p { color: var(--text); }
+
+.icon-btn[hidden] { display: none; }

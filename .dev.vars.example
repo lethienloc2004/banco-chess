@@ -1,4 +1,3 @@
-# Copy to .dev.vars for local development (npm run dev:server).
-AUTH_SECRET=dev-only-secret-change-me
-# Enables the local "dev admin" login button. Never set this in production.
-DEV=1
+# Secret used to sign login sessions. `npm start` creates .dev.vars for you;
+# for production `npm run setup` generates a random one.
+AUTH_SECRET=change-me-to-a-long-random-string
