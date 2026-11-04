@@ -4,6 +4,7 @@ import { STRINGS, type Lang, type Strings } from './i18n';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './ui/board';
 import type { GameKind } from './engine/types';
 import type { Level } from './engine/ai';
+import { playSound, unlockAudio } from './sound';
 
 export const REPO_URL = 'https://github.com';
 
@@ -16,6 +17,7 @@ interface Settings {
   humanSide: 0 | 1;
   level: Level;
   labels: 'hanzi' | 'viet';
+  sound: boolean;
 }
 
 const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
@@ -36,6 +38,7 @@ const defaults: Settings = {
   humanSide: 0,
   level: 'medium',
   labels: 'hanzi',
+  sound: true,
 };
 const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };
 const hashKind = location.hash.slice(1) as GameKind;
@@ -85,6 +88,7 @@ app.innerHTML = `
     <nav class="tabs" role="tablist"></nav>
     <div class="top-actions">
       <button class="icon-btn" id="lang-btn"></button>
+      <button class="icon-btn" id="sound-btn"></button>
       <button class="icon-btn" id="theme-btn" aria-label="theme"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg></button>
       <a class="icon-btn" id="gh-link" href="${REPO_URL}" target="_blank" rel="noopener" aria-label="GitHub">
         <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -157,7 +161,15 @@ function isBotTurn(): boolean {
 }
 
 function play(m: number) {
+  const reveal = match.pieceAt(match.moveFrom(m))?.hidden ?? false;
+  const captures = match.captured.length;
   match.play(m);
+  if (settings.sound) {
+    if (match.outcome()) playSound('end');
+    else if (match.checkedKing() !== null) playSound('check');
+    else if (match.captured.length > captures) playSound('capture');
+    else playSound(reveal ? 'reveal' : 'move');
+  }
   selected = null;
   pendingPromotion = null;
   persist();
@@ -249,6 +261,13 @@ function render(animate = false) {
   $('#lang-btn').textContent = settings.lang === 'vi' ? 'EN' : 'VI';
   $('#lang-btn').title = s.language;
   $('#theme-btn').title = s.theme;
+  const sb = $('#sound-btn');
+  sb.title = settings.sound ? s.soundOff : s.soundOn;
+  sb.setAttribute('aria-label', sb.title);
+  sb.setAttribute('aria-pressed', String(settings.sound));
+  sb.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>${settings.sound
+    ? '<path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
+    : '<path d="M16.5 9.5l5 5m0-5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}</svg>`;
   $('#new-btn').textContent = s.newGame;
   $('#undo-btn').textContent = s.undo;
   $('#flip-btn').textContent = s.flip;
@@ -361,6 +380,14 @@ function renderPlayer(el: HTMLElement, side: number) {
 // ---------- Global controls ----------
 
 $('#new-btn').onclick = newGame;
+$('#sound-btn').onclick = () => {
+  settings.sound = !settings.sound;
+  if (settings.sound) { unlockAudio(); playSound('move'); }
+  persist();
+  render();
+};
+// Browsers only allow audio after a user gesture; unlock on the first one.
+document.addEventListener('pointerdown', () => { if (settings.sound) unlockAudio(); }, { once: true });
 $('#undo-btn').onclick = undo;
 $('#flip-btn').onclick = () => { flipped = !flipped; render(); };
 $('#lang-btn').onclick = () => { settings.lang = settings.lang === 'vi' ? 'en' : 'vi'; persist(); render(); };

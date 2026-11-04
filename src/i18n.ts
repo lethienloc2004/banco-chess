@@ -38,6 +38,8 @@ const vi = {
   red: 'Đỏ',
   promote: 'Phong cấp thành',
   theme: 'Giao diện sáng/tối',
+  soundOn: 'Bật âm thanh',
+  soundOff: 'Tắt âm thanh',
   language: 'English',
   rulesTitle: 'Luật cờ úp',
   rules: [
@@ -90,6 +92,8 @@ const en: Strings = {
   red: 'Red',
   promote: 'Promote to',
   theme: 'Light/dark theme',
+  soundOn: 'Turn sound on',
+  soundOff: 'Turn sound off',
   language: 'Tiếng Việt',
   rulesTitle: 'Jieqi rules',
   rules: [

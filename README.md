@@ -22,6 +22,7 @@ Không quảng cáo · không cần tài khoản · chạy được offline · c
 - ✅ **Đúng luật**: nhập thành, bắt tốt qua đường, phong cấp, lộ mặt tướng, cản mã, cản tượng, pháo ngòi, hòa do lặp thế cờ / 50 nước / thiếu quân.
 - 📝 Ghi biên bản kiểu Việt Nam (`P2-5`, `M8.7`) hoặc WXF (`C2=5`), SAN cho cờ vua (`Nf3`, `O-O`, `Qxf7#`).
 - 🀄 Chữ trên quân: **chữ Hán** hoặc **tiếng Việt** (Xe, Mã, Pháo…).
+- 🔊 Âm thanh đi quân, ăn quân, chiếu, lật quân úp (tổng hợp bằng Web Audio, bật/tắt được).
 - 📱 Responsive, chế độ tối, tiếng Việt / English, tự lưu ván đang chơi, cài được (PWA).
 - 🪶 Siêu nhẹ: không dùng framework, tổng cộng khoảng 25 KB (gzip).
 
@@ -84,7 +85,6 @@ Mọi đóng góp đều được hoan nghênh! Một vài ý tưởng:
 - [ ] Chơi online với bạn qua link (WebRTC, không cần server)
 - [ ] Gợi ý nước đi / phân tích ván sau khi chơi
 - [ ] Đồng hồ thi đấu
-- [ ] Âm thanh khi đi quân
 - [ ] Thêm biến thể: Chess960, cờ úp với luật biến thể…
 - [ ] Bot mạnh hơn (bitboard, NNUE…)
 
@@ -105,7 +105,7 @@ browser — against a friend on the same device or against a built-in bot with t
 - The Jieqi bot never peeks at hidden pieces: it averages searches over random arrangements of
   the unknown pieces (perfect-information Monte Carlo).
 - Notation: SAN for chess, WXF (`C2=5`) or Vietnamese (`P2-5`) for xiangqi.
-- PWA (installable, works offline), dark mode, Vietnamese / English UI, auto-saves your game.
+- Synthesized sound effects (Web Audio), PWA (installable, works offline), dark mode, Vietnamese / English UI, auto-saves your game.
 
 ```bash
 npm install && npm run dev
