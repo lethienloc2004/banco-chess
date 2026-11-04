@@ -639,3 +639,8 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 .replay p { color: var(--text); }
 
 .icon-btn[hidden] { display: none; }
+
+.clock-card .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+.clock-card .btn { padding: 7px 14px; }
+.clock-card p { margin: 8px 0 0; }
+.seg { flex-wrap: wrap; }

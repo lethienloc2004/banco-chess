@@ -4,10 +4,11 @@ export function esc(value: unknown): string {
 }
 
 export function formatClock(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(total / 60), s = total % 60;
-  if (ms < 10_000 && ms > 0) return `${m}:${String(s).padStart(2, '0')}.${Math.floor((ms % 1000) / 100)}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
+  ms = Math.max(0, ms);
+  // Under 10 seconds show tenths (rounded down, so 0:00.0 means the flag has fallen).
+  if (ms < 10_000) return `0:0${Math.floor(ms / 1000)}.${Math.floor((ms % 1000) / 100)}`;
+  const total = Math.ceil(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
 export function timeAgo(ts: number, lang: 'vi' | 'en'): string {

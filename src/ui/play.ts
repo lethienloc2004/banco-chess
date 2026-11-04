@@ -1,10 +1,11 @@
 /** The game screen: board, side panel, bot, and online rooms on the server. */
+import { GameClock } from '../clock';
 import { Match } from '../game';
 import type { Level } from '../engine/ai';
 import type { GameKind, Outcome } from '../engine/types';
 import { net, ReSocket, type SocketStatus } from '../net';
 import {
-  CLAIM_AFTER_MS, EMOTES, REPORT_REASONS,
+  CLAIM_AFTER_MS, CLOCKS, EMOTES, REPORT_REASONS,
   type ClientMsg, type RoomState, type ServerMsg,
 } from '../shared/protocol';
 import { playSound } from '../sound';
@@ -50,6 +51,10 @@ export class PlayScreen implements Screen {
   private humanSide: 0 | 1 = 0;
   private level: Level = settings.level;
   private overShown = false;
+  // Local clock (bot / two-player games)
+  private clock: GameClock | null = null;
+  private flagged: Outcome | null = null;
+  private lowWarned = [false, false];
   private closeOver: (() => void) | null = null;
   private disposed = false;
   // Online room
@@ -84,6 +89,7 @@ export class PlayScreen implements Screen {
         <div class="offer-card" hidden></div>
         <div class="controls"></div>
         <div class="card level-card"></div>
+        <div class="card clock-card"></div>
         <div class="card net-card"></div>
         <details class="rules"><summary></summary><ul></ul></details>
         <div class="card"><h2 class="moves-title"></h2><ol class="moves"></ol></div>
@@ -103,11 +109,17 @@ export class PlayScreen implements Screen {
         this.match = Match.restore(saved.match);
         this.humanSide = saved.humanSide;
         this.level = saved.level;
+        this.flagged = saved.flagged ?? null;
+        if (saved.clock) this.clock = new GameClock(saved.clock.tc, saved.clock, this.match.side as 0 | 1);
       } else {
         this.match = new Match(kind);
         this.humanSide = settings.humanSide;
         this.level = settings.level;
+        const tc = CLOCKS[settings.localClock];
+        if (tc) this.clock = new GameClock(tc);
       }
+      if (this.flagged || this.match.outcome()) this.clock?.stop();
+      this.tick = window.setInterval(() => this.updateClocks(), 200);
       this.flipped = opts.mode === 'bot' && this.humanSide === 1;
       this.persist();
     }
@@ -137,18 +149,20 @@ export class PlayScreen implements Screen {
 
   private outcome(): Outcome | null {
     if (this.online) return this.room?.result ?? null;
-    return this.match.outcome();
+    return this.flagged ?? this.match.outcome();
   }
 
   private persist() {
     if (this.online) return;
     store.set('game:' + this.match.kind, {
       match: this.match.save(), mode: this.opts.mode as 'bot' | 'pvp', humanSide: this.humanSide, level: this.level, over: !!this.outcome(),
+      clock: this.clock?.save() ?? null, flagged: this.flagged,
     } satisfies SavedGame);
   }
 
   private canMove(): boolean {
     if (this.thinking || this.outcome()) return false;
+    if (!this.online && this.clock?.paused) return false;
     if (this.opts.mode === 'pvp') return true;
     if (this.opts.mode === 'bot') return this.match.side === this.humanSide;
     return !!this.room && this.room.status === 'playing' && this.sock?.status === 'open' && !this.pending && this.match.side === this.you;
@@ -173,9 +187,14 @@ export class PlayScreen implements Screen {
       this.render();
       return;
     }
+    if (this.outcome()) return;
+    if (this.clock?.flagged() !== null && this.clock?.flagged() !== undefined) { this.onFlag(); return; }
+    const mover = this.match.side as 0 | 1;
     const reveal = this.match.pieceAt(this.match.moveFrom(m))?.hidden ?? false;
     const captures = this.match.captured.length;
     this.match.play(m);
+    this.clock?.moved(mover, this.match.moves.length);
+    if (this.match.outcome()) this.clock?.stop();
     this.soundFor(m, captures, reveal);
     this.selected = null;
     this.pendingPromotion = null;
@@ -197,6 +216,7 @@ export class PlayScreen implements Screen {
       const apply = () => {
         if (this.req !== id || this.disposed) return;
         this.thinking = false;
+        if (this.outcome()) { this.render(); return; } // e.g. the bot ran out of time while thinking
         if (e.data.move !== undefined && this.match.legalMoves().includes(e.data.move)) this.play(e.data.move);
         else { console.error('Bot error', e.data.error); this.render(); }
       };
@@ -220,6 +240,9 @@ export class PlayScreen implements Screen {
     this.cancelBot();
     this.closeOver?.();
     this.match = new Match(this.match.kind);
+    this.flagged = null;
+    this.lowWarned = [false, false];
+    if (this.clock) this.clock = new GameClock(this.clock.tc);
     this.overShown = false;
     this.selected = null;
     this.pendingPromotion = null;
@@ -230,10 +253,11 @@ export class PlayScreen implements Screen {
   }
 
   private undo() {
-    if (this.online || !this.match.moves.length) return;
+    if (this.online || !this.match.moves.length || this.flagged) return;
     this.cancelBot();
     this.match.undo();
     if (this.opts.mode === 'bot') while (this.match.moves.length && this.match.side !== this.humanSide) this.match.undo();
+    this.clock?.rewind(this.match.moves.length, this.match.side as 0 | 1);
     this.overShown = !!this.outcome();
     this.selected = null;
     this.pendingPromotion = null;
@@ -419,7 +443,52 @@ export class PlayScreen implements Screen {
     return r.remaining[side] - (running ? Date.now() + this.clockOffset - r.turnStart! : 0);
   }
 
+  /** A local clock ran out: decide the game (loss, or draw if the opponent cannot win). */
+  private onFlag() {
+    const side = this.clock?.flagged();
+    if (side === null || side === undefined || this.outcome()) return;
+    this.flagged = this.match.timeoutResult(side);
+    this.clock!.stop();
+    this.cancelBot();
+    this.selected = null;
+    this.pendingPromotion = null;
+    if (settings.sound) playSound('end');
+    this.persist();
+    this.render();
+    this.checkOver();
+  }
+
+  private togglePause() {
+    const c = this.clock;
+    if (!c || this.outcome()) return;
+    if (c.paused) c.resume(); else c.pause();
+    this.persist();
+    this.render();
+  }
+
+  private updateLocalClock() {
+    const c = this.clock;
+    if (!c) return;
+    if (!this.flagged && c.flagged() !== null) { this.onFlag(); return; }
+    const over = !!this.outcome();
+    this.el.querySelectorAll<HTMLElement>('.clock').forEach(el => {
+      const side = Number(el.dataset.side) as 0 | 1;
+      const ms = Math.max(0, c.left(side));
+      const running = !over && c.active === side && !c.paused;
+      el.textContent = formatClock(ms);
+      el.classList.toggle('low', ms < 30_000);
+      el.classList.toggle('run', running);
+      // Two short beeps once when a human player drops under 10 seconds.
+      const human = this.opts.mode === 'pvp' || side === this.humanSide;
+      if (running && human && ms < 10_000 && !this.lowWarned[side]) {
+        this.lowWarned[side] = true;
+        if (settings.sound) playSound('lowtime');
+      }
+    });
+  }
+
   private updateClocks() {
+    if (!this.online) { this.updateLocalClock(); return; }
     const r = this.room;
     if (!r) return;
     if (r.clock) {
@@ -511,6 +580,11 @@ export class PlayScreen implements Screen {
 
   // ---------- Rendering ----------
 
+  private clockLabel(): string {
+    const tc = this.clock?.tc;
+    return tc ? `${tc.base >= 60 ? tc.base / 60 : tc.base + 's'}+${tc.inc}` : '';
+  }
+
   private sideName(side: number): string {
     const s = t();
     return side === 0 ? (this.match.isChess ? s.white : s.red) : s.black;
@@ -528,8 +602,8 @@ export class PlayScreen implements Screen {
     this.q('.game-title .thumb').innerHTML = gameThumb(m.kind);
     this.q('.game-title h1').textContent = s[m.kind];
     this.q('.mode-line').textContent = mode === 'bot'
-      ? `${s.bot} · ${s.youPlay.toLowerCase()} ${this.sideName(this.humanSide)}`
-      : mode === 'pvp' ? s.pvp
+      ? [`${s.bot} · ${s.youPlay.toLowerCase()} ${this.sideName(this.humanSide)}`, this.clockLabel()].filter(Boolean).join(' · ')
+      : mode === 'pvp' ? [s.pvp, this.clockLabel()].filter(Boolean).join(' · ')
       : r ? [r.rated ? s.ranked : s.friendRoom, r.clock ? `${r.clock.base / 60}+${r.clock.inc}` : s.noClock,
         this.you === null ? s.spectating : `${s.youPlay.toLowerCase()} ${this.sideName(this.you)}`].join(' · ') : s.online;
 
@@ -580,18 +654,30 @@ export class PlayScreen implements Screen {
           : btn('draw', ICON.hand, s.offerDraw, !playing || r!.drawOffer === this.you))
         + btn('resign', ICON.flag, s.resign, !playing);
     } else {
-      controls.innerHTML = btn('undo', ICON.undo, s.undo, m.moves.length === 0) + btn('flip', ICON.flip, s.flip) + btn('new', ICON.plus, s.newGame, false, !!outcome);
+      controls.innerHTML = btn('undo', ICON.undo, s.undo, m.moves.length === 0 || !!this.flagged) + btn('flip', ICON.flip, s.flip) + btn('new', ICON.plus, s.newGame, false, !!outcome);
     }
     controls.querySelectorAll<HTMLButtonElement>('button').forEach(b => {
       b.onclick = () => {
         const act = b.dataset.act;
         if (act === 'undo') this.undo();
+        else if (act === 'pause') this.togglePause();
         else if (act === 'flip') { this.flipped = !this.flipped; this.render(); }
         else if (act === 'new') this.newGame();
         else if (act === 'resign') void this.resign();
         else if (act === 'draw') this.offerDraw();
       };
     });
+
+    // Local clock: time control + pause
+    const cc = this.q('.clock-card');
+    cc.hidden = this.online || !this.clock;
+    if (!this.online && this.clock) {
+      const paused = this.clock.paused;
+      cc.innerHTML = `<div class="row"><span>⏱ ${esc(s.timeControl)}: <b>${esc(this.clockLabel())}</b></span>
+        <button class="btn" data-act="pause"${outcome ? ' disabled' : ''}>${esc(paused ? s.resume : s.pause)}</button></div>
+        ${!outcome && this.clock.active === null ? `<p class="muted small">${esc(s.clockStartsHint)}</p>` : ''}`;
+      cc.querySelector<HTMLButtonElement>('[data-act="pause"]')!.onclick = () => this.togglePause();
+    }
 
     // Bot level
     const lc = this.q('.level-card');
@@ -642,6 +728,13 @@ export class PlayScreen implements Screen {
       this.el.querySelectorAll<HTMLButtonElement>('[data-act="copy"]').forEach(b => (b.onclick = () => void this.copyLink()));
       this.el.querySelectorAll<HTMLButtonElement>('[data-act="share"]').forEach(b => (b.onclick = () => this.shareLink()));
       overlay.querySelector<HTMLButtonElement>('[data-act="home"]')?.addEventListener('click', () => this.nav.go('#/', 'back'));
+    }
+
+    if (!this.online && this.clock?.paused && !outcome) {
+      overlay.hidden = false;
+      overlay.innerHTML = `<div class="ov-card"><div class="ov-icon">⏸</div><h2>${esc(s.paused)}</h2>
+        <div class="ov-actions"><button class="btn primary" data-act="resume">${esc(s.resume)}</button></div></div>`;
+      overlay.querySelector<HTMLButtonElement>('[data-act="resume"]')!.onclick = () => this.togglePause();
     }
 
     // Rules
@@ -718,7 +811,7 @@ export class PlayScreen implements Screen {
       : `<span class="cap-xq ${side ? 'r' : 'b'}">${xiangqiLabel(type, side ^ 1, 'hanzi')}</span>`).join('');
     const turn = !this.outcome() && m.side === side && (!this.online || r?.status === 'playing');
     el.classList.toggle('turn', turn);
-    const clock = this.online && r?.clock ? `<span class="clock" data-side="${side}"></span>` : '';
+    const clock = (this.online && r?.clock) || (!this.online && this.clock) ? `<span class="clock" data-side="${side}"></span>` : '';
     el.innerHTML = `<span class="pname"><span class="dot side-${side} ${m.isChess ? 'chess' : 'xq'}"></span><span class="nm">${name}</span>${who ? `<span class="who">${esc(who)}</span>` : ''}</span><span class="caps" title="${esc(s.captured)}">${icons}</span>${clock}`;
   }
 

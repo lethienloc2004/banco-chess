@@ -1,6 +1,7 @@
 /** User settings and local persistence. */
 import type { Level } from './engine/ai';
-import type { GameKind } from './engine/types';
+import type { ClockState } from './clock';
+import type { GameKind, Outcome } from './engine/types';
 import type { SavedMatch } from './game';
 import { STRINGS, type Lang, type Strings } from './i18n';
 import { DEFAULT_CUSTOM, type CustomColors } from './ui/themes';
@@ -21,6 +22,8 @@ export interface Settings {
   xqPieces: string;
   custom: CustomColors;
   onlineClock: string;
+  /** Time control for bot / two-player games ('none' = unlimited). */
+  localClock: string;
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -30,6 +33,9 @@ export interface SavedGame {
   humanSide: 0 | 1;
   level: Level;
   over?: boolean;
+  clock?: ClockState | null;
+  /** Set when the game ended on time. */
+  flagged?: Outcome | null;
 }
 
 export const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
@@ -63,6 +69,7 @@ const defaults: Settings = {
   xqPieces: 'classic',
   custom: DEFAULT_CUSTOM,
   onlineClock: '10+5',
+  localClock: 'none',
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

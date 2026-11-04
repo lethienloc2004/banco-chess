@@ -383,7 +383,7 @@ export class Xiangqi implements SearchPosition {
   }
 
   /** Pieces that can ever threaten the enemy general. */
-  private hasAttackers(color: number): boolean {
+  hasAttackers(color: number): boolean {
     for (let sq = 0; sq < 90; sq++) {
       const p = this.board[sq];
       if (!p || pieceColor(p) !== color) continue;

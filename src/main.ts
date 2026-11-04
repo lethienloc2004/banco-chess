@@ -162,8 +162,13 @@ function show(dir: 'forward' | 'back' | 'none' = 'none') {
     window.scrollTo({ top: 0 });
   };
   document.documentElement.dataset.nav = dir;
-  const vt = (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
-  if (dir !== 'none' && vt && !reduceMotion.matches) vt.call(document, swap);
+  type VT = { ready: Promise<void>; finished: Promise<void>; updateCallbackDone: Promise<void> };
+  const vt = (document as Document & { startViewTransition?: (cb: () => void) => VT }).startViewTransition;
+  if (dir !== 'none' && vt && !reduceMotion.matches) {
+    // A newer navigation skips the running transition; that is expected, not an error.
+    const tr = vt.call(document, swap);
+    for (const p of [tr.ready, tr.finished, tr.updateCallbackDone]) p?.catch(() => {});
+  }
   else {
     swap();
     if (dir !== 'none') current!.el.classList.add('enter-' + dir);

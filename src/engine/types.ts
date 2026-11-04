@@ -5,7 +5,10 @@ export type GameKind = 'chess' | 'xiangqi' | 'jieqi';
 export type WinReason =
   | 'checkmate' | 'stalemate' | 'nomoves' | 'perpetual-check' | 'perpetual-chase'
   | 'resign' | 'timeout' | 'abandon' | 'admin';
-export type DrawReason = 'stalemate' | 'fifty' | 'repetition' | 'material' | 'agreement' | 'admin' | 'cancelled';
+export type DrawReason =
+  | 'stalemate' | 'fifty' | 'repetition' | 'material' | 'agreement' | 'admin' | 'cancelled'
+  /** Flag fell, but the opponent could not have won by any legal sequence. */
+  | 'timeout-material';
 
 export type Outcome = { winner: 0 | 1; reason: WinReason } | { winner: null; reason: DrawReason };
 

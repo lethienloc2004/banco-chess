@@ -149,6 +149,13 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     ul.appendChild(li);
   };
 
+  const clockOptions = (): [string, string][] => Object.keys(CLOCKS).map(k => [k, k === 'none' ? s.noClock : k]);
+  const clockRow = () => optRow(s.timeControl, seg<string>(clockOptions(), settings.localClock, v => { settings.localClock = v; saveSettings(); }));
+  const freshClock = () => {
+    const tc = CLOCKS[settings.localClock];
+    return tc ? { tc, remaining: [tc.base * 1000, tc.base * 1000] as [number, number], plies: 0 } : null;
+  };
+
   const startBtn = (label: string, onClick: () => void) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -162,16 +169,17 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     panel.append(
       optRow(s.youPlay, seg<0 | 1>([[0, red], [1, s.black]], settings.humanSide, v => { settings.humanSide = v; saveSettings(); })),
       optRow(s.level, seg<Level>([['easy', s.easy], ['medium', s.medium], ['hard', s.hard]], settings.level, v => { settings.level = v; saveSettings(); })),
+      clockRow(),
       startBtn(s.start, () => {
-        store.set('game:' + kind, { match: new Match(kind).save(), mode: 'bot', humanSide: settings.humanSide, level: settings.level } satisfies SavedGame);
+        store.set('game:' + kind, { match: new Match(kind).save(), mode: 'bot', humanSide: settings.humanSide, level: settings.level, clock: freshClock() } satisfies SavedGame);
         nav.go(`#/${kind}/bot`);
       }),
     );
   });
 
   expandable('👥', s.pvp, s.pvpDesc, panel => {
-    panel.append(startBtn(s.start, () => {
-      store.set('game:' + kind, { match: new Match(kind).save(), mode: 'pvp', humanSide: 0, level: settings.level } satisfies SavedGame);
+    panel.append(clockRow(), startBtn(s.start, () => {
+      store.set('game:' + kind, { match: new Match(kind).save(), mode: 'pvp', humanSide: 0, level: settings.level, clock: freshClock() } satisfies SavedGame);
       nav.go(`#/${kind}/pvp`);
     }));
   });
@@ -202,7 +210,7 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     });
     panel.append(
       optRow(s.youPlay, seg<0 | 1 | 'random'>([[0, red], [1, s.black], ['random', s.random]], settings.onlineSide, v => { settings.onlineSide = v; saveSettings(); })),
-      optRow(s.timeControl, seg<string>(Object.keys(CLOCKS).map(k => [k, k === 'none' ? s.noClock : k]), settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); })),
+      optRow(s.timeControl, seg<string>(clockOptions(), settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); })),
       create,
     );
     void net.init().then(ok => { if (!ok || net.banned) { create.disabled = true; offline(panel); } });

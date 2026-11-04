@@ -32,10 +32,12 @@ export interface Clock { base: number; inc: number }
 
 export const CLOCKS: Record<string, Clock | null> = {
   none: null,
+  '1+0': { base: 60, inc: 0 },
   '3+2': { base: 180, inc: 2 },
   '5+3': { base: 300, inc: 3 },
   '10+5': { base: 600, inc: 5 },
   '15+10': { base: 900, inc: 10 },
+  '30+20': { base: 1800, inc: 20 },
 };
 export const RANKED_CLOCK: Clock = { base: 600, inc: 5 };
 

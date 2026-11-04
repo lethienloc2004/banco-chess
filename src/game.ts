@@ -215,6 +215,17 @@ export class Match {
     return { winner: null, reason: 'repetition' };
   }
 
+  /**
+   * Result when `loser` runs out of time: a loss, unless the opponent could
+   * not have won by any legal sequence of moves, which is a draw (FIDE 6.9;
+   * in xiangqi: the opponent has no attacking pieces left).
+   */
+  timeoutResult(loser: 0 | 1): Outcome {
+    const winner = (loser ^ 1) as 0 | 1;
+    const canWin = this.pos instanceof C.Chess ? this.pos.canWin(winner) : this.pos.hasAttackers(winner);
+    return canWin ? { winner, reason: 'timeout' } : { winner: null, reason: 'timeout-material' };
+  }
+
   /** State to hand to the bot (chess: FEN, xiangqi: JSON). */
   botState(): string | X.XiangqiJSON {
     return this.pos instanceof C.Chess ? this.pos.fen() : this.pos.toJSON();

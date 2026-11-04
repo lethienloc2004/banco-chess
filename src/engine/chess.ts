@@ -395,6 +395,31 @@ export class Chess implements SearchPosition {
     return knights === 0 && bishopColours.size === 1;
   }
 
+  /**
+   * Could `color` still checkmate by some legal sequence (FIDE 6.9, used when
+   * the opponent's flag falls)? Same approximation as major chess sites:
+   * a lone king never can; king + one knight, or king + bishops all on one
+   * square colour, can only mate if the other side has pieces that can block.
+   */
+  canWin(color: number): boolean {
+    const mine: { t: number; shade: number }[] = [];
+    const theirs: { t: number; shade: number }[] = [];
+    for (let sq = 0; sq < 128; sq++) {
+      if (sq & 0x88) { sq += 7; continue; }
+      const p = this.board[sq];
+      const t = pieceType(p);
+      if (!t || t === KING) continue;
+      (pieceColor(p) === color ? mine : theirs).push({ t, shade: (sqFile(sq) + sqRank(sq)) & 1 });
+    }
+    if (!mine.length) return false;
+    if (mine.some(p => p.t === PAWN || p.t === ROOK || p.t === QUEEN)) return true;
+    const knights = mine.filter(p => p.t === KNIGHT).length;
+    const shades = new Set(mine.filter(p => p.t === BISHOP).map(p => p.shade));
+    if (knights === 1 && shades.size === 0) return theirs.length > 0;
+    if (knights === 0 && shades.size === 1) return theirs.some(p => p.t !== BISHOP || !shades.has(p.shade));
+    return true;
+  }
+
   /** True when the side to move can legally capture en passant right now. */
   private epCapturable(): boolean {
     if (this.ep < 0) return false;

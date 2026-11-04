@@ -164,7 +164,7 @@ export class GameRoom extends DurableObject<Env> {
           s.remaining[side] -= now - s.turnStart;
           if (s.remaining[side] <= 0) {
             s.remaining[side] = 0;
-            await this.finish({ winner: (side ^ 1) as 0 | 1, reason: 'timeout' });
+            await this.finish(this.getMatch().timeoutResult(side));
             return;
           }
           s.remaining[side] += s.clock.inc * 1000;
@@ -350,7 +350,7 @@ export class GameRoom extends DurableObject<Env> {
       if (s.clock && s.turnStart !== null && now >= s.turnStart + s.remaining[stm]) {
         s.remaining[stm] = 0;
         s.turnStart = null;
-        await this.finish({ winner: (stm ^ 1) as 0 | 1, reason: 'timeout' });
+        await this.finish(this.getMatch().timeoutResult(stm));
         return;
       }
       const gone = s.disconnectedAt.map(d => d !== null && now - d >= AUTO_ABANDON_MS);
