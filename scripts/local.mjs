@@ -6,8 +6,8 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 
 const shell = process.platform === 'win32';
-const run = (cmd, args) => {
-  const r = spawnSync(cmd, args, { stdio: 'inherit', shell });
+const run = (cmd, args, env = {}) => {
+  const r = spawnSync(cmd, args, { stdio: 'inherit', shell, env: { ...process.env, ...env } });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
@@ -18,7 +18,8 @@ if (!existsSync('.dev.vars')) {
 console.log('\n▶ Đang build app…');
 run('npx', ['vite', 'build', '--logLevel', 'warn']);
 console.log('▶ Đang chuẩn bị cơ sở dữ liệu cục bộ…');
-run('npx', ['wrangler', 'd1', 'migrations', 'apply', 'DB', '--local']);
+// CI=1 makes wrangler skip the "continue? (Y/n)" prompt: this only touches the local database.
+run('npx', ['wrangler', 'd1', 'migrations', 'apply', 'DB', '--local'], { CI: '1' });
 console.log('\n🎉 Mở http://localhost:8787 để chơi. Nhấn Ctrl+C để dừng.\n');
 // DEV=1 enables the "admin login (development only)" button in Settings.
 const dev = spawn('npx', ['wrangler', 'dev', '--port', '8787', '--var', 'DEV:1'], { stdio: 'inherit', shell });
