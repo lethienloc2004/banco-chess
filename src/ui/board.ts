@@ -74,7 +74,7 @@ export class BoardRenderer {
     return this.match.sqOf({ file, rank });
   }
 
-  render(match: Match, view: BoardView, animate = false) {
+  render(match: Match, view: BoardView, animate = false, intro = false) {
     this.match = match;
     this.view = view;
     const parts: string[] = [];
@@ -108,9 +108,11 @@ export class BoardRenderer {
       parts.push(`<circle class="hl-check" cx="${x}" cy="${y}" r="${match.isChess ? 46 : 52}"/>`);
     }
 
+    let index = 0;
     for (const p of match.pieces()) {
       const [x, y] = this.center(p.sq);
-      parts.push(`<g class="piece" data-sq="${p.sq}" transform="translate(${x} ${y})">`);
+      // Inner group carries the entrance animation so it doesn't fight the position transform.
+      parts.push(`<g class="piece" data-sq="${p.sq}" transform="translate(${x} ${y})"><g class="pi" style="--i:${index++}">`);
       if (match.isChess) {
         parts.push(`<text class="cp ${p.color ? 'b' : 'w'}" y="4">${chessGlyph(p.type)}</text>`);
       } else if (p.hidden) {
@@ -124,7 +126,7 @@ export class BoardRenderer {
           `<circle class="xq-ring ${p.color ? 'b' : 'r'}" r="37"/>`,
           `<text class="xq-t ${p.color ? 'b' : 'r'}${viet ? ' viet' : ''}${viet && label.length > 3 ? ' long' : ''}" y="${viet ? 2 : 3}">${label}</text>`);
       }
-      parts.push('</g>');
+      parts.push('</g></g>');
     }
 
     for (const [sq, capture] of view.targets) {
@@ -135,6 +137,12 @@ export class BoardRenderer {
     }
 
     this.svg.innerHTML = parts.join('');
+    if (intro) {
+      this.svg.classList.remove('intro');
+      void this.svg.getBoundingClientRect();
+      this.svg.classList.add('intro');
+      window.setTimeout(() => this.svg.classList.remove('intro'), 1200);
+    }
 
     if (animate && last !== null) {
       const from = this.center(match.moveFrom(last));
