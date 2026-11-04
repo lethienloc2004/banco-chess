@@ -8,6 +8,8 @@ export interface BoardView {
   targets: Map<number, boolean>;
   labels: 'hanzi' | 'viet';
   river: [string, string];
+  /** Show the real identity of face-down pieces (admin replay). */
+  peek?: boolean;
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -115,14 +117,14 @@ export class BoardRenderer {
       parts.push(`<g class="piece" data-sq="${p.sq}" transform="translate(${x} ${y})"><g class="pi" style="--i:${index++}">`);
       if (match.isChess) {
         parts.push(`<text class="cp ${p.color ? 'b' : 'w'}" y="4">${chessGlyph(p.type)}</text>`);
-      } else if (p.hidden) {
+      } else if (p.hidden && !view.peek) {
         parts.push(`<circle class="xq-disc hidden ${p.color ? 'b' : 'r'}" r="44"/>`,
           `<circle class="xq-ring hidden" r="36"/>`,
           `<text class="xq-q" y="2">?</text>`);
       } else {
         const label = xiangqiLabel(p.type, p.color, view.labels);
         const viet = view.labels === 'viet';
-        parts.push(`<circle class="xq-disc ${p.color ? 'b' : 'r'}" r="44"/>`,
+        parts.push(`<circle class="xq-disc ${p.color ? 'b' : 'r'}${p.hidden ? ' peek' : ''}" r="44"/>`,
           `<circle class="xq-ring ${p.color ? 'b' : 'r'}" r="37"/>`,
           `<text class="xq-t ${p.color ? 'b' : 'r'}${viet ? ' viet' : ''}${viet && label.length > 3 ? ' long' : ''}" y="${viet ? 2 : 3}">${label}</text>`);
       }

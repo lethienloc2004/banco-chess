@@ -2,9 +2,12 @@
 
 export type GameKind = 'chess' | 'xiangqi' | 'jieqi';
 
-export type Outcome =
-  | { winner: 0 | 1; reason: 'checkmate' | 'stalemate' | 'nomoves' }
-  | { winner: null; reason: 'stalemate' | 'fifty' | 'repetition' | 'material' };
+export type WinReason =
+  | 'checkmate' | 'stalemate' | 'nomoves' | 'perpetual-check' | 'perpetual-chase'
+  | 'resign' | 'timeout' | 'abandon' | 'admin';
+export type DrawReason = 'stalemate' | 'fifty' | 'repetition' | 'material' | 'agreement' | 'admin' | 'cancelled';
+
+export type Outcome = { winner: 0 | 1; reason: WinReason } | { winner: null; reason: DrawReason };
 
 /** Minimal interface the alpha-beta search needs. Scores are from the side to move. */
 export interface SearchPosition {

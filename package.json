@@ -1,23 +1,25 @@
 {
   "name": "ban-co",
   "version": "0.1.0",
-  "description": "Chơi cờ vua, cờ tướng và cờ tướng úp ngay trên trình duyệt — có máy chơi cùng.",
+  "description": "Chơi cờ vua, cờ tướng và cờ tướng úp trên trình duyệt: máy chơi cùng, chơi online, ghép ngẫu nhiên, xếp hạng.",
   "type": "module",
   "private": true,
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev:server": "wrangler d1 migrations apply ban-co --local && wrangler dev --port 8787",
+    "build": "tsc --noEmit && tsc -p server --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:server": "node tests/e2e/server.mjs",
+    "db:migrate": "wrangler d1 migrations apply ban-co --remote",
+    "deploy": "npm run build && wrangler d1 migrations apply ban-co --remote && wrangler deploy"
   },
   "devDependencies": {
-    "peer": "^1.0.2",
+    "@cloudflare/workers-types": "^5.20261104.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.1.0"
-  },
-  "dependencies": {
-    "peerjs": "^1.5.5"
+    "vitest": "^5.1.0",
+    "wrangler": "^4.157.0"
   }
 }

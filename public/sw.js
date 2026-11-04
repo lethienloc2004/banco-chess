@@ -1,5 +1,5 @@
 // Offline support: network first, falling back to the cache.
-const CACHE = 'ban-co-v1';
+const CACHE = 'ban-co-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './icon.svg', './manifest.webmanifest'])));
@@ -16,6 +16,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // Never cache the online server's API.
+  if (new URL(req.url).pathname.startsWith('/api/')) return;
   e.respondWith(
     fetch(req)
       .then(res => {

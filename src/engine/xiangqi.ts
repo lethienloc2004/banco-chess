@@ -152,6 +152,25 @@ export class Xiangqi implements SearchPosition {
     return this.key;
   }
 
+  /** Set the real identity of a face-down piece (used when a server reveals it). */
+  setHiddenType(sq: number, type: number) {
+    const p = this.board[sq];
+    if (!isHidden(p)) return;
+    const q = mk(type, pieceColor(p)) | HIDDEN;
+    this.key ^= Z_PIECE[(p & 31) * 90 + sq] ^ Z_PIECE[(q & 31) * 90 + sq];
+    this.board[sq] = q;
+  }
+
+  /**
+   * Copy of the position where every face-down piece shows only the type of
+   * its start square — what a player is allowed to know.
+   */
+  masked(): XiangqiJSON {
+    const j = this.toJSON();
+    j.board = j.board.map((p, sq) => (isHidden(p) ? (mk(START_TYPE[sq], pieceColor(p)) | HIDDEN) : p));
+    return j;
+  }
+
   positionKey(): string {
     return String.fromCharCode(...Array.from(this.board, p => 48 + (p & 31))) + this.side;
   }
@@ -169,16 +188,24 @@ export class Xiangqi implements SearchPosition {
 
   private pseudo(capturesOnly: boolean): number[] {
     const out: number[] = [];
-    const b = this.board, us = this.side;
+    for (let sq = 0; sq < 90; sq++) {
+      const p = this.board[sq];
+      if (p && pieceColor(p) === this.side) this.genFrom(sq, capturesOnly, out);
+    }
+    return out;
+  }
+
+  /** Pseudo-legal moves of the piece on `sq`, whichever side it belongs to. */
+  genFrom(sq: number, capturesOnly: boolean, out: number[] = []): number[] {
+    const b = this.board, us = pieceColor(b[sq]);
     const add = (from: number, f: number, r: number) => {
       const to = at(f, r);
       const t = b[to];
       if (!t) { if (!capturesOnly) out.push(encode(from, to)); }
       else if (pieceColor(t) !== us) out.push(encode(from, to));
     };
-    for (let sq = 0; sq < 90; sq++) {
+    {
       const p = b[sq];
-      if (!p || pieceColor(p) !== us) continue;
       const f0 = fileOf(sq), r0 = rankOf(sq);
       const restricted = this.restricted(p);
       switch (this.moveType(sq)) {

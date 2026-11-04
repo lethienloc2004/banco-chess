@@ -3,9 +3,13 @@ import { Match } from '../game';
 import type { GameKind } from '../engine/types';
 import type { Level } from '../engine/ai';
 import { KINDS, saveSettings, settings, store, t, type SavedGame } from '../state';
+import { lobby, net } from '../net';
+import { CLOCKS, RANKED_CLOCK } from '../shared/protocol';
+import { toast } from './dialog';
+import { esc } from './util';
 
 export interface Nav {
-  go(hash: string, dir?: 'forward' | 'back'): void;
+  go(hash: string, dir?: 'forward' | 'back' | 'none'): void;
 }
 
 export interface Screen {
@@ -47,9 +51,18 @@ export function homeScreen(nav: Nav): Screen {
       <h1>${s.heroTitle}</h1>
       <p>${s.heroSub}</p>
     </div>
+    <p class="online-pill" hidden></p>
     <h2 class="list-title">${s.chooseGame}</h2>
     <ul class="list"></ul>`;
   const ul = el.querySelector('ul')!;
+  const pill = el.querySelector<HTMLElement>('.online-pill')!;
+  const showOnline = () => {
+    if (!lobby.stats) return;
+    pill.hidden = false;
+    pill.innerHTML = `<span class="live-dot"></span>${esc(s.onlineNow(lobby.stats.online))}`;
+  };
+  showOnline();
+  const off = lobby.on(m => { if (m.t === 'stats' || m.t === 'hello') showOnline(); });
   KINDS.forEach((kind, i) => {
     const li = document.createElement('li');
     const saved = savedGame(kind);
@@ -61,7 +74,7 @@ export function homeScreen(nav: Nav): Screen {
     li.querySelector('button')!.onclick = () => nav.go('#/' + kind);
     ul.appendChild(li);
   });
-  return { el, dispose() {} };
+  return { el, dispose() { off(); } };
 }
 
 function seg<T extends string | number>(options: [T, string][], value: T, onPick: (v: T) => void): HTMLElement {
@@ -163,15 +176,36 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     }));
   });
 
-  expandable('🌐', s.online, s.onlineDesc, panel => {
+  const offline = (panel: HTMLElement) => {
+    const note = document.createElement('p');
+    note.className = 'note warn';
+    note.textContent = net.banned ? s.bannedText(net.banned.reason ?? '') : s.serverOffline;
+    panel.appendChild(note);
+  };
+
+  expandable('⚡', s.quickMatch, s.quickMatchDesc(RANKED_CLOCK.base / 60, RANKED_CLOCK.inc), panel => {
+    const go = startBtn(s.findOpponent, () => nav.go(`#/match/${kind}`));
+    panel.append(go);
+    void net.init().then(ok => { if (!ok || net.banned) { go.disabled = true; offline(panel); } });
+  });
+
+  expandable('🔗', s.online, s.onlineDesc, panel => {
+    const create = startBtn(s.createRoom, async () => {
+      create.disabled = true;
+      try {
+        const { id } = await net.api<{ id: string }>('/rooms', { method: 'POST', body: { kind, side: settings.onlineSide, clock: settings.onlineClock } });
+        nav.go('#/r/' + id);
+      } catch {
+        toast(s.serverOffline);
+        create.disabled = false;
+      }
+    });
     panel.append(
       optRow(s.youPlay, seg<0 | 1 | 'random'>([[0, red], [1, s.black], ['random', s.random]], settings.onlineSide, v => { settings.onlineSide = v; saveSettings(); })),
-      startBtn(s.createRoom, () => nav.go(`#/${kind}/online`)),
+      optRow(s.timeControl, seg<string>(Object.keys(CLOCKS).map(k => [k, k === 'none' ? s.noClock : k]), settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); })),
+      create,
     );
-    const note = document.createElement('p');
-    note.className = 'note';
-    note.textContent = s.onlineNote;
-    panel.appendChild(note);
+    void net.init().then(ok => { if (!ok || net.banned) { create.disabled = true; offline(panel); } });
   });
 
   return { el, dispose() {} };

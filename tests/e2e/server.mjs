@@ -1,0 +1,137 @@
+// Integration test for the game server. Start it first: npm run dev:server
+const B = process.env.SERVER_URL ?? 'http://127.0.0.1:8787';
+const api = async (path, { token, method = 'GET', body } = {}) => {
+  const r = await fetch(B + '/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  return { status: r.status, data: await r.json().catch(() => null) };
+};
+const sock = (path, token) => new Promise((resolve, reject) => {
+  const ws = new WebSocket(B.replace('http', 'ws') + '/api' + path + '?token=' + token);
+  const inbox = [];
+  const waiters = [];
+  ws.onmessage = e => { const m = JSON.parse(e.data); inbox.push(m); waiters.forEach(w => w()); };
+  ws.onopen = () => resolve({
+    ws, inbox,
+    send: m => ws.send(JSON.stringify(m)),
+    wait: (pred, ms = 5000) => new Promise((res, rej) => {
+      const t = setTimeout(() => rej(new Error('timeout waiting')), ms);
+      let done = false;
+      const check = () => { if (done) return; const i = inbox.findIndex(pred); if (i >= 0) { done = true; clearTimeout(t); waiters.splice(waiters.indexOf(check), 1); res(inbox.splice(0, i + 1).pop()); } };
+      waiters.push(check); check();
+    }),
+  });
+  ws.onerror = reject;
+});
+const ok = (c, msg) => { if (!c) { console.log('FAIL:', msg); process.exitCode = 1; } else console.log('ok  -', msg); };
+
+const g1 = (await api('/auth/guest', { method: 'POST' })).data;
+const g2 = (await api('/auth/guest', { method: 'POST' })).data;
+ok(g1.token && g1.user.name.startsWith('Khách'), 'guest accounts created: ' + g1.user.name + ', ' + g2.user.name);
+ok((await api('/me', { token: 'bad' })).status === 401, 'bad token rejected');
+ok((await api('/me', { token: g1.token, method: 'PATCH', body: { name: '<b>Hùng</b>  Cờ' } })).data.user.name === 'bHùng/b Cờ', 'name sanitized');
+
+// --- Friend room (jieqi): hidden identities must not leak
+const room = (await api('/rooms', { token: g1.token, method: 'POST', body: { kind: 'jieqi', side: 0, clock: '5+3' } })).data;
+ok(/^[a-z2-9]{7}$/.test(room.id), 'room created ' + room.id);
+const a = await sock(`/rooms/${room.id}/ws`, g1.token);
+let st = (await a.wait(m => m.t === 'state')).state;
+ok(st.status === 'waiting' && st.you === 0, 'host waiting as red');
+const b = await sock(`/rooms/${room.id}/ws`, g2.token);
+st = (await b.wait(m => m.t === 'state')).state;
+ok(st.status === 'playing' && st.you === 1, 'guest joined as black, game playing');
+const hostState = (await a.wait(m => m.t === 'state' && m.state.status === 'playing')).state;
+ok(hostState.status === 'playing', 'host notified game started');
+// masked: every hidden piece type equals its start-square type
+const START = [5,4,3,2,1,2,3,4,5, 0,0,0,0,0,0,0,0,0, 0,6,0,0,0,0,0,6,0, 7,0,7,0,7,0,7,0,7];
+const startType = sq => { const r = Math.floor(sq / 9), f = sq % 9; const rr = r <= 4 ? r : 9 - r; return START[rr * 9 + f] ?? 0; };
+ok(st.initial.board.every((p, sq) => !(p & 16) || (p & 7) === startType(sq)), 'jieqi start position is masked for clients');
+// Red moves b2 (cannon square, sq 19) to e2 (sq 22): move = from | to << 7
+const mv = 19 | (22 << 7);
+b.send({ t: 'move', ply: 0, m: mv });
+ok((await b.wait(m => m.t === 'error')).code === 'not-your-turn', 'black cannot move on red turn');
+a.send({ t: 'move', ply: 0, m: 19 | (19 << 7) });
+ok((await a.wait(m => m.t === 'error')).code === 'illegal', 'illegal move rejected');
+a.send({ t: 'move', ply: 0, m: mv });
+const moved = await b.wait(m => m.t === 'move');
+ok(moved.mv.m === mv && moved.mv.r >= 2 && moved.mv.r <= 7, 'move relayed with revealed identity r=' + moved.mv.r);
+// draw offer + decline, emote
+b.send({ t: 'draw' });
+ok((await a.wait(m => m.t === 'offer')).side === 1, 'draw offer relayed');
+a.send({ t: 'decline' });
+ok((await b.wait(m => m.t === 'offer' && m.side === null)).side === null, 'draw declined');
+a.send({ t: 'emote', e: '👍' });
+ok((await b.wait(m => m.t === 'emote')).e === '👍', 'emote relayed');
+// reconnect: guest reconnects and gets the moves back
+b.ws.close();
+await a.wait(m => m.t === 'presence' && m.seats[1] && !m.seats[1].online);
+ok(true, 'host sees guest offline');
+const b2 = await sock(`/rooms/${room.id}/ws`, g2.token);
+st = (await b2.wait(m => m.t === 'state')).state;
+ok(st.you === 1 && st.moves.length === 1, 'guest reconnected with game state');
+a.send({ t: 'claim' });
+ok((await a.wait(m => m.t === 'error')).code === 'too-early', 'cannot claim win while opponent online');
+b2.send({ t: 'resign' });
+st = (await a.wait(m => m.t === 'state' && m.state.status === 'over')).state;
+ok(st.result.winner === 0 && st.result.reason === 'resign' && st.ratingChange === null, 'resign -> red wins, unrated');
+a.send({ t: 'rematch' }); b2.send({ t: 'rematch' });
+st = (await a.wait(m => m.t === 'state' && m.state.gameNo === 2)).state;
+ok(st.you === 1 && st.moves.length === 0 && st.status === 'playing', 'rematch: colours swapped');
+a.ws.close(); b2.ws.close();
+
+// --- Matchmaking (chess, rated)
+const l1 = await sock('/lobby/ws', g1.token);
+const l2 = await sock('/lobby/ws', g2.token);
+await l1.wait(m => m.t === 'hello');
+l1.send({ t: 'queue', kind: 'chess' });
+await l1.wait(m => m.t === 'queued');
+l2.send({ t: 'queue', kind: 'chess' });
+const m1 = await l1.wait(m => m.t === 'matched'), m2 = await l2.wait(m => m.t === 'matched');
+ok(m1.room === m2.room, 'matched into the same room ' + m1.room);
+const r1 = await sock(`/rooms/${m1.room}/ws`, g1.token), r2 = await sock(`/rooms/${m2.room}/ws`, g2.token);
+const s1 = (await r1.wait(m => m.t === 'state')).state, s2 = (await r2.wait(m => m.t === 'state')).state;
+ok(s1.rated && s1.clock && s1.you !== s2.you, 'rated game with clock, opposite sides');
+const [white, black] = s1.you === 0 ? [r1, r2] : [r2, r1];
+// Fool's mate: f3 e5 g4 Qh4#. 0x88 squares; encode from | to<<7 | flags<<17 (double push flag 8)
+const sq = s => (Number(s[1]) - 1) * 16 + 'abcdefgh'.indexOf(s[0]);
+const enc = (f, t, flags = 0) => sq(f) | (sq(t) << 7) | (flags << 17);
+const seq = [[white, enc('f2', 'f3')], [black, enc('e7', 'e5', 8)], [white, enc('g2', 'g4', 8)], [black, enc('d8', 'h4')]];
+for (let i = 0; i < seq.length; i++) {
+  seq[i][0].send({ t: 'move', ply: i, m: seq[i][1] });
+  await r1.wait(m => m.t === 'move' && m.ply === i);
+}
+const end = (await r1.wait(m => m.t === 'state' && m.state.status === 'over')).state;
+ok(end.result.reason === 'checkmate' && end.result.winner === 1, 'checkmate detected by server');
+ok(end.ratingChange && end.ratingChange[1] > 0 && end.ratingChange[0] < 0, 'ratings updated ' + JSON.stringify(end.ratingChange));
+
+// --- Reports & admin
+const loserId = s1.you === 0 ? g1.user.id : g2.user.id;
+const winnerTok = s1.you === 0 ? g2.token : g1.token;
+ok((await api('/reports', { token: winnerTok, method: 'POST', body: { room: m1.room, gameNo: 1, target: loserId, reason: 'abuse', note: 'test' } })).status === 200, 'report filed');
+ok((await api('/admin/stats', { token: g1.token })).status === 403, 'non-admin blocked from admin API');
+const adm = (await api('/auth/dev-admin', { method: 'POST' })).data;
+const stats = (await api('/admin/stats', { token: adm.token })).data;
+ok(stats.users >= 2 && stats.openReports >= 1 && stats.online >= 2, 'admin stats ' + JSON.stringify({ users: stats.users, online: stats.online, reports: stats.openReports, today: stats.gamesToday }));
+const games = (await api('/admin/games', { token: adm.token })).data.games;
+ok(games.length >= 3, 'admin sees games: ' + games.map(g => `${g.kind}:${g.status}:${g.reason ?? '-'}`).join(', '));
+const detail = (await api('/admin/games/' + games.find(g => g.kind === 'jieqi').id, { token: adm.token })).data.game;
+ok(detail.initial.board.some((p, sq) => (p & 16) && (p & 7) !== startType(sq)), 'admin sees real jieqi identities');
+// live jieqi game 2 is playing -> cancel it
+const live = games.find(g => g.status === 'playing');
+ok((await api(`/admin/games/${live.id}/action`, { token: adm.token, method: 'POST', body: { action: 'cancel' } })).status === 200, 'admin cancelled live game ' + live.id);
+const reports = (await api('/admin/reports', { token: adm.token })).data.reports;
+ok(reports[0].target_name, 'report lists names');
+await api(`/admin/reports/${reports[0].id}`, { token: adm.token, method: 'POST', body: { status: 'resolved', resolution: 'warned' } });
+await api(`/admin/users/${loserId}/action`, { token: adm.token, method: 'POST', body: { action: 'warn', reason: 'Lời lẽ không phù hợp' } });
+const loserTok = s1.you === 0 ? g1.token : g2.token;
+ok((await api('/me', { token: loserTok })).data.user.notice === 'Lời lẽ không phù hợp', 'warning notice delivered');
+// announcement reaches the lobby live
+await api('/admin/announcements', { token: adm.token, method: 'POST', body: { text: 'Bảo trì lúc 22h', level: 'warn', hours: 2 } });
+ok((await l2.wait(m => m.t === 'announcement')).announcement.text === 'Bảo trì lúc 22h', 'announcement broadcast live');
+// ban kicks from lobby and blocks rooms
+await api(`/admin/users/${loserId}/action`, { token: adm.token, method: 'POST', body: { action: 'ban', days: 1, reason: 'test' } });
+const kickedSock = s1.you === 0 ? l1 : l2;
+ok((await kickedSock.wait(m => m.t === 'kicked')).t === 'kicked', 'banned user kicked from lobby');
+ok((await api('/rooms', { token: loserTok, method: 'POST', body: { kind: 'chess', side: 0, clock: 'none' } })).status === 403, 'banned user cannot create rooms');
+ok((await api('/me', { token: loserTok })).data.banned?.reason === 'test', '/me reports ban');
+await api(`/admin/users/${loserId}/action`, { token: adm.token, method: 'POST', body: { action: 'unban' } });
+ok((await api('/admin/audit', { token: adm.token })).data.audit.length >= 5, 'audit log recorded');
+process.exit();

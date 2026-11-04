@@ -18,6 +18,9 @@ export interface SavedMatch {
   moves: number[];
 }
 
+/** Identities a server reveals with a jieqi move: the moving piece and/or the captured one. */
+export interface Reveal { r?: number; c?: number }
+
 export class Match {
   readonly kind: GameKind;
   readonly initial: string | X.XiangqiJSON;
@@ -28,6 +31,10 @@ export class Match {
   /** Captured pieces in order (piece code incl. colour, revealed). */
   captured: number[] = [];
   private keys: string[] = [];
+  /** Per move: did it give check / did it start chasing an unprotected piece (xiangqi). */
+  private checks: boolean[] = [];
+  private chases: boolean[] = [];
+  private readonly startSide: number;
 
   constructor(kind: GameKind, initial?: string | X.XiangqiJSON) {
     this.kind = kind;
@@ -39,6 +46,7 @@ export class Match {
       this.initial = x.toJSON();
       this.pos = x;
     }
+    this.startSide = this.pos.side;
     this.keys = [this.repetitionKey()];
   }
 
@@ -49,6 +57,16 @@ export class Match {
       m.play(mv);
     }
     return m;
+  }
+
+  /** Replay a game whose hidden pieces are only known through server reveals. */
+  static restoreRevealed(kind: GameKind, initial: string | X.XiangqiJSON, moves: { m: number; r?: number; c?: number }[]): Match {
+    const match = new Match(kind, initial);
+    for (const mv of moves) {
+      if (!match.pos.legalMoves().includes(mv.m)) break;
+      match.playRevealed(mv.m, mv);
+    }
+    return match;
   }
 
   private repetitionKey(): string {
@@ -102,8 +120,28 @@ export class Match {
     return this.pos.kings[this.pos.side];
   }
 
+  /** What a move reveals in jieqi (real identities of hidden mover / victim). */
+  revealOf(m: number): Reveal {
+    if (!(this.pos instanceof X.Xiangqi)) return {};
+    const b = this.pos.board, from = X.moveFrom(m), to = X.moveTo(m);
+    const out: Reveal = {};
+    if (X.isHidden(b[from])) out.r = X.pieceType(b[from]);
+    if (b[to] && X.isHidden(b[to])) out.c = X.pieceType(b[to]);
+    return out;
+  }
+
+  /** Apply a move after filling in identities revealed by the server. */
+  playRevealed(m: number, reveal: Reveal) {
+    if (this.pos instanceof X.Xiangqi) {
+      if (reveal.r) this.pos.setHiddenType(X.moveFrom(m), reveal.r);
+      if (reveal.c) this.pos.setHiddenType(X.moveTo(m), reveal.c);
+    }
+    this.play(m);
+  }
+
   play(m: number) {
     const pos = this.pos;
+    let chase = false;
     if (pos instanceof C.Chess) {
       const san = pos.san(m);
       this.notes.push({ vi: san, en: san });
@@ -114,9 +152,12 @@ export class Match {
       this.notes.push({ vi: pos.notation(m, 'vi'), en: pos.notation(m, 'en') });
       const victim = pos.board[X.moveTo(m)];
       if (victim) this.captured.push(victim & ~X.HIDDEN);
+      chase = isChase(pos, m);
     }
     pos.make(m);
     this.moves.push(m);
+    this.checks.push(pos.inCheck());
+    this.chases.push(chase);
     this.keys.push(this.repetitionKey());
   }
 
@@ -125,6 +166,8 @@ export class Match {
     const m = this.moves.pop()!;
     this.notes.pop();
     this.keys.pop();
+    this.checks.pop();
+    this.chases.pop();
     this.pos.unmake();
     // Recompute whether the undone move captured something.
     const victim = this.isChess
@@ -138,8 +181,38 @@ export class Match {
     const o = this.pos.outcome();
     if (o) return o;
     const key = this.keys[this.keys.length - 1];
-    if (this.keys.filter(k => k === key).length >= 3) return { winner: null, reason: 'repetition' };
-    return null;
+    const seen: number[] = [];
+    this.keys.forEach((k, i) => { if (k === key) seen.push(i); });
+    if (seen.length < 3) return null;
+    if (this.isChess) return { winner: null, reason: 'repetition' };
+    return this.repetitionVerdict(seen[seen.length - 3], this.keys.length - 1);
+  }
+
+  /**
+   * Asian xiangqi rules (simplified): in a repeated cycle, a side that checks
+   * on every move loses ("chiếu dai"); otherwise a side that chases an
+   * unprotected piece (or checks) on every move loses ("đuổi dai").
+   * If both or neither side violates, the game is drawn.
+   */
+  private repetitionVerdict(start: number, end: number): Outcome {
+    const perpetualCheck = [true, true];
+    const perpetualChase = [true, true];
+    const moved = [0, 0];
+    for (let j = start; j < end; j++) {
+      const side = (this.startSide + j) % 2;
+      moved[side]++;
+      if (!this.checks[j]) perpetualCheck[side] = false;
+      if (!this.checks[j] && !this.chases[j]) perpetualChase[side] = false;
+    }
+    for (const s of [0, 1]) if (!moved[s]) { perpetualCheck[s] = false; perpetualChase[s] = false; }
+    if (perpetualCheck[0] !== perpetualCheck[1]) {
+      return { winner: perpetualCheck[0] ? 1 : 0, reason: 'perpetual-check' };
+    }
+    if (!perpetualCheck[0]) {
+      const chase = [perpetualChase[0], perpetualChase[1]];
+      if (chase[0] !== chase[1]) return { winner: chase[0] ? 1 : 0, reason: 'perpetual-chase' };
+    }
+    return { winner: null, reason: 'repetition' };
   }
 
   /** State to hand to the bot (chess: FEN, xiangqi: JSON). */
@@ -150,6 +223,35 @@ export class Match {
   lastMove(): number | null {
     return this.moves.length ? this.moves[this.moves.length - 1] : null;
   }
+}
+
+/**
+ * Does this move make the moving piece newly attack an enemy piece that is
+ * unprotected (or worth more than the attacker)? Generals and soldiers may
+ * chase freely, and soldiers/generals are not counted as chased.
+ */
+function isChase(pos: X.Xiangqi, m: number): boolean {
+  const from = X.moveFrom(m), to = X.moveTo(m);
+  const moverType = pos.moveType(from);
+  if (moverType === X.KING || moverType === X.PAWN) return false;
+  const before = new Set(pos.genFrom(from, true).map(X.moveTo));
+  pos.make(m);
+  let chase = false;
+  const attacker = X.pieceType(pos.board[to]);
+  if (attacker !== X.KING && attacker !== X.PAWN) {
+    for (const mv of pos.genFrom(to, true)) {
+      const t = X.moveTo(mv);
+      if (before.has(t)) continue;
+      const victim = pos.board[t];
+      const vt = X.pieceType(victim);
+      if (vt === X.KING || vt === X.PAWN) continue;
+      const protectedBy = pos.attacked(t, X.pieceColor(victim));
+      const worth = X.isHidden(victim) ? 250 : X.VALUE[vt];
+      if (!protectedBy || worth > X.VALUE[attacker]) { chase = true; break; }
+    }
+  }
+  pos.unmake();
+  return chase;
 }
 
 function secureRandom(): number {

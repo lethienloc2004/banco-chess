@@ -3,8 +3,9 @@ import type { Level } from './engine/ai';
 import type { GameKind } from './engine/types';
 import type { SavedMatch } from './game';
 import { STRINGS, type Lang, type Strings } from './i18n';
+import { DEFAULT_CUSTOM, type CustomColors } from './ui/themes';
 
-export type Mode = 'bot' | 'pvp' | 'online';
+export type Mode = 'bot' | 'pvp' | 'room';
 
 export interface Settings {
   lang: Lang;
@@ -18,6 +19,8 @@ export interface Settings {
   chessPieces: string;
   xqBoard: string;
   xqPieces: string;
+  custom: CustomColors;
+  onlineClock: string;
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -58,9 +61,12 @@ const defaults: Settings = {
   chessPieces: 'classic',
   xqBoard: 'wood',
   xqPieces: 'classic',
+  custom: DEFAULT_CUSTOM,
+  onlineClock: '10+5',
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };
+settings.custom = { ...DEFAULT_CUSTOM, ...settings.custom };
 
 export function saveSettings() {
   store.set('settings', settings);
