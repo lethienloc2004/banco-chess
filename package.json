@@ -25,6 +25,20 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
-  }
+    "url": "https://github.com/lethienloc2004/banco-chess"
+  },
+  "homepage": "https://github.com/lethienloc2004/banco-chess#readme",
+  "bugs": {
+    "url": "https://github.com/lethienloc2004/banco-chess/issues"
+  },
+  "keywords": [
+    "chess",
+    "xiangqi",
+    "chinese-chess",
+    "jieqi",
+    "board-game",
+    "cloudflare-workers",
+    "typescript",
+    "vietnamese"
+  ]
 }

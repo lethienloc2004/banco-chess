@@ -8,7 +8,7 @@
 
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
-[**▶ Chơi ngay**](#) · [English](#english) · [Báo lỗi / góp ý](../../issues)
+[**🚀 Tự chạy / Deploy**](#-bắt-đầu-nhanh) · [English](#english) · [Báo lỗi / góp ý](../../issues)
 
 ![Demo](docs/demo.gif)
 
@@ -133,7 +133,7 @@ Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại
 
 #### Cách B: nút bấm, không cần cài gì trên máy
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/ban-co)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/lethienloc2004/banco-chess)
 
 1. Bấm nút trên và đăng nhập Cloudflare. Cloudflare sẽ tạo một bản sao của dự án trên GitHub của bạn, kèm cơ sở dữ liệu.
 2. Khi được hỏi **AUTH_SECRET**, điền một chuỗi ngẫu nhiên dài bất kỳ, ví dụ gõ bừa khoảng 40 ký tự. Đừng chia sẻ chuỗi này cho ai.
