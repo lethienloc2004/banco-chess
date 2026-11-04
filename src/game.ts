@@ -39,7 +39,7 @@ export class Match {
       this.initial = x.toJSON();
       this.pos = x;
     }
-    this.keys = [this.pos.positionKey()];
+    this.keys = [this.repetitionKey()];
   }
 
   static restore(s: SavedMatch): Match {
@@ -49,6 +49,10 @@ export class Match {
       m.play(mv);
     }
     return m;
+  }
+
+  private repetitionKey(): string {
+    return this.pos instanceof C.Chess ? this.pos.repetitionKey() : this.pos.positionKey();
   }
 
   save(): SavedMatch {
@@ -113,7 +117,7 @@ export class Match {
     }
     pos.make(m);
     this.moves.push(m);
-    this.keys.push(pos.positionKey());
+    this.keys.push(this.repetitionKey());
   }
 
   undo(): boolean {

@@ -52,6 +52,8 @@ const Z_EP = Int32Array.from({ length: 8 }, rnd);
 const Z_SIDE = rnd();
 
 // Piece-square tables from white's point of view, rank 8 first.
+// Based on Tomasz Michniewski's "Simplified Evaluation Function"
+// (https://www.chessprogramming.org/Simplified_Evaluation_Function).
 // prettier-ignore
 const PST: number[][] = [
   [],
@@ -132,8 +134,12 @@ export class Chess implements SearchPosition {
     return `${this.positionKey()} ${this.halfmove} ${this.fullmove}`;
   }
 
-  /** FEN without move counters: identical positions share a key. */
+  /** FEN without move counters. */
   positionKey(): string {
+    return this.placementKey(true);
+  }
+
+  private placementKey(withEp: boolean): string {
     let s = '';
     for (let rank = 7; rank >= 0; rank--) {
       let empty = 0;
@@ -152,7 +158,7 @@ export class Chess implements SearchPosition {
     if (this.castling & 2) c += 'Q';
     if (this.castling & 4) c += 'k';
     if (this.castling & 8) c += 'q';
-    return `${s} ${this.side ? 'b' : 'w'} ${c || '-'} ${this.ep >= 0 ? sqName(this.ep) : '-'}`;
+    return `${s} ${this.side ? 'b' : 'w'} ${c || '-'} ${withEp && this.ep >= 0 ? sqName(this.ep) : '-'}`;
   }
 
   clone(): Chess {
@@ -370,16 +376,37 @@ export class Chess implements SearchPosition {
     if (us === BLACK) this.fullmove--;
   }
 
+  /**
+   * Dead positions by material: K vs K, K+minor vs K, and any number of
+   * bishops (either side) that all stand on squares of the same colour.
+   */
   insufficientMaterial(): boolean {
-    let minors = 0;
+    let knights = 0, bishops = 0;
+    const bishopColours = new Set<number>();
     for (let sq = 0; sq < 128; sq++) {
       if (sq & 0x88) { sq += 7; continue; }
       const t = pieceType(this.board[sq]);
       if (!t || t === KING) continue;
-      if (t === KNIGHT || t === BISHOP) { if (++minors > 1) return false; }
+      if (t === KNIGHT) knights++;
+      else if (t === BISHOP) { bishops++; bishopColours.add((sqFile(sq) + sqRank(sq)) & 1); }
       else return false;
     }
-    return true;
+    if (knights + bishops <= 1) return true;
+    return knights === 0 && bishopColours.size === 1;
+  }
+
+  /** True when the side to move can legally capture en passant right now. */
+  private epCapturable(): boolean {
+    if (this.ep < 0) return false;
+    return this.legalMoves().some(m => (moveFlags(m) & F_EP) !== 0);
+  }
+
+  /**
+   * Key for threefold repetition (FIDE): same pieces, side to move, castling
+   * rights, and en passant only when such a capture is actually possible.
+   */
+  repetitionKey(): string {
+    return this.placementKey(this.epCapturable());
   }
 
   isRuleDraw(): boolean {

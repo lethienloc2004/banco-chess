@@ -129,8 +129,8 @@ button { font: inherit; color: inherit; }
 .pname { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
 .caps { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 1px; min-width: 0; }
 .cap-chess { font-size: 20px; line-height: 1; font-family: 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', 'Noto Sans Symbols 2', serif; }
-.cap-chess.w { color: #fff; -webkit-text-stroke: 1px #333; }
-.cap-chess.b { color: #222; }
+.cap-chess.w { color: var(--cp-w-fill, #fff); -webkit-text-stroke: 1px var(--cp-w-stroke, #333); }
+.cap-chess.b { color: var(--cp-b-fill, #222); }
 .cap-xq {
   display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
   background: var(--xq-piece); border: 1px solid var(--xq-piece-edge);
@@ -140,10 +140,10 @@ button { font: inherit; color: inherit; }
 .cap-xq.b { color: var(--xq-black); }
 
 .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; border: 1px solid var(--muted); }
-.dot.chess.side-0 { background: #fff; }
-.dot.chess.side-1 { background: #222; }
+.dot.chess.side-0 { background: var(--cp-w-fill, #fff); }
+.dot.chess.side-1 { background: var(--cp-b-fill, #222); }
 .dot.xq.side-0 { background: var(--xq-red); }
-.dot.xq.side-1 { background: #222; }
+.dot.xq.side-1 { background: var(--xq-black); }
 
 /* ---------- Panel ---------- */
 .panel { display: flex; flex-direction: column; gap: 14px; }
@@ -169,7 +169,7 @@ button { font: inherit; color: inherit; }
   display: flex; flex-direction: column; gap: 10px; padding: 14px 16px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
 }
-.settings label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--muted); }
+.settings .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: var(--muted); }
 .seg { display: inline-flex; background: var(--surface-2); padding: 3px; border-radius: 9px; gap: 2px; }
 .seg button { border: 0; background: transparent; padding: 5px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
 .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
@@ -198,6 +198,14 @@ button { font: inherit; color: inherit; }
 
 .foot { text-align: center; color: var(--muted); font-size: 13px; padding: 8px 16px 24px; }
 
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.sw {
+  width: 30px; height: 30px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 2px solid var(--border); background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%);
+}
+.sw.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ---------- Promotion ---------- */
 .promo {
   position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
@@ -211,8 +219,8 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--border); background: var(--sq-light);
   font-family: 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', 'Noto Sans Symbols 2', serif;
 }
-.cp-btn.w { color: #fff; -webkit-text-stroke: 1.5px #222; }
-.cp-btn.b { color: #111; }
+.cp-btn.w { color: var(--cp-w-fill, #fff); -webkit-text-stroke: 1.5px var(--cp-w-stroke, #222); }
+.cp-btn.b { color: var(--cp-b-fill, #111); -webkit-text-stroke: 1px var(--cp-b-stroke, #111); }
 
 /* ---------- SVG board ---------- */
 .sq-light { fill: var(--sq-light); }
@@ -233,8 +241,8 @@ button { font: inherit; color: inherit; }
   font-family: 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', 'Noto Sans Symbols 2', 'Noto Sans Symbols', serif;
   paint-order: stroke;
 }
-.cp.w { fill: #fff; stroke: #222; stroke-width: 3.5px; }
-.cp.b { fill: #1d1d1d; stroke: #1d1d1d; stroke-width: 1px; }
+.cp.w { fill: var(--cp-w-fill, #fff); stroke: var(--cp-w-stroke, #222); stroke-width: 3.5px; }
+.cp.b { fill: var(--cp-b-fill, #1d1d1d); stroke: var(--cp-b-stroke, #1d1d1d); stroke-width: 2px; }
 
 .xq-bg { fill: var(--xq-bg); }
 .xq-frame { fill: none; stroke: var(--xq-line); stroke-width: 5; }
@@ -271,5 +279,5 @@ button { font: inherit; color: inherit; }
 @media (max-width: 420px) {
   .top { gap: 10px; }
   .brand small { display: none; }
-  .settings label { flex-direction: column; align-items: flex-start; }
+  .settings .row { flex-direction: column; align-items: flex-start; }
 }

@@ -50,3 +50,23 @@ describe('chess notation and outcomes', () => {
     }
   });
 });
+
+describe('draw rules', () => {
+  it('bishops on same-coloured squares are a dead draw, opposite colours are not', () => {
+    // White bishop c1 (dark), black bishop f8 (dark).
+    expect(new Chess('5b1k/8/8/8/8/8/8/2B4K w - - 0 1').outcome()).toEqual({ winner: null, reason: 'material' });
+    // White bishop c1 (dark), black bishop c8 (light).
+    expect(new Chess('2b4k/8/8/8/8/8/8/2B4K w - - 0 1').outcome()).toBeNull();
+    // Two knights are not automatically drawn.
+    expect(new Chess('7k/8/8/8/8/8/8/1NN4K w - - 0 1').outcome()).toBeNull();
+  });
+
+  it('repetition key ignores an en passant square that cannot be used', () => {
+    const a = new Chess('4k3/8/8/8/4P3/8/8/4K3 b - e3 0 1'); // no black pawn can take
+    const b = new Chess('4k3/8/8/8/4P3/8/8/4K3 b - - 0 1');
+    expect(a.repetitionKey()).toBe(b.repetitionKey());
+    const c = new Chess('4k3/8/8/8/3pP3/8/8/4K3 b - e3 0 1'); // d4 pawn can take on e3
+    const d = new Chess('4k3/8/8/8/3pP3/8/8/4K3 b - - 0 1');
+    expect(c.repetitionKey()).not.toBe(d.repetitionKey());
+  });
+});

@@ -5,6 +5,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './ui/board';
 import type { GameKind } from './engine/types';
 import type { Level } from './engine/ai';
 import { playSound, unlockAudio } from './sound';
+import { CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, findTheme, type Theme as ColorTheme } from './ui/themes';
 
 export const REPO_URL = 'https://github.com';
 
@@ -18,6 +19,10 @@ interface Settings {
   level: Level;
   labels: 'hanzi' | 'viet';
   sound: boolean;
+  chessBoard: string;
+  chessPieces: string;
+  xqBoard: string;
+  xqPieces: string;
 }
 
 const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
@@ -39,6 +44,10 @@ const defaults: Settings = {
   level: 'medium',
   labels: 'hanzi',
   sound: true,
+  chessBoard: 'wood',
+  chessPieces: 'classic',
+  xqBoard: 'wood',
+  xqPieces: 'classic',
 };
 const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };
 const hashKind = location.hash.slice(1) as GameKind;
@@ -110,14 +119,18 @@ app.innerHTML = `
         <button class="btn" id="flip-btn"></button>
       </div>
       <div class="settings">
-        <label><span data-t="mode"></span>
-          <div class="seg" id="mode-seg"></div></label>
-        <label class="bot-only"><span data-t="youPlay"></span>
-          <div class="seg" id="side-seg"></div></label>
-        <label class="bot-only"><span data-t="level"></span>
-          <div class="seg" id="level-seg"></div></label>
-        <label class="xq-only"><span data-t="labels"></span>
-          <div class="seg" id="labels-seg"></div></label>
+        <div class="row"><span data-t="mode"></span>
+          <div class="seg" id="mode-seg"></div></div>
+        <div class="row bot-only"><span data-t="youPlay"></span>
+          <div class="seg" id="side-seg"></div></div>
+        <div class="row bot-only"><span data-t="level"></span>
+          <div class="seg" id="level-seg"></div></div>
+        <div class="row xq-only"><span data-t="labels"></span>
+          <div class="seg" id="labels-seg"></div></div>
+      </div>
+      <div class="settings colors">
+        <div class="row"><span data-t="boardColor"></span><div class="swatches" id="board-sw"></div></div>
+        <div class="row"><span data-t="pieceColor"></span><div class="swatches" id="piece-sw"></div></div>
       </div>
       <details class="rules jieqi-only" id="rules"><summary data-t="rulesTitle"></summary><ul></ul></details>
       <div class="card">
@@ -150,6 +163,22 @@ function seg<T extends string | number>(el: HTMLElement, options: [T, string][],
     b.className = v === value ? 'on' : '';
     b.setAttribute('aria-pressed', String(v === value));
     b.onclick = () => onPick(v);
+    el.appendChild(b);
+  }
+}
+
+function swatches(el: HTMLElement, list: ColorTheme[], value: string, onPick: (id: string) => void) {
+  el.innerHTML = '';
+  for (const th of list) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sw' + (th.id === value ? ' on' : '');
+    b.title = th[settings.lang];
+    b.setAttribute('aria-label', th[settings.lang]);
+    b.setAttribute('aria-pressed', String(th.id === value));
+    b.style.setProperty('--a', th.swatch[0]);
+    b.style.setProperty('--b', th.swatch[1]);
+    b.onclick = () => onPick(th.id);
     el.appendChild(b);
   }
 }
@@ -301,6 +330,20 @@ function render(animate = false) {
   seg($('#labels-seg'), [['hanzi', s.hanzi], ['viet', s.viet]], settings.labels, v => {
     settings.labels = v; persist(); render();
   });
+  // Colours
+  const chess = match.isChess;
+  swatches($('#board-sw'), chess ? CHESS_BOARDS : XQ_BOARDS, chess ? settings.chessBoard : settings.xqBoard, id => {
+    if (chess) settings.chessBoard = id; else settings.xqBoard = id;
+    persist(); render();
+  });
+  swatches($('#piece-sw'), chess ? CHESS_PIECES : XQ_PIECES, chess ? settings.chessPieces : settings.xqPieces, id => {
+    if (chess) settings.chessPieces = id; else settings.xqPieces = id;
+    persist(); render();
+  });
+  applyThemes(app, [
+    findTheme(CHESS_BOARDS, settings.chessBoard), findTheme(CHESS_PIECES, settings.chessPieces),
+    findTheme(XQ_BOARDS, settings.xqBoard), findTheme(XQ_PIECES, settings.xqPieces),
+  ]);
   $('#rules ul').innerHTML = s.rules.map(r => `<li>${r}</li>`).join('');
 
   // Status
