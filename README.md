@@ -8,7 +8,7 @@
 
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
-[**🚀 Tự chạy / Deploy**](#-bắt-đầu-nhanh) · [✨ Tính năng](#-tính-năng) · [English](#english) · [Báo lỗi / góp ý](../../issues)
+[**▶ Chơi ngay**](https://banco-chess.lethienloc.workers.dev) · [🚀 Tự chạy / Deploy](#-bắt-đầu-nhanh) · [✨ Tính năng](#-tính-năng) · [English](#english) · [Báo lỗi / góp ý](../../issues)
 
 ![Demo](docs/demo.gif)
 
@@ -146,6 +146,10 @@ Bot không nhìn trộm quân úp. Khi chơi online, máy chủ giấu danh tín
 Sửa file `.puml` rồi chạy `npm run diagrams` để vẽ lại (cần Java).
 
 ## 🚀 Bắt đầu nhanh
+
+### 0. Chơi thử ngay, không cần cài gì
+
+Mở **https://banco-chess.lethienloc.workers.dev**: có đủ mọi tính năng, kể cả chơi online, ghép trận và bảng xếp hạng. Cài lên điện thoại như app: mở link bằng Chrome/Safari rồi chọn **Thêm vào màn hình chính**.
 
 ### 1. Chơi trên máy của bạn: làm một lần, khoảng 5 phút
 
@@ -389,6 +393,8 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
 **Bàn Cờ** ("chess board" in Vietnamese) is a web app to play **Chess**, **Xiangqi** (Chinese chess), **Jieqi**
 (揭棋, xiangqi with face-down pieces) and **Hidden chess** (the same idea for chess): against a built-in bot, with a
 friend on the same device, or online. The whole interface is available in Vietnamese and English.
+
+**▶ Play now: https://banco-chess.lethienloc.workers.dev** (everything included: bots, online play, matchmaking, leaderboards; installable as an app).
 
 - **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,
   a 5-game minimum, and profiles with per-game record, peak rating and recent games.
