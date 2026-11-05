@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chính sách quyền riêng tư — Bàn Cờ</title>
+<link rel="icon" href="./icon.svg" />
+<style>
+  :root { --bg: #f6f1ea; --card: #fffdf9; --text: #2b2118; --muted: #6b5a4b; --accent: #8b5e34; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1612; --card: #241d18; --text: #f1e8de; --muted: #b9a897; --accent: #e0a96d; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  .card { background: var(--card); border-radius: 16px; padding: 20px 24px; margin: 16px 0; }
+  h1 { font-size: 28px; margin: 8px 0; } h2 { font-size: 19px; margin: 20px 0 6px; }
+  a { color: var(--accent); } .muted { color: var(--muted); font-size: 14px; }
+  header a { text-decoration: none; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <header><a href="./">♟ Bàn Cờ</a> · <a href="#english">English</a></header>
+
+  <div class="card">
+    <h1>Chính sách quyền riêng tư</h1>
+    <p class="muted">Áp dụng cho bản Bàn Cờ tại banco-chess.lethienloc.workers.dev. Cập nhật: 05/11/2026.</p>
+
+    <h2>Tóm tắt</h2>
+    <p>Bàn Cờ miễn phí, không quảng cáo, không theo dõi người dùng và không bán dữ liệu. App chỉ lưu những gì cần để chơi online.</p>
+
+    <h2>Dữ liệu lưu trên máy chủ</h2>
+    <ul>
+      <li><b>Tài khoản khách:</b> một mã ngẫu nhiên và tên hiển thị (ví dụ "Khách 1234"). Bạn đổi tên được trong Cài đặt.</li>
+      <li><b>Nếu bạn đăng nhập Google:</b> mã tài khoản Google, email (đã xác minh) và tên. Email chỉ dùng để đăng nhập và xác định quản trị viên, không hiển thị cho người khác, không gửi thư.</li>
+      <li><b>Ván cờ online:</b> người chơi, nước đi, kết quả, thời gian; điểm Elo, số ván, thắng/hòa/thua.</li>
+      <li><b>Báo cáo vi phạm</b> bạn gửi hoặc bị gửi, và các cảnh cáo/khóa của quản trị viên.</li>
+    </ul>
+
+    <h2>Dữ liệu chỉ nằm trên máy bạn</h2>
+    <p>Cài đặt (màu, âm thanh, ngôn ngữ), ván đang chơi với máy, tiến độ giải thế cờ và phiên đăng nhập được lưu trong bộ nhớ trình duyệt của bạn. Bot và phần phân tích ván chạy ngay trên trình duyệt, không gửi lên máy chủ.</p>
+
+    <h2>Thông tin công khai</h2>
+    <p>Tên hiển thị, điểm Elo, thành tích và các ván online gần đây hiện trên bảng xếp hạng và trang hồ sơ người chơi.</p>
+
+    <h2>Bên thứ ba</h2>
+    <ul>
+      <li><b>Cloudflare</b> lưu trữ app và cơ sở dữ liệu; máy chủ của họ có thể ghi lại địa chỉ IP theo <a href="https://www.cloudflare.com/privacypolicy/">chính sách của Cloudflare</a>.</li>
+      <li><b>Google</b> xử lý đăng nhập Google (nếu bạn dùng) và cung cấp font chữ Hán trên quân cờ tướng (Google Fonts), theo <a href="https://policies.google.com/privacy">chính sách của Google</a>.</li>
+    </ul>
+    <p>Không có quảng cáo, công cụ thống kê hay cookie theo dõi.</p>
+
+    <h2>Xóa dữ liệu</h2>
+    <p>Muốn xóa tài khoản và dữ liệu online của bạn, hãy gửi yêu cầu qua <a href="https://github.com/lethienloc2004/banco-chess/issues">trang góp ý trên GitHub</a> (ghi tên hiển thị, không cần ghi email). Dữ liệu trên máy bạn xóa được bằng cách xóa dữ liệu trang web trong trình duyệt.</p>
+
+    <h2>Mã nguồn mở</h2>
+    <p>Toàn bộ mã nguồn ở <a href="https://github.com/lethienloc2004/banco-chess">github.com/lethienloc2004/banco-chess</a>: bạn có thể tự kiểm tra app làm gì với dữ liệu. Người tự cài một bản riêng chịu trách nhiệm về chính sách của bản đó.</p>
+  </div>
+
+  <div class="card" id="english" lang="en">
+    <h1>Privacy policy</h1>
+    <p class="muted">For the Bàn Cờ instance at banco-chess.lethienloc.workers.dev. Updated 5 November 2026.</p>
+    <p><b>In short:</b> free, no ads, no tracking, no data sold. Only what online play needs is stored.</p>
+    <h2>Stored on the server</h2>
+    <ul>
+      <li><b>Guest accounts:</b> a random ID and a display name you can change.</li>
+      <li><b>Google sign-in (optional):</b> your Google account ID, verified email and name. The email is only used to sign in and to recognise admins; it is never shown to others and no mail is sent.</li>
+      <li><b>Online games:</b> players, moves, results, times; Elo ratings and records.</li>
+      <li><b>Reports</b> you file or receive, and admin warnings or bans.</li>
+    </ul>
+    <h2>Kept only in your browser</h2>
+    <p>Settings, games against the bot, puzzle progress and your session. The bot and the game analysis run in your browser.</p>
+    <h2>Public</h2>
+    <p>Display name, ratings, records and recent online games appear on leaderboards and player profiles.</p>
+    <h2>Third parties</h2>
+    <p>Cloudflare hosts the app and database (<a href="https://www.cloudflare.com/privacypolicy/">policy</a>). Google handles Google sign-in and serves the Chinese font used on xiangqi pieces (<a href="https://policies.google.com/privacy">policy</a>). No ads, analytics or tracking cookies.</p>
+    <h2>Deletion</h2>
+    <p>Ask for your account and online data to be deleted through the <a href="https://github.com/lethienloc2004/banco-chess/issues">GitHub issues page</a> (give your display name, not your email). Clear the site data in your browser to remove what is stored locally.</p>
+    <h2>Open source</h2>
+    <p>The full source is at <a href="https://github.com/lethienloc2004/banco-chess">github.com/lethienloc2004/banco-chess</a>. People who host their own copy are responsible for its policy.</p>
+  </div>
+  <p class="muted"><a href="./terms.html">Điều khoản sử dụng / Terms of use</a></p>
+</main>
+</body>
+</html>

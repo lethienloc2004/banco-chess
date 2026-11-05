@@ -316,6 +316,8 @@ const vi = {
     return parts.join(', ') + '.';
   },
   source: 'Mã nguồn',
+  privacy: 'Quyền riêng tư',
+  terms: 'Điều khoản',
 };
 
 export type Strings = typeof vi;
@@ -635,6 +637,8 @@ const en: Strings = {
     return parts.join(', ') + '.';
   },
   source: 'Source',
+  privacy: 'Privacy',
+  terms: 'Terms',
 };
 
 export const STRINGS: Record<Lang, Strings> = { vi, en };

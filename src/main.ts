@@ -80,7 +80,7 @@ app.innerHTML = `
   </header>
   <div id="banner" class="banner" hidden></div>
   <div id="screen" class="screen-host"></div>
-  <footer class="foot"><span>MIT License<span ${REPO_URL ? '' : 'hidden'}> · <a href="${REPO_URL}" target="_blank" rel="noopener" id="src-link"></a></span></span></footer>
+  <footer class="foot"><span>MIT License<span ${REPO_URL ? '' : 'hidden'}> · <a href="${REPO_URL}" target="_blank" rel="noopener" id="src-link"></a></span> · <a href="./privacy.html" id="privacy-link"></a> · <a href="./terms.html" id="terms-link"></a></span></footer>
 `;
 
 const $ = <T extends HTMLElement>(sel: string) => app.querySelector<T>(sel)!;
@@ -114,6 +114,8 @@ function applyGlobal() {
   ]);
   $('#tagline').textContent = s.tagline;
   $('#src-link').textContent = s.source;
+  $('#privacy-link').textContent = s.privacy;
+  $('#terms-link').textContent = s.terms;
   const back = $('#back-btn');
   back.hidden = route.name === 'home';
   back.title = s.back;
