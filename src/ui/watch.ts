@@ -9,6 +9,7 @@ import { saveSettings, settings, t } from '../state';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
+import { openAnalysis } from './analysis';
 import { esc } from './util';
 
 export type WatchSpeed = 'slow' | 'normal' | 'fast';
@@ -65,7 +66,7 @@ export class WatchScreen implements Screen {
   private game = 0;
   private quality: (Quality | null)[] = [];
 
-  constructor(private kind: GameKind, _nav: Nav) {
+  constructor(private kind: GameKind, private nav: Nav) {
     this.match = new Match(kind);
     this.el = document.createElement('section');
     this.el.className = 'screen game watch';
@@ -223,6 +224,14 @@ export class WatchScreen implements Screen {
     return out;
   }
 
+  private analyse() {
+    const [l0, l1] = this.levels();
+    openAnalysis(this.nav, {
+      kind: this.kind, initial: this.match.initial, moves: this.match.movesWithReveals(), players: [{ bot: l0 }, { bot: l1 }],
+      result: this.match.outcome(), back: location.hash || '#/',
+    });
+  }
+
   private newGame() {
     this.req = -1;
     clearTimeout(this.timer);
@@ -296,12 +305,14 @@ export class WatchScreen implements Screen {
     controls.innerHTML = `
       <button class="btn${this.running ? '' : ' primary'}" data-act="toggle"${outcome ? ' disabled' : ''}>${this.running ? '⏸' : '▶'}<span>${esc(this.running ? W.pause : W.play)}</span></button>
       <button class="btn" data-act="step"${this.running || outcome || this.thinking ? ' disabled' : ''}>⏭<span>${esc(W.step)}</span></button>
-      <button class="btn${outcome ? ' primary' : ''}" data-act="new">↺<span>${esc(s.newGame)}</span></button>`;
+      <button class="btn${outcome ? ' primary' : ''}" data-act="new">↺<span>${esc(s.newGame)}</span></button>
+      ${outcome ? `<button class="btn" data-act="analyse">📈<span>${esc(s.analysis.open)}</span></button>` : ''}`;
     controls.querySelectorAll<HTMLButtonElement>('button').forEach(b => (b.onclick = () => {
       const act = b.dataset.act;
       if (act === 'toggle') { this.running = !this.running; this.render(); if (this.running) this.schedule(50); }
       else if (act === 'step') { this.stepOnce = true; this.think(); }
       else if (act === 'new') this.newGame();
+      else if (act === 'analyse') this.analyse();
     }));
 
     // Live settings: level per side, speed, flip

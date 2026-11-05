@@ -223,6 +223,17 @@ export class Match {
     return canWin ? { winner, reason: 'timeout' } : { winner: null, reason: 'timeout-material' };
   }
 
+  /** The moves with the identities they revealed (for analysis and replays of hidden variants). */
+  movesWithReveals(): ({ m: number } & Reveal)[] {
+    const replay = new Match(this.kind, this.initial);
+    const out: ({ m: number } & Reveal)[] = [];
+    for (const m of this.moves) {
+      out.push({ m, ...replay.revealOf(m) });
+      replay.play(m);
+    }
+    return out;
+  }
+
   /** State to hand to the bot (chess: FEN, xiangqi: JSON). */
   botState(): string | X.XiangqiJSON {
     return this.pos instanceof C.Chess ? this.pos.fen() : this.pos.toJSON();

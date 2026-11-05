@@ -64,6 +64,12 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - **Thanh đánh giá** cho biết bên nào hơn và hơn bao nhiêu, hoặc "chiếu hết sau N nước".
   - Xem **chuỗi nước máy dự tính**.
   - **Nhận xét từng nước**: ✓ tốt nhất, ?! không chính xác, ? sai lầm, ?? sai lầm nghiêm trọng. Nhận xét do một máy trọng tài cố định chấm, nên nhất quán dù hai bên chơi ở mức nào.
+- 📈 **Phân tích ván sau khi chơi** (nút "Phân tích ván" ở cuối mỗi ván, cả chơi online và máy đấu máy):
+  - Máy chấm **từng nước**: ✓ tốt nhất, ?! không chính xác, ? sai lầm, ?? sai lầm nghiêm trọng.
+  - Gặp nước sai, máy chỉ ra **nước tốt hơn**. **Mũi tên xanh** chỉ nước tốt nhất ở thế cờ đang xem, kèm diễn biến dự tính.
+  - **Biểu đồ ưu thế** cả ván: bấm vào đâu thì nhảy tới thế cờ đó.
+  - **Độ chính xác (%)** và số lỗi của mỗi bên, tính theo công thức Lichess công bố.
+  - Đi tới đi lui bằng nút hoặc phím ← →. Có hai mức phân tích: nhanh và kỹ.
 - 🎭 **Bot cờ úp không ăn gian**: máy không biết quân úp là gì. Nó thử nhiều cách xếp ngẫu nhiên rồi chọn nước tốt nhất tính trung bình.
 - ✅ **Đúng luật**:
   - Cờ vua: nhập thành, bắt tốt qua đường, phong cấp, hòa theo FIDE.
@@ -232,7 +238,8 @@ src/
   shared/         Giao thức và kiểu dữ liệu dùng chung cho app và máy chủ
   net.ts          Gọi API, tài khoản, WebSocket tự kết nối lại
   puzzles/        Dữ liệu thế cờ, bộ giải chiếu hết vét cạn, tiến độ người chơi
-  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ
+  analysis.ts     Chấm nước đi và độ chính xác cho phần phân tích ván
+  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ, phân tích ván
 server/
   index.ts        API: đăng nhập khách/Google, phòng, báo cáo
   room.ts         Durable Object phòng chơi
@@ -272,6 +279,7 @@ Toàn bộ mã nguồn được viết mới, **không dùng thư viện cờ n�
   - Cờ vua: từ trang [Perft Results](https://www.chessprogramming.org/Perft_Results).
   - Cờ tướng: số liệu thế khởi đầu được các engine cờ tướng công bố (44 / 1 920 / 79 666).
 - **Bot cờ úp** dùng ý tưởng [Perfect Information Monte Carlo](https://www.chessprogramming.org/Monte-Carlo_Tree_Search): lấy mẫu các cách xếp quân úp rồi tìm kiếm trên từng mẫu.
+- **Độ chính xác khi phân tích ván**: công thức tỉ lệ thắng và độ chính xác mà [Lichess công bố](https://lichess.org/page/accuracy).
 - **Xếp hạng**: [hệ số Elo](https://en.wikipedia.org/wiki/Elo_rating_system), K = 32.
 - **Máy chủ**: [Cloudflare Workers, Durable Objects và D1](https://developers.cloudflare.com/).
 - **Đăng nhập Google**: [Google Identity Services](https://developers.google.com/identity/gsi/web).
@@ -323,6 +331,12 @@ friend on the same device, or online. The whole interface is available in Vietna
   +17 =2 −1 in chess, +16 =4 −0 in xiangqi and +12 =7 −1 in jieqi against the previous version (+215 to +380 Elo).
   Rough chess Elo against limited-strength Stockfish 19: Easy ~1000, Medium ~2050, Hard ~2450 (small samples, likely optimistic).
 - **Bot vs bot** watch mode with an evaluation bar, expected line and per-move quality marks from a fixed referee engine.
+- **Post-game analysis** ("Analyse game" after any game, online games and bot-vs-bot included):
+  - Every move is marked, from best to blunder, and mistakes come with the better move.
+  - A green arrow shows the best move in the position on screen.
+  - A clickable advantage graph covers the whole game.
+  - Accuracy per side uses the formulas Lichess publishes.
+  - Step through with the buttons or the ← → keys, at quick or deep analysis.
 - **126 puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions, all proven unique forced mates.
 - **Sounds per piece**, synthesized with Web Audio: pawn tick, rook thud, queen chime, king bell, cannon pop / boom,
   a horse whinny for knights and an elephant trumpet for elephants and bishops (both are "Tượng" in Vietnamese).

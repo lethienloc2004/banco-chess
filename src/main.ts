@@ -10,6 +10,7 @@ import { matchScreen } from './ui/match';
 import { PlayScreen } from './ui/play';
 import { PuzzleScreen, puzzleListScreen } from './ui/puzzles';
 import { WatchScreen } from './ui/watch';
+import { AnalysisScreen, pendingAnalysis } from './ui/analysis';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -29,13 +30,15 @@ type Route =
   | { name: 'admin'; tab: string }
   | { name: 'puzzles'; kind?: string }
   | { name: 'puzzle'; id: string }
-  | { name: 'watch'; kind: GameKind };
+  | { name: 'watch'; kind: GameKind }
+  | { name: 'analysis' };
 
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   const kind = parts[0] as GameKind;
   if ((parts[0] === 'r' || parts[0] === 'join') && parts[1]) return { name: 'room', room: parts[1] };
   if (parts[0] === 'match' && KINDS.includes(parts[1] as GameKind)) return { name: 'match', kind: parts[1] as GameKind };
+  if (parts[0] === 'analysis') return { name: 'analysis' };
   if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview' };
   if (parts[0] === 'puzzles') return { name: 'puzzles', kind: parts[1] };
   if (parts[0] === 'puzzle' && parts[1] && findPuzzle(parts[1])) return { name: 'puzzle', id: parts[1] };
@@ -148,6 +151,7 @@ function build(r: Route): Screen {
     case 'puzzles': return puzzleListScreen(r.kind, nav);
     case 'puzzle': return new PuzzleScreen(r.id, nav);
     case 'watch': return new WatchScreen(r.kind, nav);
+    case 'analysis': return new AnalysisScreen(nav);
   }
 }
 
@@ -158,6 +162,7 @@ function titleFor(r: Route): string {
   if (r.name === 'room') return `${s.online} — ${base}`;
   if (r.name === 'admin') return `${s.admin.title} — ${base}`;
   if (r.name === 'puzzles' || r.name === 'puzzle') return `${s.puzzles.title} — ${base}`;
+  if (r.name === 'analysis') return `${s.analysis.title} — ${base}`;
   return `${s[r.kind]} — ${base}`;
 }
 
@@ -192,12 +197,13 @@ function backTarget(): string {
   switch (route.name) {
     case 'play': case 'match': case 'watch': return '#/' + route.kind;
     case 'puzzle': return '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
+    case 'analysis': return pendingAnalysis()?.back ?? '#/';
     default: return '#/';
   }
 }
 
 function rebuildCurrent() {
-  if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen) { current.refresh(); return; }
+  if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen || current instanceof AnalysisScreen) { current.refresh(); return; }
   current?.dispose();
   current = build(route);
   host.replaceChildren(current.el);
@@ -294,7 +300,7 @@ function settingsChanged(rebuild = false) {
   saveSettings();
   applyGlobal();
   if (rebuild) rebuildCurrent();
-  else if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen) current.refresh();
+  else if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen || current instanceof AnalysisScreen) current.refresh();
 }
 
 function accountGroup(close: () => void): HTMLElement {

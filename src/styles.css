@@ -150,7 +150,7 @@ button { font: inherit; color: inherit; }
 .status.thinking span:last-child::after { content: ''; animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.4; } }
 
-.controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
 .controls .btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; font-size: 13px; }
 .controls .btn svg { width: 20px; height: 20px; }
 .btn {
@@ -715,3 +715,54 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 .cp-q { fill: #e9d8bd; font: 700 40px system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; opacity: .85; }
 .cp.peek { opacity: .75; }
 .thumb-disc.hidden.chess { fill: #6d5a45; stroke: #fff; stroke-width: 2.5; }
+
+/* Analysis arrows */
+.arrow line { stroke-width: 16; stroke-linecap: round; }
+.arrow.best line { stroke: rgba(22, 163, 74, .78); }
+.arrow.best polygon { fill: rgba(22, 163, 74, .85); }
+.arrow.played line { stroke: rgba(234, 88, 12, .6); }
+.arrow.played polygon { fill: rgba(234, 88, 12, .7); }
+.arrow { pointer-events: none; }
+
+/* Post-game analysis */
+.an-nav { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+.an-nav .btn { min-width: 48px; padding: 8px 12px; font-size: 16px; }
+.an-ply { min-width: 64px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 14px; }
+.an-graph { cursor: pointer; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); line-height: 0; }
+.an-graph svg { width: 100%; height: 110px; display: block; }
+.an-graph .g-bg { fill: #262626; }
+.an-graph .g-area { fill: #f5f5f4; }
+.an-graph svg.xq .g-bg { fill: var(--xq-black); }
+.an-graph svg.xq .g-area { fill: var(--xq-red); }
+.an-graph .g-mid { stroke: #a8a29e; stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.an-graph .g-cur { stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.an-graph .q-dot { stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.q-dot.mistake { fill: #ea580c; }
+.q-dot.blunder { fill: var(--danger); }
+.an-progress { margin: 8px 0 0; }
+.an-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.an-table th, .an-table td { padding: 4px 6px; text-align: center; }
+.an-table thead th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.an-table tbody th { text-align: left; font-weight: 600; display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.an-table .acc { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.an-table em.q { font-style: normal; font-weight: 800; }
+.an-current p { margin: 6px 0; }
+.an-move code, .an-better code, .an-current .pv code { font-size: 15px; }
+.an-current .pv code.first { font-weight: 800; color: #16a34a; }
+.q-badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+.q-badge em { font-style: normal; }
+.q-badge.best { color: #16a34a; }
+.q-badge.inaccuracy { color: #ca8a04; }
+.q-badge.mistake { color: #ea580c; }
+.q-badge.blunder { color: var(--danger); }
+.an-better { color: var(--muted); }
+.an-settings { display: flex; flex-direction: column; gap: 8px; }
+.an-settings .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.an-settings .btn { padding: 6px 12px; }
+.an-settings input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent); }
+.analysis .moves .mv { all: unset; cursor: pointer; padding: 0 4px; border-radius: 5px; }
+.analysis .moves .mv:hover { background: var(--surface-2); }
+.analysis .moves .mv:focus-visible { outline: 2px solid var(--accent); }
+.analysis .moves .mv.cur { font-weight: 700; color: var(--accent); }
+.empty-analysis { max-width: 480px; margin: 40px auto; text-align: center; }
+.empty-analysis p { margin: 0 0 16px; }

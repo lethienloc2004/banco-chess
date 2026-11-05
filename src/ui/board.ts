@@ -10,6 +10,8 @@ export interface BoardView {
   river: [string, string];
   /** Show the real identity of face-down pieces (admin replay). */
   peek?: boolean;
+  /** Arrows drawn over the pieces (e.g. the best move in analysis). */
+  arrows?: { from: number; to: number; kind: 'best' | 'played' }[];
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -134,6 +136,17 @@ export class BoardRenderer {
           `<text class="xq-t ${p.color ? 'b' : 'r'}${viet ? ' viet' : ''}${viet && label.length > 3 ? ' long' : ''}" y="${viet ? 2 : 3}">${label}</text>`);
       }
       parts.push('</g></g>');
+    }
+
+    for (const a of view.arrows ?? []) {
+      const [x1, y1] = this.center(a.from), [x2, y2] = this.center(a.to);
+      const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      // Stop short of the target centre so the head sits on the square.
+      const ex = x2 - ux * 22, ey = y2 - uy * 22;
+      const head = 26, w = 18;
+      parts.push(`<g class="arrow ${a.kind}"><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"/>`,
+        `<polygon points="${x2},${y2} ${ex - uy * w},${ey + ux * w} ${ex + uy * w},${ey - ux * w}" transform="translate(${ux * (head - 22)} ${uy * (head - 22)})"/></g>`);
     }
 
     for (const [sq, capture] of view.targets) {

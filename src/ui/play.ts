@@ -13,6 +13,7 @@ import { saveSettings, settings, store, t, type SavedGame } from '../state';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { moveSfx } from './sfx';
 import { confirmDialog, openDialog, toast, type DialogAction } from './dialog';
+import { openAnalysis, type AnalysisPlayer } from './analysis';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
 
@@ -37,6 +38,7 @@ const ICON = {
   hand: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-1V4.5a1.5 1.5 0 0 1 3 0V12m0-6.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.7-2.3L2.6 15a1.5 1.5 0 0 1 2.3-1.9L8 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-4 3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   report: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 
@@ -562,6 +564,7 @@ export class PlayScreen implements Screen {
     const actions: DialogAction[] = [
       { label: s.home, kind: 'ghost', onClick: () => this.nav.go('#/', 'back') },
       { label: s.reviewBoard },
+      { label: s.analysis.open, onClick: () => this.analyse() },
     ];
     if (!this.online) actions.push({ label: s.newGame, kind: 'primary', onClick: () => this.newGame() });
     else if (this.you !== null) {
@@ -579,6 +582,19 @@ export class PlayScreen implements Screen {
   private clockLabel(): string {
     const tc = this.clock?.tc;
     return tc ? clockLabel(tc) : '';
+  }
+
+  /** Open the finished game in the analysis screen. */
+  private analyse() {
+    const r = this.room;
+    const players = ([0, 1] as const).map((side): AnalysisPlayer => {
+      if (this.opts.mode === 'bot') return side === this.humanSide ? { you: true } : { bot: this.level };
+      const seat = r?.seats[side];
+      return seat ? { name: seat.name, rating: seat.rating, you: side === this.you } : {};
+    }) as [AnalysisPlayer, AnalysisPlayer];
+    const moves = this.online && r ? r.moves : this.match.movesWithReveals();
+    const initial = this.online && r ? r.initial : this.match.initial;
+    openAnalysis(this.nav, { kind: this.match.kind, initial, moves, players, result: this.outcome(), back: location.hash || '#/' });
   }
 
   private sideName(side: number): string {
@@ -648,9 +664,10 @@ export class PlayScreen implements Screen {
       controls.innerHTML = btn('flip', ICON.flip, s.flip)
         + (over ? btn('new', ICON.plus, r!.rematch[this.you!] ? s.rematchWaitingShort : s.rematch, r!.rematch[this.you!], true)
           : btn('draw', ICON.hand, s.offerDraw, !playing || r!.drawOffer === this.you))
-        + btn('resign', ICON.flag, s.resign, !playing);
+        + (over ? btn('analyse', ICON.chart, s.analysis.open) : btn('resign', ICON.flag, s.resign, !playing));
     } else {
       controls.innerHTML = btn('undo', ICON.undo, s.undo, m.moves.length === 0 || !!this.flagged) + btn('flip', ICON.flip, s.flip) + btn('new', ICON.plus, s.newGame, false, !!outcome);
+      if (outcome) controls.innerHTML += btn('analyse', ICON.chart, s.analysis.open);
     }
     controls.querySelectorAll<HTMLButtonElement>('button').forEach(b => {
       b.onclick = () => {
@@ -661,6 +678,7 @@ export class PlayScreen implements Screen {
         else if (act === 'new') this.newGame();
         else if (act === 'resign') void this.resign();
         else if (act === 'draw') this.offerDraw();
+        else if (act === 'analyse') this.analyse();
       };
     });
 
