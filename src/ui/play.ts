@@ -11,6 +11,7 @@ import {
 import { playSound } from '../sound';
 import { saveSettings, settings, store, t, type SavedGame } from '../state';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
+import { moveSfx } from './sfx';
 import { confirmDialog, openDialog, toast, type DialogAction } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
@@ -169,12 +170,7 @@ export class PlayScreen implements Screen {
   }
 
   private soundFor(m: number, captures: number, reveal: boolean) {
-    if (!settings.sound) return;
-    if (this.outcome() || this.match.outcome()) playSound('end');
-    else if (this.match.checkedKing() !== null) playSound('check');
-    else if (this.match.captured.length > captures) playSound('capture');
-    else playSound(reveal ? 'reveal' : 'move');
-    void m;
+    moveSfx(this.match, m, captures, reveal, !!this.outcome());
   }
 
   private play(m: number) {

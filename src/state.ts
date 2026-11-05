@@ -27,6 +27,8 @@ export interface Settings {
   /** Bot vs bot: level per side and pace. */
   watchLevels: [Level, Level];
   watchSpeed: 'slow' | 'normal' | 'fast';
+  /** 'piece': every piece has its own sound; 'simple': one knock for all. */
+  soundStyle: 'piece' | 'simple';
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -75,6 +77,7 @@ const defaults: Settings = {
   localClock: 'none',
   watchLevels: ['hard', 'hard'],
   watchSpeed: 'normal',
+  soundStyle: 'piece',
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

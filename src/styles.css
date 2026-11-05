@@ -703,3 +703,6 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 .q.mistake { color: #ea580c; }
 .q.blunder { color: var(--danger); }
 .q-legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 0; }
+
+.sound-style { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.sound-style .btn { padding: 6px 10px; font-size: 13px; }

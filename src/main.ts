@@ -1,7 +1,7 @@
 import './styles.css';
 import type { GameKind } from './engine/types';
 import { lobby, net, renderGoogleButton } from './net';
-import { playSound, unlockAudio } from './sound';
+import { playSound, previewVoices, setSoundStyle, unlockAudio } from './sound';
 import { KINDS, saveSettings, settings, store, t } from './state';
 import { adminScreen } from './ui/admin';
 import { openDialog, toast } from './ui/dialog';
@@ -269,6 +269,27 @@ function palette(list: ColorTheme[], key: keyof CustomColors, value: string, lab
   return wrap;
 }
 
+function soundStyleControl(): HTMLElement {
+  const s = t();
+  const wrap = document.createElement('div');
+  wrap.className = 'sound-style';
+  wrap.append(seg([['piece', s.soundPiece], ['simple', s.soundSimple]], settings.soundStyle, v => {
+    settings.soundStyle = v;
+    setSoundStyle(v);
+    saveSettings();
+  }));
+  for (const [game, label] of [['chess', s.chess], ['xq', s.xiangqi]] as const) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn';
+    b.textContent = `▶ ${label}`;
+    b.title = s.soundPreview;
+    b.onclick = () => { unlockAudio(); previewVoices(game); };
+    wrap.appendChild(b);
+  }
+  return wrap;
+}
+
 function settingsChanged(rebuild = false) {
   saveSettings();
   applyGlobal();
@@ -349,6 +370,7 @@ function openSettings() {
       row(s.sound, seg([[true, s.on], [false, s.off]], settings.sound, v => {
         settings.sound = v; if (v) { unlockAudio(); playSound('move'); } settingsChanged();
       })),
+      row(s.soundStyle, soundStyleControl()),
     ),
     group(s.chess,
       row(s.boardColor, palette(CHESS_BOARDS, 'chessBoard', settings.chessBoard, [C.light, C.dark], id => { settings.chessBoard = id; settingsChanged(); })),
@@ -383,6 +405,7 @@ if (KINDS.includes(legacy)) history.replaceState(null, '', '#/' + legacy);
 const old = location.hash.match(/^#\/(\w+)\/online/);
 if (old) history.replaceState(null, '', '#/' + old[1]);
 
+setSoundStyle(settings.soundStyle);
 show('none');
 
 // Connect to the online server in the background; local modes never wait for it.

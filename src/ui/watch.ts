@@ -5,10 +5,10 @@
 import { Match } from '../game';
 import { LEVELS, type AIResult, type Level } from '../engine/ai';
 import { MATE, type GameKind } from '../engine/types';
-import { playSound } from '../sound';
 import { saveSettings, settings, t } from '../state';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
+import { moveSfx } from './sfx';
 import { esc } from './util';
 
 export type WatchSpeed = 'slow' | 'normal' | 'fast';
@@ -205,12 +205,7 @@ export class WatchScreen implements Screen {
     this.match.play(r.move);
     this.queueReferee();
     this.thinking = false;
-    if (settings.sound) {
-      if (this.match.outcome()) playSound('end');
-      else if (this.match.checkedKing() !== null) playSound('check');
-      else if (this.match.captured.length > captures) playSound('capture');
-      else playSound(reveal ? 'reveal' : 'move');
-    }
+    moveSfx(this.match, r.move, captures, reveal);
     void side;
     this.render(true);
     if (!this.match.outcome()) this.schedule(60);

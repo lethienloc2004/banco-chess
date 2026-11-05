@@ -11,6 +11,7 @@ import { settings, t } from '../state';
 import { BoardRenderer, chessGlyph } from './board';
 import { openDialog } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
+import { moveSfx } from './sfx';
 import { esc } from './util';
 
 const STAR = '★';
@@ -218,7 +219,7 @@ export class PuzzleScreen implements Screen {
     if (!followsLine) this.onLine = false;
     this.step++;
     if (this.remaining() === 0) return this.finish(captures);
-    if (settings.sound) playSound(this.match.captured.length > captures ? 'capture' : this.match.checkedKing() !== null ? 'check' : 'move');
+    moveSfx(this.match, m, captures, false);
     this.phase = 'reply';
     this.message = { text: s.puzzles.good, cls: 'good' };
     this.render(true);
@@ -231,7 +232,7 @@ export class PuzzleScreen implements Screen {
     if (d === undefined || d === null) return;
     const captures = this.match.captured.length;
     this.match.play(d);
-    if (settings.sound) playSound(this.match.captured.length > captures ? 'capture' : 'move');
+    moveSfx(this.match, d, captures, false);
     this.phase = 'play';
     this.message = null;
     this.render(true);
@@ -283,7 +284,7 @@ export class PuzzleScreen implements Screen {
     line.forEach((m, i) => this.later(() => {
       const captures = this.match.captured.length;
       this.match.play(m);
-      if (settings.sound) playSound(i === line.length - 1 ? 'end' : this.match.captured.length > captures ? 'capture' : 'move');
+      moveSfx(this.match, m, captures, false, i === line.length - 1);
       if (i === line.length - 1) this.message = { text: t().puzzles.shownDone, cls: 'over' };
       this.render(true);
     }, 700 * (i + 1)));

@@ -63,7 +63,7 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Cờ vua: 16 kiểu bàn và 10 bộ màu quân.
   - Cờ tướng: 13 kiểu bàn và 10 bộ màu quân.
   - Thêm chế độ **tùy chỉnh** với bảng chọn màu bất kỳ.
-- 🔊 Âm thanh tổng hợp bằng Web Audio. Có hiệu ứng chuyển cảnh, chế độ tối, tiếng Việt và English, giao diện dùng tốt trên điện thoại.
+- 🔊 **Âm thanh riêng cho từng quân** (tổng hợp bằng Web Audio, không cần file): Tốt kêu "tách", Xe "thịch" nặng, Hậu có tiếng chuông, Vua/Tướng có tiếng chuông trầm, Sĩ gõ nhẹ hai tiếng, Pháo "bụp" (ăn quân thì "đùng"), **Mã có tiếng ngựa hí, Tượng có tiếng voi rống**. Ăn quân có thêm tiếng "rắc". Có thể đổi sang kiểu đơn giản và nghe thử trong Cài đặt.
 
 <table>
   <tr>
