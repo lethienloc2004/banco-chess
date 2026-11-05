@@ -28,7 +28,7 @@ type Route =
   | { name: 'play'; kind: GameKind; mode: 'bot' | 'pvp' }
   | { name: 'room'; room: string }
   | { name: 'match'; kind: GameKind }
-  | { name: 'admin'; tab: string }
+  | { name: 'admin'; tab: string; user?: string }
   | { name: 'puzzles'; kind?: string }
   | { name: 'puzzle'; id: string }
   | { name: 'watch'; kind: GameKind }
@@ -44,7 +44,7 @@ function parseRoute(hash: string): Route {
   if (parts[0] === 'analysis') return { name: 'analysis' };
   if (parts[0] === 'leaderboard') return { name: 'leaderboard', kind: parts[1] };
   if (parts[0] === 'player' && parts[1]) return { name: 'player', id: parts[1] };
-  if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview' };
+  if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview', user: parts[2] };
   if (parts[0] === 'puzzles') return { name: 'puzzles', kind: parts[1] };
   if (parts[0] === 'puzzle' && parts[1] && findPuzzle(parts[1])) return { name: 'puzzle', id: parts[1] };
   if (!KINDS.includes(kind)) return { name: 'home' };
@@ -152,7 +152,7 @@ function build(r: Route): Screen {
     case 'play': return new PlayScreen({ kind: r.kind, mode: r.mode }, nav);
     case 'room': return new PlayScreen({ kind: 'xiangqi', mode: 'room', room: r.room }, nav);
     case 'match': return matchScreen(r.kind, nav);
-    case 'admin': return adminScreen(r.tab, nav);
+    case 'admin': return adminScreen(r.tab, nav, r.user);
     case 'puzzles': return puzzleListScreen(r.kind, nav);
     case 'puzzle': return new PuzzleScreen(r.id, nav);
     case 'watch': return new WatchScreen(r.kind, nav);

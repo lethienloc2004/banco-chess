@@ -87,6 +87,8 @@ export interface PlayerProfile {
   name: string;
   created: number;
   banned: boolean;
+  /** Kept off the leaderboards by an admin. */
+  hidden: boolean;
   stats: Record<GameKind, KindStats>;
   recent: ProfileGame[];
 }

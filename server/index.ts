@@ -60,7 +60,7 @@ async function leaderboard(env: Env, kind: GameKind, me: UserRow | null): Promis
     entries.push({ ...r, rank: prev && prev.rating === r.rating ? prev.rank : i + 1 });
   });
   let meRow: BoardEntry | null = null;
-  if (me && mine && mine.games >= LEADERBOARD_MIN_GAMES && !isBanned(me, now)) {
+  if (me && mine && mine.games >= LEADERBOARD_MIN_GAMES && !isBanned(me, now) && !me.board_hidden) {
     meRow = entries.find(e => e.id === me.id) ?? {
       rank: await rankOf(db, kind, mine.rating, now), id: me.id, name: me.name,
       rating: mine.rating, games: mine.games, wins: mine.wins, draws: mine.draws, peak: mine.peak,
@@ -81,11 +81,12 @@ async function profile(env: Env, id: string): Promise<PlayerProfile | null> {
       .bind(id, id).all<{ id: string; kind: GameKind; rated: number; p0_id: string | null; p0_name: string | null; p1_id: string | null; p1_name: string | null; winner: 0 | 1 | null; reason: string | null; ended: number | null }>(),
   ]);
   const banned = isBanned(u, now);
+  const hidden = !!u.board_hidden;
   const stats = {} as Record<GameKind, KindStats>;
   for (const kind of KINDS) {
     const r = rows.results.find(x => x.kind === kind);
     const base = { rating: r?.rating ?? 1200, games: r?.games ?? 0, wins: r?.wins ?? 0, draws: r?.draws ?? 0, peak: r?.peak ?? 1200 };
-    const ranked = !banned && base.games >= LEADERBOARD_MIN_GAMES;
+    const ranked = !banned && !hidden && base.games >= LEADERBOARD_MIN_GAMES;
     stats[kind] = { ...base, rank: ranked ? await rankOf(db, kind, base.rating, now) : null };
   }
   const recent: ProfileGame[] = games.results.map(g => {
@@ -96,7 +97,7 @@ async function profile(env: Env, id: string): Promise<PlayerProfile | null> {
       winner: g.winner, reason: g.reason, ended: g.ended,
     };
   });
-  return { id: u.id, name: u.name, created: u.created, banned, stats, recent };
+  return { id: u.id, name: u.name, created: u.created, banned, hidden, stats, recent };
 }
 
 async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {

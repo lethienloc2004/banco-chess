@@ -160,6 +160,40 @@ const meW = (await api('/me', { token: whiteTok })).data.user;
 ok(meW.ratings.xiangqi === 1555 && meW.ratings.chess < 1200, 'admin set the xiangqi rating only ' + JSON.stringify(meW.ratings));
 const adminList = (await api('/admin/users?q=' + whiteId, { token: adm.token })).data.users;
 ok(adminList[0]?.ratings?.xiangqi === 1555, 'admin user list shows ratings per game');
+
+// --- Admin leaderboard tools
+const A = (path, body) => api(path, { token: adm.token, method: 'POST', body });
+const onBoard = async id => (await api('/leaderboard?kind=chess')).data.entries.some(e => e.id === id);
+await A(`/admin/users/${blackId}/action`, { action: 'board', hidden: true });
+let pb = (await api('/players/' + blackId)).data.profile;
+ok(!(await onBoard(blackId)) && pb.hidden && pb.stats.chess.rank === null, 'admin hid a player from the leaderboard');
+ok((await api('/admin/users?filter=hidden', { token: adm.token })).data.users.some(u => u.id === blackId), 'hidden players filter');
+await A(`/admin/users/${blackId}/action`, { action: 'board', hidden: false });
+ok(await onBoard(blackId), 'shown on the leaderboard again');
+const ratedGames = (await api('/admin/games?q=' + blackId, { token: adm.token })).data.games.filter(g => g.rated && g.status === 'over' && g.kind === 'chess');
+const elo = async tok => (await api('/me', { token: tok })).data.user.ratings.chess;
+// Change the latest result (Black won by resignation) to a White win: Elo recomputed from before the game
+const g5 = ratedGames[0], whiteSide = g5.p0_id === whiteId ? 0 : 1;
+const [b0, w0] = [await elo(blackTok), await elo(whiteTok)];
+const fix = (await A(`/admin/games/${g5.id}/action`, { action: 'result', winner: whiteSide })).data;
+const dB = whiteSide === 0 ? fix.refund.d1 : fix.refund.d0, dW = whiteSide === 0 ? fix.refund.d0 : fix.refund.d1;
+ok(fix.refund && !fix.refund.estimated && dB < -20 && dW > 20 && dB === -dW, 'result corrected, Elo recomputed exactly ' + JSON.stringify(fix.refund));
+ok(await elo(blackTok) === b0 + dB && await elo(whiteTok) === w0 + dW, 'ratings moved by the correction');
+pb = (await api('/players/' + blackId)).data.profile;
+ok(pb.stats.chess.games === 5 && pb.stats.chess.wins === 4, 'win counts follow the new result');
+// Void another rated game: the points go back and it no longer counts
+const g4 = ratedGames[1];
+const b1 = await elo(blackTok);
+const voided = (await A(`/admin/games/${g4.id}/action`, { action: 'cancel' })).data;
+const dB2 = g4.p0_id === blackId ? voided.refund.d0 : voided.refund.d1;
+pb = (await api('/players/' + blackId)).data.profile;
+ok(dB2 < 0 && await elo(blackTok) === b1 + dB2 && pb.stats.chess.games === 4 && pb.stats.chess.wins === 3, 'voided game: Elo given back, 4 games left ' + JSON.stringify(voided.refund));
+ok(!(await onBoard(blackId)), 'below 5 games again: off the board');
+ok((await A(`/admin/games/${g4.id}/action`, { action: 'cancel' })).data.refund === null, 'voiding twice changes nothing');
+// Reset one game's record
+await A(`/admin/users/${whiteId}/action`, { action: 'reset', kind: 'chess' });
+const wr = (await api('/me', { token: whiteTok })).data.user.ratings;
+ok(wr.chess === 1200 && wr.xiangqi === 1555 && (await api('/players/' + whiteId)).data.profile.stats.chess.games === 0, 'reset the chess record only');
 const games = (await api('/admin/games', { token: adm.token })).data.games;
 ok(games.length >= 3, 'admin sees games: ' + games.map(g => `${g.kind}:${g.status}:${g.reason ?? '-'}`).join(', '));
 const detail = (await api('/admin/games/' + games.find(g => g.kind === 'jieqi').id, { token: adm.token })).data.game;

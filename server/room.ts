@@ -286,11 +286,14 @@ export class GameRoom extends DurableObject<Env> {
     s.lastActivity = now;
     const [a, b] = s.seats;
     const counted = a && b && result.reason !== 'cancelled';
+    const before: [number, number] = [a?.rating ?? 0, b?.rating ?? 0];
     if (counted) {
       // Each game has its own rating: only this game's rating moves.
       const current = await ratingsIn(this.env.DB, s.kind, [a.id, b.id]);
       const ra = current.get(a.id) ?? a.rating;
       const rb = current.get(b.id) ?? b.rating;
+      before[0] = ra;
+      before[1] = rb;
       const score = result.winner === 0 ? 1 : result.winner === 1 ? 0 : 0.5;
       const [na, nb] = rated ? elo(ra, rb, score) : [ra, rb];
       if (rated) s.ratingChange = [na - ra, nb - rb];
@@ -303,8 +306,11 @@ export class GameRoom extends DurableObject<Env> {
         ...(rated ? [recordRated(db, a.id, s.kind, na, score, now), recordRated(db, b.id, s.kind, nb, (1 - score) as 0 | 0.5 | 1, now)] : []),
       ]);
     }
-    await this.env.DB.prepare('UPDATE games SET status = ?, winner = ?, reason = ?, moves = ?, ended = ?, rated = ? WHERE id = ?')
-      .bind('over', result.winner, result.reason, JSON.stringify(s.moves), now, rated && counted ? 1 : 0, this.gameId()).run();
+    // Ratings before the game and the change, so an admin correction can be undone exactly.
+    const change = rated && counted ? { r0: before[0], r1: before[1], d0: s.ratingChange![0], d1: s.ratingChange![1] } : null;
+    await this.env.DB.prepare('UPDATE games SET status = ?, winner = ?, reason = ?, moves = ?, ended = ?, rated = ?, r0 = ?, r1 = ?, d0 = ?, d1 = ? WHERE id = ?')
+      .bind('over', result.winner, result.reason, JSON.stringify(s.moves), now, rated && counted ? 1 : 0,
+        change?.r0 ?? null, change?.r1 ?? null, change?.d0 ?? null, change?.d1 ?? null, this.gameId()).run();
     await this.save();
     await this.scheduleAlarm();
     this.broadcastState();

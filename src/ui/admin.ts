@@ -19,6 +19,7 @@ interface GameRow {
 interface UserRow {
   id: string; name: string; email: string | null; role: string; ratings?: Ratings; games: number; wins: number;
   warnings: number; banned_until: number | null; ban_reason: string | null; created: number; last_seen: number; google_sub: string | null;
+  board_hidden?: number;
 }
 
 const ratingOf = (u: UserRow, k: GameKind) => u.ratings?.[k] ?? DEFAULT_RATING;
@@ -27,7 +28,7 @@ const ratingCell = (u: UserRow) => KINDS.map(k => `<span title="${esc(t()[k])}">
 
 const fmtDate = (ts: number | null) => (ts ? new Date(ts).toLocaleString(settings.lang === 'vi' ? 'vi-VN' : 'en-GB') : '—');
 
-export function adminScreen(tab: Tab | string, nav: Nav): Screen {
+export function adminScreen(tab: Tab | string, nav: Nav, openUserId?: string): Screen {
   const s = t();
   const A = s.admin;
   const el = document.createElement('section');
@@ -92,6 +93,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       <p class="small"><span class="dot xq side-0"></span> <a href="#" data-user="${esc(g.p0_id ?? '')}">${esc(g.p0_name ?? '—')}</a> ·
         <span class="dot xq side-1"></span> <a href="#" data-user="${esc(g.p1_id ?? '')}">${esc(g.p1_name ?? '—')}</a></p>
       <p class="small">${result(g)} · ${esc(fmtDate(g.created))}</p>
+      ${g.rated && g.status === 'over' && g.reason !== 'cancelled' ? `<p class="small muted">⚖️ ${esc(A.ratedNote)}</p>` : ''}
       <div class="admin-actions"></div>`;
     const renderer = new BoardRenderer(wrap.querySelector('.replay-board')!, () => {});
     const show = () => {
@@ -107,7 +109,11 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
     const actions = wrap.querySelector<HTMLElement>('.admin-actions')!;
     const act = async (label: string, payload: { action: 'cancel' | 'result'; winner?: 0 | 1 | null }) => {
       if (!(await confirmDialog(`${label}?`, A.confirm, s.close))) return;
-      if (await call(`/games/${g.id}/action`, 'POST', payload)) { toast(A.done); close(); void load(); }
+      const r = await call<{ refund: { d0: number; d1: number; estimated: boolean } | null }>(`/games/${g.id}/action`, 'POST', payload);
+      if (!r) return;
+      const sign = (d: number) => (d > 0 ? '+' : '') + d;
+      toast(r.refund ? A.refunded(`${g.p0_name ?? s.red} ${sign(r.refund.d0)}`, `${g.p1_name ?? s.black} ${sign(r.refund.d1)}`, r.refund.estimated) : A.done);
+      close(); void load();
     };
     const mk = (label: string, payload: { action: 'cancel' | 'result'; winner?: 0 | 1 | null }, danger = false) => {
       const b = document.createElement('button');
@@ -140,7 +146,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
         <span>${esc(s.rating)}</span><span>${KINDS.map(k => `${esc(s[k])} <b>${ratingOf(u, k)}</b>`).join(' · ')}<br>${u.games} ${esc(A.gamesCount)} · ${u.wins} ${esc(A.winsCount)} · <a href="#/player/${esc(u.id)}">${esc(s.board.profile)}</a></span>
         <span>${esc(A.role)}</span><span>${u.role === 'admin' ? '🛡️ ' + esc(A.adminRole) : esc(A.userRole)}</span>
         <span>${esc(A.warnings)}</span><span>${u.warnings}</span>
-        <span>${esc(A.status)}</span><span>${banned ? `⛔ ${esc(A.bannedUntil(fmtDate(u.banned_until! > 8e15 ? null : u.banned_until)))} — ${esc(u.ban_reason ?? '')}` : '✅ ' + esc(A.active)}</span>
+        <span>${esc(A.status)}</span><span>${banned ? `⛔ ${esc(A.bannedUntil(fmtDate(u.banned_until! > 8e15 ? null : u.banned_until)))} — ${esc(u.ban_reason ?? '')}` : '✅ ' + esc(A.active)}${u.board_hidden ? ` · 🙈 ${esc(A.boardHidden)}` : ''}</span>
         <span>${esc(A.joined)}</span><span>${esc(fmtDate(u.created))} · ${esc(A.lastSeen)} ${esc(fmtDate(u.last_seen))}</span>
       </div>
       <div class="admin-form">
@@ -157,8 +163,10 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
           <select class="inp" name="rkind"><option value="all">${esc(A.allGames)}</option>${KINDS.map(k => `<option value="${k}">${esc(s[k])}</option>`).join('')}</select>
           <input class="inp narrow" name="rating" type="number" min="100" max="3500" value="${ratingOf(u, 'chess')}" />
           <button class="btn" data-a="rating">${esc(A.setRating)}</button>
+          <button class="btn" data-a="reset">${esc(A.resetStats)}</button>
         </div>
         <div class="admin-actions">
+          <button class="btn" data-a="board">${esc(u.board_hidden ? A.showBoard : A.hideBoard)}</button>
           <button class="btn" data-a="role">${esc(u.role === 'admin' ? A.removeAdmin : A.makeAdmin)}</button>
           <button class="btn danger" data-a="delete">${esc(A.deleteUser)}</button>
         </div>
@@ -173,8 +181,10 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       if (a === 'ban') payload.days = Number(val('days')) || null;
       if (a === 'rename') payload.name = val('name');
       if (a === 'rating') { payload.rating = Number(val('rating')); payload.kind = val('rkind'); }
+      if (a === 'reset') payload.kind = val('rkind');
+      if (a === 'board') payload.hidden = !u.board_hidden;
       if (a === 'role') payload.role = u.role === 'admin' ? 'user' : 'admin';
-      if ((a === 'ban' || a === 'delete' || a === 'role') && !(await confirmDialog(`${b.textContent} — ${u.name}?`, A.confirm, s.close))) return;
+      if ((a === 'ban' || a === 'delete' || a === 'role' || a === 'reset') && !(await confirmDialog(`${b.textContent} — ${u.name}?`, A.confirm, s.close))) return;
       if (await call(`/users/${u.id}/action`, 'POST', payload)) { toast(A.done); close(); if (a !== 'delete') void openUser(u.id); void load(); }
     }));
     bindGames(wrap);
@@ -241,7 +251,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       await fetchReports();
     } else if (current === 'users') {
       body.innerHTML = `<div class="admin-filter"><input class="inp" placeholder="${esc(A.searchUsers)}" />
-        <select class="inp"><option value="">${esc(A.all)}</option><option value="banned">${esc(A.bannedUsers)}</option><option value="admins">${esc(A.admins)}</option></select></div><div class="list-area"></div>`;
+        <select class="inp"><option value="">${esc(A.all)}</option><option value="banned">${esc(A.bannedUsers)}</option><option value="admins">${esc(A.admins)}</option><option value="hidden">🙈 ${esc(A.boardHidden)}</option></select></div><div class="list-area"></div>`;
       const [q, sel] = [body.querySelector<HTMLInputElement>('input')!, body.querySelector<HTMLSelectElement>('select')!];
       const area = body.querySelector<HTMLElement>('.list-area')!;
       const fetchUsers = async () => {
@@ -249,7 +259,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
         if (!r) return;
         area.innerHTML = r.users.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>${esc(A.name)}</th><th>${esc(s.rating)}</th><th>${esc(A.gamesCount)}</th><th>${esc(A.status)}</th><th>${esc(A.lastSeen)}</th></tr></thead><tbody>
           ${r.users.map(u => `<tr class="clickable" data-user="${esc(u.id)}"><td>${u.role === 'admin' ? '🛡️ ' : ''}${esc(u.name)}<div class="muted small">${esc(u.email ?? (u.google_sub ? 'Google' : A.guest))}</div></td>
-          <td class="small">${ratingCell(u)}</td><td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}</td>
+          <td class="small">${ratingCell(u)}</td><td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}${u.board_hidden ? ' 🙈' : ''}</td>
           <td class="muted small">${esc(timeAgo(u.last_seen, settings.lang))}</td></tr>`).join('')}</tbody></table></div>` : `<p class="muted">${esc(A.empty)}</p>`;
         bindGames(area);
       };
@@ -257,6 +267,8 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       q.oninput = () => { clearTimeout(deb); deb = window.setTimeout(fetchUsers, 300); };
       sel.onchange = fetchUsers;
       await fetchUsers();
+      // #/admin/users/<id>: open that player straight away (e.g. from their profile).
+      if (openUserId) void openUser(openUserId);
     } else if (current === 'announcements') {
       body.innerHTML = `<div class="card admin-form">
           <textarea class="inp" maxlength="300" rows="2" placeholder="${esc(A.announcementPh)}"></textarea>

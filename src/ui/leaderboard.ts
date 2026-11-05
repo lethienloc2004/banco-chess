@@ -130,8 +130,9 @@ export function profileScreen(id: string, nav: Nav): Screen {
     el.innerHTML = `
       <div class="screen-head">
         <span class="avatar big">${esc([...p.name][0]?.toUpperCase() ?? '?')}</span>
-        <div><h1>${esc(p.name)}${own ? ` <span class="tag">${esc(L.you)}</span>` : ''}${p.banned ? ` <span class="tag danger">${esc(L.banned)}</span>` : ''}</h1>
+        <div><h1>${esc(p.name)}${own ? ` <span class="tag">${esc(L.you)}</span>` : ''}${p.banned ? ` <span class="tag danger">${esc(L.banned)}</span>` : ''}${p.hidden ? ` <span class="tag">${esc(L.hiddenTag)}</span>` : ''}</h1>
           <p>${esc(L.joined(fmtDate(p.created)))}</p></div>
+        ${net.me?.role === 'admin' ? `<a class="btn pf-manage" href="#/admin/users/${esc(p.id)}">🛡️ ${esc(L.manage)}</a>` : ''}
       </div>
       <div class="pf-grid">${cards}</div>
       <h2 class="list-title">${esc(L.recent)}</h2>

@@ -1,7 +1,7 @@
 /** Admin API: statistics, games, reports, users, announcements, audit log. */
 import type { GameKind } from '../src/engine/types';
-import { cleanName, type LobbyStats, type Ratings } from '../src/shared/protocol';
-import { KINDS, audit, currentAnnouncement, defaultRatings, getUser, publicUser, ratingsOf, setRating, type UserRow } from './db';
+import { cleanName, elo, type LobbyStats, type Ratings } from '../src/shared/protocol';
+import { KINDS, audit, currentAnnouncement, defaultRatings, getUser, publicUser, ratingsIn, ratingsOf, setRating, type UserRow } from './db';
 import type { Env } from './env';
 import { fail, json } from './http';
 
@@ -18,6 +18,71 @@ function room(env: Env, id: string) {
 }
 
 /** Game ids are "<room>-<n>"; room ids never contain "-". */
+interface GameRecord {
+  id: string; room: string; kind: GameKind; status: string; rated: number;
+  p0_id: string | null; p1_id: string | null; winner: 0 | 1 | null; reason: string | null;
+  r0: number | null; r1: number | null; d0: number | null; d1: number | null;
+}
+
+/** What a correction did to the two players' ratings. */
+export interface Refund { d0: number; d1: number; estimated: boolean }
+
+const scoreOf = (winner: 0 | 1 | null): 0 | 0.5 | 1 => (winner === 0 ? 1 : winner === 1 ? 0 : 0.5);
+
+/**
+ * Void a finished game or change its result. For a rated game the rating
+ * change is undone (void) or recomputed from the ratings before the game
+ * (new result), together with the game, win and draw counts. Games rated
+ * before the change was stored get an estimate from the current ratings.
+ */
+async function correctFinished(db: D1Database, g: GameRecord, to: 'void' | 0 | 1 | null): Promise<Refund | null> {
+  const winner = to === 'void' ? null : to;
+  const reason = to === 'void' ? 'cancelled' : 'admin';
+  const wasCounted = g.reason !== 'cancelled';
+  if (!g.rated || !g.p0_id || !g.p1_id || !wasCounted) {
+    await db.prepare('UPDATE games SET winner = ?, reason = ?, rated = 0 WHERE id = ?').bind(winner, reason, g.id).run();
+    return null;
+  }
+  const old = scoreOf(g.winner);
+  let { r0, r1, d0, d1 } = g;
+  let estimated = false;
+  if (r0 === null || r1 === null || d0 === null || d1 === null) {
+    // Older game: assume the change was what Elo gives at today's ratings.
+    const cur = await ratingsIn(db, g.kind, [g.p0_id, g.p1_id]);
+    const c0 = cur.get(g.p0_id)!, c1 = cur.get(g.p1_id)!;
+    const [n0, n1] = elo(c0, c1, old);
+    d0 = n0 - c0; d1 = n1 - c1; r0 = c0 - d0; r1 = c1 - d1;
+    estimated = true;
+  }
+  const wins = (sc: number) => (sc === 1 ? 1 : 0), draws = (sc: number) => (sc === 0.5 ? 1 : 0);
+  let delta: [number, number], games: number, nd: [number | null, number | null], newScore: number | null;
+  if (to === 'void') {
+    delta = [-d0, -d1]; games = -1; nd = [null, null]; newScore = null;
+  } else {
+    newScore = scoreOf(to);
+    const [n0, n1] = elo(r0, r1, newScore);
+    nd = [n0 - r0, n1 - r1];
+    delta = [nd[0]! - d0, nd[1]! - d1]; games = 0;
+  }
+  const side = (uid: string, i: 0 | 1, dRating: number) => {
+    const o = i === 0 ? old : 1 - old, n = newScore === null ? null : i === 0 ? newScore : 1 - newScore;
+    const dw = (n === null ? 0 : wins(n)) - wins(o), dd = (n === null ? 0 : draws(n)) - draws(o);
+    return [
+      // A rating reset since then leaves no row: nothing to give back.
+      db.prepare('UPDATE ratings SET rating = rating + ?, games = MAX(0, games + ?), wins = MAX(0, wins + ?), draws = MAX(0, draws + ?) WHERE user_id = ? AND kind = ?')
+        .bind(dRating, games, dw, dd, uid, g.kind),
+      db.prepare('UPDATE users SET games = MAX(0, games + ?), wins = MAX(0, wins + ?) WHERE id = ?').bind(games, dw, uid),
+    ];
+  };
+  await db.batch([
+    ...side(g.p0_id, 0, delta[0]),
+    ...side(g.p1_id, 1, delta[1]),
+    db.prepare('UPDATE games SET winner = ?, reason = ?, rated = ?, r0 = ?, r1 = ?, d0 = ?, d1 = ? WHERE id = ?')
+      .bind(winner, reason, to === 'void' ? 0 : 1, r0, r1, nd[0], nd[1], g.id),
+  ]);
+  return { d0: delta[0], d1: delta[1], estimated };
+}
+
 function splitGameId(id: string): { room: string; gameNo: number } | null {
   const m = id.match(/^([\w]+)-(\d+)$/);
   return m ? { room: m[1], gameNo: Number(m[2]) } : null;
@@ -86,20 +151,20 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
   const gameAction = path.match(/^\/games\/([\w-]+)\/action$/);
   if (gameAction && method === 'POST') {
     const body = await readJson<{ action: 'cancel' | 'result'; winner?: 0 | 1 | null }>(req);
-    const g = await db.prepare('SELECT * FROM games WHERE id = ?').bind(gameAction[1]).first<{ id: string; room: string; status: string }>();
+    const g = await db.prepare('SELECT * FROM games WHERE id = ?').bind(gameAction[1]).first<GameRecord>();
     if (!g || !body) return fail(404, 'not-found');
     const ids = splitGameId(g.id);
+    let refund: Refund | null = null;
     if (g.status === 'playing' && ids) {
+      // Live game: the room ends it (never rated).
       const res = await room(env, ids.room).fetch('https://room/admin', { method: 'POST', body: JSON.stringify(body) });
       if (!res.ok) return fail(409, 'not-playing');
     } else {
-      // Finished game: correct the record (ratings are not recomputed).
-      const winner = body.action === 'cancel' ? null : body.winner ?? null;
-      const reason = body.action === 'cancel' ? 'cancelled' : 'admin';
-      await db.prepare('UPDATE games SET winner = ?, reason = ?, rated = 0 WHERE id = ?').bind(winner, reason, g.id).run();
+      // Finished game: correct the record and the ratings it moved.
+      refund = await correctFinished(db, g, body.action === 'cancel' ? 'void' : body.winner ?? null);
     }
-    await audit(db, admin, 'game.' + body.action, g.id, body);
-    return json({ ok: true });
+    await audit(db, admin, 'game.' + body.action, g.id, { ...body, refund });
+    return json({ ok: true, refund });
   }
 
   // ----- Reports -----
@@ -132,6 +197,7 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
     if (q) { where.push('(name LIKE ? OR email LIKE ? OR id = ?)'); args.push(`%${q}%`, `%${q}%`, q); }
     if (filter === 'banned') { where.push('banned_until > ?'); args.push(now); }
     if (filter === 'admins') where.push("role = 'admin'");
+    if (filter === 'hidden') where.push('board_hidden = 1');
     const rows = await db.prepare(
       `SELECT * FROM users ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY last_seen DESC LIMIT 100`,
     ).bind(...args).all<UserRow>();
@@ -160,7 +226,7 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
 
   const userAction = path.match(/^\/users\/([\w-]+)\/action$/);
   if (userAction && method === 'POST') {
-    const body = await readJson<{ action: string; days?: number | null; reason?: string; name?: string; role?: string; rating?: number; kind?: GameKind | 'all' }>(req);
+    const body = await readJson<{ action: string; days?: number | null; reason?: string; name?: string; role?: string; rating?: number; kind?: GameKind | 'all'; hidden?: boolean }>(req);
     const u = await getUser(db, userAction[1]);
     if (!u || !body) return fail(404, 'not-found');
     const reason = String(body.reason ?? '').slice(0, 300);
@@ -197,6 +263,16 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
         await db.batch(kinds.map(k => setRating(db, u.id, k, rating, now)));
         break;
       }
+      case 'reset': {
+        // Back to 1200 and 0 games in one game or all of them.
+        const kinds = body.kind === 'all' || !body.kind ? KINDS : KINDS.includes(body.kind) ? [body.kind] : null;
+        if (!kinds) return fail(400, 'bad-kind');
+        await db.prepare(`DELETE FROM ratings WHERE user_id = ? AND kind IN (${kinds.map(() => '?').join(', ')})`).bind(u.id, ...kinds).run();
+        break;
+      }
+      case 'board':
+        await db.prepare('UPDATE users SET board_hidden = ? WHERE id = ?').bind(body.hidden ? 1 : 0, u.id).run();
+        break;
       case 'delete':
         if (u.id === admin.id) return fail(400, 'self');
         await lobby(env).fetch('https://lobby/kick', { method: 'POST', body: JSON.stringify({ uid: u.id }) });

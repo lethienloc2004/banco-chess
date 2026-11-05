@@ -18,6 +18,8 @@ export interface UserRow {
   notice: string | null;
   banned_until: number | null;
   ban_reason: string | null;
+  /** 1 = kept off the leaderboards by an admin. */
+  board_hidden: number;
   created: number;
   last_seen: number;
 }
@@ -73,7 +75,7 @@ export function setRating(db: D1Database, uid: string, kind: GameKind, rating: n
 }
 
 /** SQL condition for "shown on the leaderboard" (table aliases r = ratings, u = users). */
-export const RANKED = `r.games >= ${LEADERBOARD_MIN_GAMES} AND (u.banned_until IS NULL OR u.banned_until <= ?)`;
+export const RANKED = `r.games >= ${LEADERBOARD_MIN_GAMES} AND u.board_hidden = 0 AND (u.banned_until IS NULL OR u.banned_until <= ?)`;
 
 /** Leaderboard position for a rating: one more than the number of ranked players above it. */
 export async function rankOf(db: D1Database, kind: GameKind, rating: number, now = Date.now()): Promise<number> {
