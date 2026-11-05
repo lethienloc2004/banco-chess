@@ -311,3 +311,71 @@ export function previewVoices(game: 'chess' | 'xq') {
   types.forEach((type, i) => setTimeout(() => playMove({ game, type, capture: false }), i * 420));
   setTimeout(() => playMove({ game, type: game === 'chess' ? 2 : 6, capture: true }), types.length * 420);
 }
+
+// ---------- Holiday skin sounds (layered on top of the normal move sound) ----------
+
+export type Theme = 'halloween' | 'christmas' | 'tet' | 'midautumn';
+
+/** A sine/triangle note with vibrato, for the ghostly "hoo". */
+function wobble(a: AudioContext, t: number, from: number, to: number, gain: number, dur: number, rate = 6, depth = 9) {
+  const osc = a.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(from, t);
+  osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+  const lfo = a.createOscillator();
+  lfo.frequency.value = rate;
+  const lg = a.createGain();
+  lg.gain.value = depth;
+  lfo.connect(lg).connect(osc.frequency);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.12);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g).connect(a.destination);
+  osc.start(t); lfo.start(t);
+  osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+}
+
+/** Small metallic bell: a few inharmonic partials with a long ring. */
+function bell(a: AudioContext, t: number, base: number, gain: number, dur = 0.5) {
+  for (const [ratio, g] of [[1, 1], [2.76, 0.5], [5.4, 0.25], [8.93, 0.12]] as const) tone(a, t, base * ratio, gain * g, dur * (1.2 - ratio / 12), 'sine');
+}
+
+/** Short sharp crack of a firecracker. */
+function crack(a: AudioContext, t: number, gain: number) {
+  noiseBurst(a, t, 5200, 1800, gain, 0.035, 'highpass');
+  noiseBurst(a, t, 900, 300, gain * 0.6, 0.06);
+}
+
+/** Themed sound for a move or a capture by a piece wearing a holiday skin. */
+export function playThemed(theme: Theme, capture: boolean) {
+  const a = audio();
+  if (!a || !noise) return;
+  const t = a.currentTime + 0.02;
+  switch (theme) {
+    case 'halloween':
+      if (capture) {
+        wobble(a, t + 0.05, 330, 196, 0.12, 0.9);
+        wobble(a, t + 0.12, 247, 147, 0.07, 0.8, 5, 6);
+        for (let i = 0; i < 5; i++) noiseBurst(a, t + 0.05 + i * 0.07, 3000, 1500, 0.05, 0.04); // bat wings
+      } else noiseBurst(a, t, 500, 180, 0.05, 0.35, 'lowpass'); // misty whoosh
+      break;
+    case 'christmas':
+      if (capture) [0, 0.09, 0.18, 0.3].forEach((d, i) => bell(a, t + d, i % 2 ? 1568 : 1760, 0.07, 0.6));
+      else bell(a, t + 0.04, 2093, 0.035, 0.35);
+      break;
+    case 'tet':
+      if (capture) {
+        knock(a, t, 90, 0.5, 0.25); // the big "đùng"
+        let d = 0.08;
+        for (let i = 0; i < 12; i++) { crack(a, t + d, 0.22 + Math.random() * 0.12); d += 0.035 + Math.random() * 0.05; }
+      } else { crack(a, t + 0.03, 0.07); crack(a, t + 0.09, 0.05); }
+      break;
+    case 'midautumn': {
+      const notes = [1568, 1760, 2093, 2349, 2637];
+      if (capture) notes.forEach((f, i) => tone(a, t + i * 0.09 + Math.random() * 0.04, f, 0.05, 1.3, 'sine'));
+      else tone(a, t + 0.04, notes[Math.floor(Math.random() * notes.length)], 0.03, 0.9, 'sine');
+      break;
+    }
+  }
+}

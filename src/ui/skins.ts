@@ -4,6 +4,7 @@
  * Side 0 = White / Red, side 1 = Black.
  */
 
+import type { Theme } from '../sound';
 import { chessShape, discShape, type ChessSet, type DiscShape } from './pieces';
 
 type Pair<T> = [T, T];
@@ -22,6 +23,8 @@ interface Skin {
   /** Extra shapes drawn on top of a piece (centre 0,0; chess glyphs span about ±40, xiangqi discs r = 44). */
   deco?: (game: 'chess' | 'xq', side: 0 | 1) => string;
   fx?: Fx;
+  /** Holiday skins: themed move trail, capture show and sounds. */
+  theme?: Theme;
 }
 
 // ---------- SVG helpers ----------
@@ -148,6 +151,7 @@ const SKINS: Record<string, Skin> = {
     fx: 'petals',
   },
   pumpkin: {
+    theme: 'halloween',
     set: 'halloween', disc: 'pumpkin',
     defs: lin('sk-pumpkin-w', ['#ffd28c', '#ff8c1a', '#cf4f00']) + lin('sk-pumpkin-b', ['#4a3370', '#24163d', '#0d0717']) + rad('sk-pumpkin-r', ['#ffc266', '#ff8a1a', '#c94a00']) + rad('sk-pumpkin-k', ['#55377d', '#2a1745', '#0f0819']) + halo('sk-pumpkin-g', '#7cff6b', 3) + halo('sk-pumpkin-o', '#ff9a1a', 3),
     chess: [{ fill: url('sk-pumpkin-w'), stroke: '#3d1a00', sw: 3, filter: 'sk-pumpkin-o' }, { fill: url('sk-pumpkin-b'), stroke: '#7cff6b', sw: 2.8, filter: 'sk-pumpkin-g' }],
@@ -156,6 +160,7 @@ const SKINS: Record<string, Skin> = {
     fx: 'spooky',
   },
   christmas: {
+    theme: 'christmas',
     set: 'christmas', disc: 'bauble',
     defs: lin('sk-xmas-w', ['#ffffff', '#f2f7fb', '#d7e4ee']) + lin('sk-xmas-b', ['#43a047', '#1f6b2a', '#0b3a12']) + rad('sk-xmas-r', ['#ff6b6b', '#d32f2f', '#8e1414']) + rad('sk-xmas-k', ['#4caf50', '#1e7a2c', '#0b3d14']),
     chess: [{ fill: url('sk-xmas-w'), stroke: '#c62828', sw: 3.5 }, { fill: url('sk-xmas-b'), stroke: '#f9d342', sw: 2.5 }],
@@ -164,6 +169,7 @@ const SKINS: Record<string, Skin> = {
     fx: 'snow',
   },
   tet: {
+    theme: 'tet',
     set: 'tet', disc: 'bagua',
     defs: lin('sk-tet-w', ['#ff7a66', '#e8261a', '#a90f06']) + lin('sk-tet-b', ['#fff0b0', '#f2c230', '#b88407']) + rad('sk-tet-r', ['#ff5c45', '#d11a0c', '#8f0a03']) + rad('sk-tet-k', ['#fff1b8', '#f0c13a', '#b5860b']) + halo('sk-tet-h', '#ffd54f', 2.5),
     chess: [{ fill: url('sk-tet-w'), stroke: '#ffd54f', sw: 3.2, filter: 'sk-tet-h' }, { fill: url('sk-tet-b'), stroke: '#7a4b00', sw: 2.5 }],
@@ -172,6 +178,7 @@ const SKINS: Record<string, Skin> = {
     fx: 'petals',
   },
   lantern: {
+    theme: 'midautumn',
     set: 'midautumn', disc: 'lantern',
     defs: lin('sk-lantern-w', ['#fff6d0', '#ffcf5a', '#f08a00']) + lin('sk-lantern-b', ['#33447a', '#18224a', '#070b22']) + rad('sk-lantern-r', ['#fff0b8', '#ffb43b', '#e06a00']) + rad('sk-lantern-k', ['#34488a', '#16205a', '#060a24']) + halo('sk-lantern-h', '#ffc14d', 4),
     chess: [{ fill: url('sk-lantern-w'), stroke: '#9a4a00', sw: 3, filter: 'sk-lantern-h' }, { fill: url('sk-lantern-b'), stroke: '#ffd27a', sw: 2.6 }],
@@ -241,4 +248,75 @@ export function skinPreview(id: string | null, game: 'chess' | 'xq'): string {
   const p = (side: 0 | 1, label: string, x: number) => `<g transform="translate(${x} 55)">${id && hasSkin(id) ? xqPiece(id, side, label, `xq-t ${side ? 'b' : 'r'}`, 3)
     : `<circle class="xq-disc" r="44"/><circle class="xq-ring ${side ? 'b' : 'r'}" r="37"/><text class="xq-t ${side ? 'b' : 'r'}" y="3">${label}</text>`}</g>`;
   return `<svg viewBox="-12 -10 224 130" class="skin-prev" aria-hidden="true">${defs}${p(0, '帥', 52)}${p(1, '將', 148)}</svg>`;
+}
+
+// ---------- Holiday move trails and capture shows ----------
+
+export const skinTheme = (id: string | null | undefined): Theme | null => (hasSkin(id) ? SKINS[id].theme ?? null : null);
+
+const BAT = 'M0 2 C-3 -3 -8 -5 -14 -2 C-11 -1 -11 2 -12 4 C-8 2 -6 4 -4 6 C-3 3 -1 3 0 4 C1 3 3 3 4 6 C6 4 8 2 12 4 C11 2 11 -1 14 -2 C8 -5 3 -3 0 2Z';
+const SNOWFLAKE = (s: number) => `<path d="M0 -${s}V${s}M-${s} 0H${s}M-${s * 0.7} -${s * 0.7}L${s * 0.7} ${s * 0.7}M-${s * 0.7} ${s * 0.7}L${s * 0.7} -${s * 0.7}" stroke="#fff" stroke-width="${(s / 3).toFixed(1)}" stroke-linecap="round"/>`;
+const vars = (o: Record<string, string | number>) => Object.entries(o).map(([k, v]) => `--${k}:${v}`).join(';');
+
+/** Particles left along the path of a move (they start as the piece passes). */
+export function moveTrail(theme: Theme, from: [number, number], to: [number, number]): string {
+  const n = 7;
+  const bits: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const f = 0.12 + (0.8 * i) / (n - 1);
+    const x = from[0] + (to[0] - from[0]) * f, y = from[1] + (to[1] - from[1]) * f;
+    const jx = ((i * 37) % 21) - 10, jy = ((i * 53) % 17) - 8;
+    const delay = Math.round(f * 150);
+    const shape = theme === 'halloween' ? `<circle r="${11 + (i % 3) * 3}" fill="${i % 2 ? '#7b4dbb' : '#5c3a8f'}"/>`
+      : theme === 'christmas' ? (i % 2 ? SNOWFLAKE(4) : '<circle r="3.2" fill="#fff"/>')
+      : theme === 'tet' ? `<ellipse rx="6" ry="3.6" fill="${i % 2 ? '#ffd23f' : '#ff9ec0'}"/>`
+      : `<circle r="3.4" fill="#ffe08a" class="fx-firefly"/>`;
+    bits.push(`<g class="trail-bit" transform="translate(${(x + jx).toFixed(1)} ${(y + jy).toFixed(1)})"><g style="${vars({ delay: `${delay}ms`, rot: `${(i * 47) % 180}deg` })}">${shape}</g></g>`);
+  }
+  return `<g class="fx trail trail-${theme}">${bits.join('')}</g>`;
+}
+
+/** A small effect where a holiday piece lands (no capture). */
+export function landing(theme: Theme, x: number, y: number): string {
+  const n = theme === 'halloween' ? 3 : 6;
+  const bits = Array.from({ length: n }, (_, i) => {
+    const a = (360 / n) * i + 15;
+    const shape = theme === 'halloween' ? `<circle r="10" fill="#6a45a8"/>` : theme === 'christmas' ? SNOWFLAKE(4.5)
+      : theme === 'tet' ? `<ellipse rx="5" ry="3" fill="${i % 2 ? '#ffd23f' : '#ff9ec0'}"/>` : '<circle r="3" fill="#ffe08a"/>';
+    return `<g class="land-bit" style="${vars({ a: `${a}deg`, d: '30px', delay: '140ms' })}">${shape}</g>`;
+  }).join('');
+  return `<g class="fx land land-${theme}" transform="translate(${x} ${y}) scale(1.25)">${bits}</g>`;
+}
+
+/** The capture show of a holiday piece: bats and ghost smoke, snow and a star, fireworks, lantern glow. */
+export function holidayBurst(theme: Theme, x: number, y: number): string {
+  const parts: string[] = [];
+  if (theme === 'halloween') {
+    parts.push('<circle class="hb-smoke" r="26" fill="#6a45a8"/><circle class="hb-smoke s2" r="20" fill="#3d2a5c"/>');
+    for (let i = 0; i < 7; i++) {
+      const a = -150 + i * 20 + (i % 2) * 8;
+      parts.push(`<g class="hb-fly" style="${vars({ a: `${a}deg`, d: `${70 + (i % 3) * 18}px`, delay: `${i * 30}ms` })}"><path class="hb-flap" d="${BAT}" transform="scale(1.5)" fill="#1b1027" stroke="#9dff7a" stroke-width="1"/></g>`);
+    }
+    parts.push('<g class="hb-ghost"><path d="M-10 10 V-4 C-10 -16 10 -16 10 -4 V10 L6 6 L2 10 L-2 6 L-6 10Z" fill="#fff" opacity=".9"/><circle cx="-4" cy="-4" r="1.8" fill="#222"/><circle cx="4" cy="-4" r="1.8" fill="#222"/></g>');
+  } else if (theme === 'christmas') {
+    parts.push('<circle class="hb-ring" r="20" fill="none" stroke="#fff" stroke-width="4"/>');
+    for (let i = 0; i < 12; i++) parts.push(`<g class="hb-out" style="${vars({ a: `${i * 30 + (i % 2) * 10}deg`, d: `${44 + (i % 3) * 14}px`, delay: `${(i % 4) * 30}ms` })}">${SNOWFLAKE(5 + (i % 2) * 2)}</g>`);
+    parts.push(`<g class="hb-star"><polygon points="${Array.from({ length: 10 }, (_, i) => { const a = (Math.PI / 5) * i - Math.PI / 2, r = i % 2 ? 6 : 15; return `${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`; }).join(' ')}" fill="#f9d342" stroke="#fff" stroke-width="1.5"/></g>`);
+  } else if (theme === 'tet') {
+    // Two firework bursts: rays that grow and fade, with sparks at the tips.
+    for (const [bx, by, delay, scale] of [[0, 0, 0, 1], [26, -30, 260, 0.65]] as const) {
+      const rays = Array.from({ length: 16 }, (_, i) => {
+        const a = (i * 360) / 16;
+        const c = ['#ffd54f', '#ff5252', '#ffeb3b', '#ff9100'][i % 4];
+        return `<g style="transform:rotate(${a}deg)"><line class="hb-ray" x1="0" y1="-10" x2="0" y2="-46" stroke="${c}" stroke-width="3" stroke-linecap="round" style="${vars({ delay: `${delay}ms` })}"/><circle class="hb-spark" cy="-50" r="2.6" fill="${c}" style="${vars({ delay: `${delay + 120}ms` })}"/></g>`;
+      }).join('');
+      parts.push(`<g transform="translate(${bx} ${by}) scale(${scale})"><circle class="hb-flash" r="16" fill="#fff6cf" style="${vars({ delay: `${delay}ms` })}"/>${rays}</g>`);
+    }
+  } else {
+    parts.push('<circle class="hb-glow" r="40" fill="#ffc14d"/>');
+    for (let i = 0; i < 3; i++) parts.push(`<circle class="hb-ripple" r="18" fill="none" stroke="#ffe08a" stroke-width="3" style="${vars({ delay: `${i * 150}ms` })}"/>`);
+    for (let i = 0; i < 7; i++) parts.push(`<g class="hb-fall" style="${vars({ dx: `${-48 + i * 16}px`, delay: `${i * 45}ms` })}">${sparkle(0, 0, 4 + (i % 2) * 2, i % 2 ? '#fff6cf' : '#ffe08a')}</g>`);
+  }
+  // Drawn larger than a square: the capture is the moment to show off.
+  return `<g class="fx hb hb-${theme}" transform="translate(${x} ${y}) scale(1.6)">${parts.join('')}</g>`;
 }

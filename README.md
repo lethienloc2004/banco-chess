@@ -28,6 +28,11 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     - 🎄 **Giáng sinh**: Tốt là quả châu, Xe là ống khói phủ tuyết, Tượng là cây thông, Mã là tuần lộc, Vua đội mũ ông già Noel.
     - 🧧 **Tết**: Tốt là đồng xu, Xe là ngôi chùa, Tượng là tràng pháo, Mã thắt nơ đỏ, Hậu cài hoa mai, Vua đội mũ cánh chuồn.
     - 🏮 **Trung thu**: Tốt là đèn lồng, Mã là thỏ ngọc, Tượng là đèn ông sao, Hậu là Hằng Nga, Vua dưới trăng rằm.
+  - **Skin ngày lễ có hiệu ứng và âm thanh riêng** (tắt theo nút âm thanh và chế độ "giảm chuyển động" của máy):
+    - 🎃 Halloween: đi quân để lại vệt khói tím; ăn quân thì **đàn dơi bay tán loạn**, khói ma và con ma bay lên, kèm tiếng "hú".
+    - 🎄 Giáng sinh: tuyết rắc theo đường đi; ăn quân thì **tuyết bung ra kèm ngôi sao vàng**, tiếng chuông leng keng.
+    - 🧧 Tết: cánh mai, đào rơi theo đường đi; ăn quân thì **pháo hoa nổ hai đợt**, tiếng pháo đì đùng.
+    - 🏮 Trung thu: đom đóm bay theo quân; ăn quân thì **ánh đèn lồng lan ra và sao rơi**, tiếng chuông gió.
   - Quân cờ tướng đổi viền theo chủ đề (hoa, quả bí, quả châu, đèn lồng, viền lửa, hành tinh có vành, viên ngọc, viên kẹo, đồng xu…), chữ giữ nguyên để dễ đọc. Có thêm màu chuyển, phát sáng và hiệu ứng khi ăn quân. **Chơi online thì đối thủ cũng thấy skin của bạn** (có thể tắt trong Cài đặt).
   - Tiến độ lưu theo tài khoản trên máy chủ. Ván online do máy chủ tự chấm; mỗi ván, mỗi thế cờ chỉ được tính một lần.
 

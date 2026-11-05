@@ -1,6 +1,8 @@
 /** SVG rendering of chess and xiangqi boards. */
 import type { Match } from '../game';
-import { chessPiece, fxBurst, hasSkin, skinDefs, skinFx, xqPiece } from './skins';
+import { playThemed } from '../sound';
+import { settings } from '../state';
+import { chessPiece, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
 
 export interface BoardView {
   flipped: boolean;
@@ -171,14 +173,22 @@ export class BoardRenderer {
         : `<circle class="target" cx="${x}" cy="${y}" r="${match.isChess ? 15 : 13}"/>`);
     }
 
-    // A capture by a skinned piece gets its burst (fire, petals, snow…).
+    // Skin effects: holiday skins leave a trail and put on a show when they capture
+    // (with their own sound); other skins burst on captures.
     const count = match.pieces().length;
-    if (animate && last !== null && this.prevCount !== null && count < this.prevCount) {
+    if (animate && last !== null) {
+      const captured = this.prevCount !== null && count < this.prevCount;
       const mover = match.pieceAt(match.moveTo(last));
-      const fx = mover ? skinFx(skins[mover.color]) : null;
-      if (fx) {
-        const [x, y] = this.center(match.moveTo(last));
-        parts.push(fxBurst(fx, x, y));
+      const sk = mover ? skins[mover.color] : null;
+      const theme = skinTheme(sk);
+      const to = this.center(match.moveTo(last));
+      if (theme) {
+        parts.push(moveTrail(theme, this.center(match.moveFrom(last)), to));
+        parts.push(captured ? holidayBurst(theme, to[0], to[1]) : landing(theme, to[0], to[1]));
+        if (settings.sound) playThemed(theme, captured);
+      } else if (captured) {
+        const fx = skinFx(sk);
+        if (fx) parts.push(fxBurst(fx, to[0], to[1]));
       }
     }
     this.prevCount = count;
