@@ -1,7 +1,7 @@
 {
   "name": "ban-co",
   "version": "0.1.0",
-  "description": "Chơi cờ vua, cờ tướng và cờ tướng úp trên trình duyệt: máy chơi cùng, chơi online, ghép ngẫu nhiên, xếp hạng.",
+  "description": "Chơi cờ vua, cờ tướng, cờ tướng úp và cờ vua úp trên trình duyệt: máy chơi cùng, chơi online, ghép ngẫu nhiên, xếp hạng, giải thế cờ, phân tích ván.",
   "type": "module",
   "private": true,
   "license": "MIT",
@@ -38,6 +38,8 @@
     "chinese-chess",
     "jieqi",
     "board-game",
+    "chess-engine",
+    "game-analysis",
     "cloudflare-workers",
     "typescript",
     "vietnamese"
