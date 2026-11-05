@@ -87,6 +87,9 @@ function spooky(W: number, H: number, chess: boolean): string {
   const peer = [eyes(edge + 10, H * 0.36, 1.7, 1), eyes(W - edge - 10, H * 0.58, 1.7, 6), eyes(W * 0.5, H * 0.44, 1.2, 3, '#ff6a3d')].join('');
   return defs + `<rect class="bd-flash" style="${phase(17, 2)}" x="0" y="0" width="${W}" height="${H}" fill="#e6dcff"/>`
     + fog + ghost(W * 0.22, H * 0.55, 2.4, 19, 0) + ghost(W * 0.7, H * 0.3, 2, 23, 9) + ghost(W * 0.5, H * 0.8, 1.7, 27, 17)
+    + stoneDefs + (chess
+      ? `<g opacity=".7">${tomb(140, 480, 1.9, 0, -6)}${tomb(660, 340, 1.7, 1, 5)}${tomb(420, 575, 1.5, 2, 3)}${tomb(575, 480, 1.3, 0, 8)}${hand(260, 370, 1.7, 2)}${hand(730, 570, 1.5, 7)}</g>`
+      : `<g opacity=".7">${tomb(170, 462, 1.35, 0, -6)}${tomb(770, 462, 1.35, 1, 5)}${tomb(370, 662, 1.25, 2, 3)}${tomb(570, 462, 1.15, 1, -4)}${tomb(570, 862, 1.2, 0, 6)}${hand(370, 455, 1.3, 3)}${hand(170, 862, 1.3, 8)}</g>`)
     + peer + flyingBat(H * 0.4, W, 21, 4) + flyingBat(H * 0.7, W, 29, 15, 1.2)
     + `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#bd-vig)"/>`;
 }
@@ -130,23 +133,98 @@ function wintry(W: number, H: number, top: number): string {
     + icicles(0, W, top, 3, 34);
 }
 
+/** A tombstone standing on a dark mound (base at x, y). Kinds: rounded RIP stone, cross, leaning slab. */
+function tomb(x: number, y: number, s: number, kind: 0 | 1 | 2, tilt = 0): string {
+  const stone = kind === 0
+    ? `<path d="M-17 0 V-32 A17 17 0 0 1 17 -32 V0Z" fill="url(#bd-stone)" stroke="#1c1428" stroke-width="2"/><text y="-30" text-anchor="middle" font-size="10" font-weight="700" fill="#2a2138" font-family="Georgia, serif">RIP</text><path d="M-10 -18 H10 M-8 -12 H8" stroke="#2a2138" stroke-width="1.6" opacity=".7"/><path d="M6 -46 L2 -38 L7 -30 L3 -22" stroke="#1c1428" stroke-width="1.3" fill="none"/>`
+    : kind === 1
+      ? `<path d="M-4 0 V-30 H-15 V-38 H-4 V-50 H4 V-38 H15 V-30 H4 V0Z" fill="url(#bd-stone)" stroke="#1c1428" stroke-width="2"/>`
+      : `<path d="M-15 0 V-30 Q-15 -36 -9 -36 H9 Q15 -36 15 -30 V0Z" fill="url(#bd-stone)" stroke="#1c1428" stroke-width="2"/><path d="M-8 -26 H8 M-8 -20 H8 M-6 -14 H6" stroke="#2a2138" stroke-width="1.6" opacity=".7"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cy="1" rx="26" ry="6" fill="#120a1c"/><g transform="rotate(${tilt})">${stone}</g>`
+    + `<path d="M-14 0 q2 -6 4 0 q2 -7 4 0 M8 0 q2 -6 4 0 q1 -5 3 0" stroke="#3f5d2a" stroke-width="2" fill="none"/></g>`;
+}
+const stoneDefs = `<defs><linearGradient id="bd-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a93ab"/><stop offset="1" stop-color="#5a5270"/></linearGradient></defs>`;
+/** A skeleton hand reaching out of a grave now and then. */
+const hand = (x: number, y: number, s: number, off: number) => `<g transform="translate(${x} ${y}) scale(${s})"><g class="bd-hand" style="${phase(11, off)}">`
+  + `<path d="M-4 0 V-14 L-9 -24 M-4 -14 L-5 -28 M-1 -14 L0 -30 M2 -14 L4 -27 M4 -12 L10 -18 M-4 -14 H4" stroke="#e8e2d0" stroke-width="2.6" stroke-linecap="round" fill="none"/></g>`
+  + `<ellipse rx="12" ry="3.5" fill="#120a1c"/></g>`;
+
+/** A paper lantern hanging from (x, y) that swings in the breeze. */
+const swingLantern = (x: number, y: number, s: number, off: number) =>
+  `<g transform="translate(${x} ${y})"><g class="bd-swing" style="${phase(3.6, off)}"><g transform="scale(${s}) translate(0 26)">${lantern(0, 0, 1)}</g></g></g>`;
+/** A five-pointed star lantern (đèn ông sao) on a stick, bobbing as if a child carried it. */
+function starLantern(x: number, y: number, s: number, off: number): string {
+  const pts = Array.from({ length: 10 }, (_, i) => { const a = ((i * 36 - 90) * Math.PI) / 180, r = i % 2 ? 7 : 17; return `${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`; }).join(' ');
+  return `<g transform="translate(${x} ${y}) scale(${s})"><g class="bd-bob" style="${phase(2.8, off)}">`
+    + `<circle r="26" fill="url(#bd-warm)"/><path d="M0 4 L-16 34" stroke="#7a4b22" stroke-width="2.5" stroke-linecap="round"/>`
+    + `<polygon points="${pts}" fill="#e53935" stroke="#ffd54f" stroke-width="2" stroke-linejoin="round"/><circle r="3.4" fill="#ffd54f"/>`
+    + `<path d="M-6 16 l-4 10 M6 16 l4 10" stroke="#ffd54f" stroke-width="1.6"/></g></g>`;
+}
+/** A glowing sky lantern rising slowly and fading out. */
+const skyLantern = (x: number, y: number, rise: number, s: number, dur: number, off: number) =>
+  `<g transform="translate(${x} ${y})"><g class="bd-rise" style="${phase(dur, off)};--rise:${-rise}px"><g transform="scale(${s})">`
+  + `<circle r="22" fill="url(#bd-warm)"/><path d="M-9 -12 H9 L12 10 H-12Z" fill="#ffb74d" stroke="#ffe082" stroke-width="1.2"/><ellipse cy="10" rx="12" ry="2.5" fill="#ff8f00"/><circle cy="6" r="3" fill="#fff3c4"/></g></g></g>`;
+/** A firework that bursts, sparkles and fades, again and again. */
+function firework(x: number, y: number, r: number, color: string, dur: number, off: number): string {
+  const rays = Array.from({ length: 14 }, (_, i) => {
+    const a = (i * 2 * Math.PI) / 14, c = Math.cos(a), sn = Math.sin(a);
+    return `M${(c * r * 0.35).toFixed(1)} ${(sn * r * 0.35).toFixed(1)} L${(c * r).toFixed(1)} ${(sn * r).toFixed(1)}`;
+  }).join('');
+  const tips = Array.from({ length: 14 }, (_, i) => { const a = (i * 2 * Math.PI) / 14 + 0.22; return `<circle cx="${(Math.cos(a) * r * 1.1).toFixed(1)}" cy="${(Math.sin(a) * r * 1.1).toFixed(1)}" r="2.6"/>`; }).join('');
+  return `<g transform="translate(${x} ${y})"><g class="bd-burst" style="${phase(dur, off)}"><path d="${rays}" stroke="${color}" stroke-width="3" stroke-linecap="round"/><g fill="#fff6c8">${tips}</g><circle r="${r * 0.18}" fill="#fff6c8"/></g></g>`;
+}
+/** A string of red firecrackers (pháo) hanging from (x, y). */
+function firecrackers(x: number, y: number, n: number, off: number): string {
+  let c = `<path d="M0 0 V${n * 15 + 6}" stroke="#7a4b22" stroke-width="2"/>`;
+  for (let i = 0; i < n; i++) {
+    const cy = 8 + i * 15, side = i % 2 ? 1 : -1;
+    c += `<g transform="translate(${side * 5} ${cy}) rotate(${side * 28})"><rect x="-4" y="-7" width="8" height="14" rx="1.5" fill="#d32f2f" stroke="#8e1414" stroke-width="1"/><rect x="-4" y="-2" width="8" height="3" fill="#ffd54f"/></g>`;
+  }
+  return `<g transform="translate(${x} ${y})"><g class="bd-swing slow" style="${phase(4.4, off)}">${c}<path d="M0 ${n * 15 + 6} l-5 10 M0 ${n * 15 + 6} l5 10 M0 ${n * 15 + 6} v12" stroke="#ffd54f" stroke-width="2"/></g></g>`;
+}
+const warmDefs = `<defs><radialGradient id="bd-warm"><stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".25"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient></defs>`;
+/** A shooting star streaking across now and then. */
+const shootingStar = (x: number, y: number, dur: number, off: number) =>
+  `<g transform="translate(${x} ${y}) rotate(25)"><g class="bd-shoot" style="${phase(dur, off)}"><path d="M0 0 H-90" stroke="url(#bd-tail)" stroke-width="3" stroke-linecap="round"/><circle r="3.4" fill="#fffbe6"/></g></g>`;
+const tailDefs = `<defs><linearGradient id="bd-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fffbe6" stop-opacity="0"/><stop offset="1" stop-color="#fffbe6"/></linearGradient></defs>`;
+/** A cloud drifting slowly left and right (e.g. across the moon). */
+const driftCloud = (x: number, y: number, s: number, dur: number, off: number, c = '#c9d3f0') =>
+  `<g transform="translate(${x} ${y}) scale(${s})"><g class="bd-drift" style="${phase(dur, off)}" fill="${c}" opacity=".55"><ellipse rx="34" ry="11"/><ellipse cx="-14" cy="-7" rx="16" ry="11"/><ellipse cx="10" cy="-10" rx="18" ry="13"/></g></g>`;
+
 /**
- * Weather drawn ABOVE the pieces (it never takes clicks): Christmas snowfall over the
- * whole board and frame. x0, y0, w, h is the visible area.
+ * Weather drawn ABOVE the pieces (it never takes clicks): Christmas snow, Tết apricot and
+ * peach petals, Mid-Autumn fireflies. x0, y0, w, h is the visible area.
  */
 export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h: number): string {
-  if (theme !== 'christmas') return '';
-  const n = Math.round((w * h) / 7000);
-  const flakes = scatter(n, w, 1, 41).map(([x], i) => {
-    const near = i % 5 === 0, r = near ? 7 + (i % 3) * 1.2 : 3 + (i % 4) * 0.9;
-    const dur = near ? 7 + (i % 4) : 11 + (i % 7) * 1.6;
-    const body = near && i % 2
-      ? `<g transform="scale(${(r / 6).toFixed(2)})">${snowflake(0, 0, 0.95, 1, '#7ea7c6')}${snowflake(0, 0, 0.9, 1)}</g>`
-      : `<circle r="${r.toFixed(1)}" fill="#fff" stroke="#7ea7c6" stroke-opacity=".8" stroke-width="1"/>`;
-    return `<g transform="translate(${(x0 + x).toFixed(1)} ${y0 - 12})"><g class="bd-fall" style="${phase(dur, i * 2.7)};--fy:${h + 24}px">`
-      + `<g class="bd-sway" style="${phase(3 + (i % 4), i)}" opacity="${near ? 0.8 : 0.92}">${body}</g></g></g>`;
-  }).join('');
-  return `<g class="bd-weather">${flakes}</g>`;
+  if (theme === 'christmas') {
+    const n = Math.round((w * h) / 7000);
+    const flakes = scatter(n, w, 1, 41).map(([x], i) => {
+      const near = i % 5 === 0, r = near ? 7 + (i % 3) * 1.2 : 3 + (i % 4) * 0.9;
+      const dur = near ? 7 + (i % 4) : 11 + (i % 7) * 1.6;
+      const body = near && i % 2
+        ? `<g transform="scale(${(r / 6).toFixed(2)})">${snowflake(0, 0, 0.95, 1, '#7ea7c6')}${snowflake(0, 0, 0.9, 1)}</g>`
+        : `<circle r="${r.toFixed(1)}" fill="#fff" stroke="#7ea7c6" stroke-opacity=".8" stroke-width="1"/>`;
+      return `<g transform="translate(${(x0 + x).toFixed(1)} ${y0 - 12})"><g class="bd-fall" style="${phase(dur, i * 2.7)};--fy:${h + 24}px">`
+        + `<g class="bd-sway" style="${phase(3 + (i % 4), i)}" opacity="${near ? 0.8 : 0.92}">${body}</g></g></g>`;
+    }).join('');
+    return `<g class="bd-weather">${flakes}</g>`;
+  }
+  if (theme === 'tet') {
+    const n = Math.round((w * h) / 26000);
+    const petals = scatter(n, w, 1, 53).map(([x], i) => {
+      const [fill, edge] = i % 2 ? ['#ffd23f', '#e09b00'] : ['#ffb3cf', '#e0628f'];
+      const k = 0.8 + (i % 3) * 0.3;
+      return `<g transform="translate(${(x0 + x).toFixed(1)} ${y0 - 12})"><g class="bd-fall" style="${phase(13 + (i % 6) * 1.8, i * 3.1)};--fy:${h + 24}px">`
+        + `<g class="bd-sway" style="${phase(3.4 + (i % 3), i)}"><g class="bd-spin" style="${phase(4 + (i % 4), i)}"><path transform="scale(${k})" d="M0 -9 C7 -9 9 -2 6 4 C4 8 1 9 0 7 C-1 9 -4 8 -6 4 C-9 -2 -7 -9 0 -9Z" fill="${fill}" stroke="${edge}" stroke-width="1"/></g></g></g></g>`;
+    }).join('');
+    return `<g class="bd-weather">${petals}</g>`;
+  }
+  if (theme === 'midautumn') {
+    const flies = scatter(Math.round((w * h) / 30000), w, h, 61).map(([x, y], i) =>
+      `<g transform="translate(${(x0 + x).toFixed(1)} ${(y0 + y).toFixed(1)})"><g class="bd-firefly" style="${phase(7 + (i % 5) * 1.5, i * 2.3)}"><circle r="11" fill="#ffe680" opacity=".3"/><circle r="3.6" fill="#fff6c8" stroke="#ffd24a" stroke-width="1"/></g></g>`).join('');
+    return `<g class="bd-weather">${flies}</g>`;
+  }
+  return '';
 }
 
 /** Pseudo-random but fixed scatter, so decorations do not jump between renders. */
@@ -172,9 +250,15 @@ export function boardDeco(theme: Theme, chess: boolean): string {
       case 'christmas':
         return g(wintry(800, 800, 0) + snowDrift(0, 800, 792, 0.85));
       case 'tet':
-        return g(`<g opacity=".5">${branch(0, 30, 1, 1, '#ffd23f', '#e65100')}${branch(800, 770, -1, -1, '#ff9ec0', '#c2185b')}</g>`);
+        return g(`<g opacity=".5">${branch(0, 30, 1, 1, '#ffd23f', '#e65100')}${branch(800, 770, -1, -1, '#ff9ec0', '#c2185b')}</g>`
+          + `<g opacity=".75">${firework(250, 330, 80, '#ffd54f', 5.2, 0)}${firework(590, 470, 60, '#ff5252', 6.4, 3)}${firework(420, 260, 50, '#ff80ab', 7.1, 8)}${firework(160, 560, 46, '#ffab40', 5.8, 13)}</g>`
+          + stars(scatter(22, 800, 400, 31).map(([x, y], i) => [x, 200 + y, 1.6 + (i % 3) * 0.8] as [number, number, number]), '#ffd54f'));
       case 'midautumn':
-        return g(moon(760, 40, 70, 0.38) + stars(scatter(30, 800, 800, 3).map(([x, y], i) => [x, y, 1.6 + (i % 3) * 0.7] as [number, number, number])) + rabbit(735, 50, 2.2));
+        return g(warmDefs + tailDefs + `<g class="bd-glow" style="${phase(5)}">${moon(760, 40, 70, 0.42)}</g>` + stars(scatter(30, 800, 800, 3).map(([x, y], i) => [x, y, 1.6 + (i % 3) * 0.7] as [number, number, number])) + rabbit(735, 50, 2.2)
+          + driftCloud(700, 90, 1.6, 23, 0) + driftCloud(140, 300, 1.2, 29, 9, '#9fb0e0')
+          + shootingStar(200, 120, 9, 0) + shootingStar(520, 380, 13, 6)
+          + `<g opacity=".8">${skyLantern(180, 640, 420, 1.9, 18, 0)}${skyLantern(460, 700, 480, 1.6, 22, 7)}${skyLantern(640, 620, 380, 1.7, 20, 14)}</g>`
+          + `<g opacity=".7">${starLantern(110, 420, 2.1, 0)}${starLantern(690, 470, 1.9, 2)}</g>`);
     }
   }
   const W = 940, H = 1040, riverY = 520;
@@ -189,11 +273,17 @@ export function boardDeco(theme: Theme, chess: boolean): string {
         + tree(120, riverY - 2, 1.4) + tree(820, riverY - 2, 1.4) + snowflake(470, riverY, 2.4, 0.6, '#7fa9c6'));
     case 'tet':
       return g(branch(0, 8, 1, 1, '#ffd23f', '#e65100', 200) + branch(W, H - 8, -1, -1, '#ff9ec0', '#c2185b', 200)
-        + envelope(128, riverY, 1.3) + envelope(812, riverY, 1.3) + lantern(470, riverY, 1.2)
-        + lantern(30, 300, 0.9) + lantern(910, 740, 0.9));
+        + `<g opacity=".75">${firework(270, 430, 66, '#ffd54f', 5.2, 0)}${firework(680, 610, 50, '#ff5252', 6.4, 3)}${firework(470, 640, 40, '#ff80ab', 7.1, 8)}${firework(200, 620, 40, '#ffab40', 5.8, 13)}</g>`
+        + stars(scatter(18, W, 300, 31).map(([x, y], i) => [x, 380 + y, 1.6 + (i % 3) * 0.8] as [number, number, number]), '#ffd54f')
+        + envelope(128, riverY, 1.3) + envelope(812, riverY, 1.3) + swingLantern(470, riverY - 32, 1.2, 0)
+        + swingLantern(30, 270, 0.9, 1) + swingLantern(910, 710, 0.9, 2));
     case 'midautumn':
       return g(stars(scatter(40, W, H, 5).filter(([x, y]) => x < 62 || x > 878 || y < 62 || y > 978 || (y > 478 && y < 562)).map(([x, y], i) => [x, y, 1.8 + (i % 3) * 0.8] as [number, number, number]))
-        + moon(470, riverY, 32) + rabbit(470, riverY + 8, 1.4) + lantern(120, riverY, 1.1) + lantern(820, riverY, 1.1));
+        + warmDefs + tailDefs + `<g class="bd-glow" style="${phase(5)}">${moon(470, riverY, 32)}</g>` + rabbit(470, riverY + 8, 1.4)
+        + driftCloud(470, riverY - 6, 1, 19, 0) + shootingStar(260, 140, 9, 0) + shootingStar(640, 860, 13, 6)
+        + swingLantern(120, riverY - 30, 1.1, 0) + swingLantern(820, riverY - 30, 1.1, 1)
+        + `<g opacity=".75">${skyLantern(170, 900, 380, 1.6, 18, 0)}${skyLantern(770, 420, 330, 1.5, 22, 7)}${skyLantern(570, 940, 420, 1.5, 20, 14)}</g>`
+        + `<g opacity=".7">${starLantern(170, 640, 1.5, 0)}${starLantern(770, 640, 1.5, 2)}</g>`);
   }
 }
 
@@ -240,7 +330,8 @@ export function boardFrame(theme: Theme, chess: boolean, w: number, h: number): 
         + `<path d="M${-F / 2} ${-F / 2}H${w + F / 2}V${h + F / 2}H${-F / 2}Z" fill="none" stroke="#7cff6b" stroke-width="1.6" stroke-dasharray="2 9" opacity=".6"/>`
         + `<path d="${drips}" fill="#7cff6b" opacity=".75"/>`
         + [[-F / 2, -F / 2], [w + F / 2, -F / 2], [-F / 2, h + F / 2], [w + F / 2, h + F / 2]].map(([x, y]) => pumpkin(x, y, 1.15, true)).join('')
-        + batShape(w * 0.3, -F / 2, 1.4, '#cdb8ee', 0.8) + batShape(w * 0.72, h + F / 2, 1.3, '#cdb8ee', 0.8)
+        + batShape(w * 0.3, -F / 2, 1.4, '#cdb8ee', 0.8) + batShape(w * 0.5, -F / 2, 1.1, '#cdb8ee', 0.7)
+        + stoneDefs + tomb(w * 0.22, h + F - 7, 0.78, 0, -5) + tomb(w * 0.4, h + F - 7, 0.7, 1, 4) + tomb(w * 0.6, h + F - 7, 0.75, 2, -3) + tomb(w * 0.84, h + F - 7, 0.7, 0, 6)
         + eyes(-F / 2, h * 0.3, 0.9, 2) + eyes(w + F / 2, h * 0.7, 0.9, 7, '#ff6a3d') + eyes(w * 0.55, h + F / 2, 0.8, 12)
         + eyes(-F / 2, h * 0.78, 0.8, 5, '#ff6a3d') + eyes(w * 0.15, -F / 2, 0.8, 9)
         + `</g>`;
@@ -264,7 +355,8 @@ export function boardFrame(theme: Theme, chess: boolean, w: number, h: number): 
         + `<path d="${ring(x0, y0, x1, y1, ix0, iy0, ix1, iy1, outer)}" fill-rule="evenodd" fill="url(#bd-lacquer)" stroke="#e8b739" stroke-width="3"/>`
         + `<rect x="${-F * 0.62}" y="${-F * 0.62}" width="${w + F * 1.24}" height="${h + F * 1.24}" fill="none" stroke="#ffd54f" stroke-width="2"/><rect x="-6" y="-6" width="${w + 12}" height="${h + 12}" fill="none" stroke="#ffd54f" stroke-width="2"/>`
         + curl(-F + 8, -F + 8, 1, 1, '#ffd54f') + curl(w + F - 8, -F + 8, -1, 1, '#ffd54f') + curl(-F + 8, h + F - 8, 1, -1, '#ffd54f') + curl(w + F - 8, h + F - 8, -1, -1, '#ffd54f')
-        + `<g transform="translate(${w / 2} ${-F / 2})"><circle r="${F * 0.62}" fill="#ffd54f" stroke="#b8860b" stroke-width="2"/><text y="2" text-anchor="middle" dominant-baseline="central" font-size="${F * 0.8}" font-weight="700" fill="#b3170c" font-family="'Noto Serif SC', 'Songti SC', serif">福</text></g>`
+        + firecrackers(-F / 2, -F + 30, chess ? 11 : 13, 0) + firecrackers(w + F / 2, -F + 30, chess ? 11 : 13, 2)
+        + `<g transform="translate(${w / 2} ${-F / 2})"><circle class="bd-glow" style="${phase(3)}" r="${F * 0.95}" fill="#ffd54f" opacity=".35"/><circle r="${F * 0.62}" fill="#ffd54f" stroke="#b8860b" stroke-width="2"/><text y="2" text-anchor="middle" dominant-baseline="central" font-size="${F * 0.8}" font-weight="700" fill="#b3170c" font-family="'Noto Serif SC', 'Songti SC', serif">福</text></g>`
         + `<g transform="translate(${w / 2} ${h + F / 2})"><circle r="${F * 0.42}" fill="#ffd54f" stroke="#b8860b" stroke-width="2"/><rect x="-6" y="-6" width="12" height="12" fill="#b3170c"/></g>`
         + `</g>`;
     }
@@ -277,7 +369,7 @@ export function boardFrame(theme: Theme, chess: boolean, w: number, h: number): 
         + stars(scatter(26, w + 2 * F, F - 10, 9).map(([x, y], i) => [x0 + x, y0 + 5 + y, 1.4 + (i % 3) * 0.6] as [number, number, number]))
         + stars(scatter(26, w + 2 * F, F - 10, 13).map(([x, y], i) => [x0 + x, h + 5 + y, 1.4 + (i % 3) * 0.6] as [number, number, number]))
         + cloud(-F / 2, -F / 2, 1) + cloud(w + F / 2, -F / 2, 1) + moon(w / 2, -F / 2, F * 0.36)
-        + lantern(-F / 2, h + F / 2 - 4, 0.85) + lantern(w + F / 2, h + F / 2 - 4, 0.85)
+        + swingLantern(-F / 2, h + F / 2 - 26, 0.85, 0) + swingLantern(w + F / 2, h + F / 2 - 26, 0.85, 1)
         + `</g>`;
     }
   }

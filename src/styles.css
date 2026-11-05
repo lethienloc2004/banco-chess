@@ -986,7 +986,34 @@ svg.board[data-theme] .xq-river { opacity: .9; }
 @keyframes bdFall { from { transform: translateY(0); } to { transform: translateY(var(--fy)); } }
 .bd-sway { animation: bdSway ease-in-out infinite alternate; }
 @keyframes bdSway { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
+/* Halloween: a skeleton hand reaches out of the grave. */
+.bd-hand { animation: bdHand ease-in-out infinite; }
+@keyframes bdHand { 0%, 55%, 100% { transform: translateY(14px) scaleY(.2); opacity: 0; } 65%, 85% { transform: translateY(0) scaleY(1); opacity: 1; } 75% { transform: translateY(0) rotate(-6deg); } }
+/* Tết: fireworks, swinging lanterns and firecrackers, falling petals. */
+.bd-burst { animation: bdBurst ease-out infinite; opacity: 0; }
+@keyframes bdBurst { 0% { transform: scale(.1); opacity: 0; } 4% { opacity: 1; } 30% { transform: scale(1); opacity: .9; } 45% { transform: scale(1.08) translateY(6px); opacity: 0; } 100% { opacity: 0; } }
+.bd-swing { animation: bdSwing ease-in-out infinite alternate; }
+.bd-swing.slow { animation-name: bdSwingS; }
+@keyframes bdSwing { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+@keyframes bdSwingS { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+.bd-spin { animation: bdSpin linear infinite; }
+@keyframes bdSpin { to { transform: rotate(360deg); } }
+.bd-glow { animation: bdGlow ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes bdGlow { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+/* Mid-Autumn: lanterns rise, star lanterns bob, clouds drift, shooting stars, fireflies. */
+.bd-rise { animation: bdRise linear infinite; }
+@keyframes bdRise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 50% { transform: translate(18px, calc(var(--rise) * .5)); } 80% { opacity: .8; } 100% { transform: translate(-6px, var(--rise)); opacity: 0; } }
+.bd-bob { animation: bdBob ease-in-out infinite alternate; }
+@keyframes bdBob { from { transform: translateY(-5px) rotate(-5deg); } to { transform: translateY(5px) rotate(5deg); } }
+.bd-drift { animation: bdDrift ease-in-out infinite alternate; }
+@keyframes bdDrift { from { transform: translateX(-60px); } to { transform: translateX(60px); } }
+.bd-shoot { animation: bdShoot linear infinite; opacity: 0; }
+@keyframes bdShoot { 0%, 82% { transform: translateX(0); opacity: 0; } 84% { opacity: 1; } 94% { transform: translateX(320px); opacity: 0; } 100% { opacity: 0; } }
+.bd-firefly { animation: bdFirefly ease-in-out infinite; }
+@keyframes bdFirefly { 0%, 100% { transform: translate(0, 0); opacity: .2; } 25% { transform: translate(22px, -16px); opacity: 1; } 50% { transform: translate(-8px, -30px); opacity: .4; } 75% { transform: translate(-24px, -8px); opacity: .95; } }
 @media (prefers-reduced-motion: reduce) {
+  .bd-swing, .bd-bob, .bd-drift, .bd-glow, .bd-spin { animation: none; }
+  .bd-hand, .bd-burst, .bd-rise, .bd-shoot { display: none; }
   .bd-star, .bd-fog, .bd-eyes, .bd-flicker, .bd-flap, .bd-sway { animation: none; }
   .bd-ghost, .bd-batfly, .bd-flash, .bd-weather { display: none; }
   .bd-eyes { opacity: .8; }
