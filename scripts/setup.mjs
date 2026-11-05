@@ -49,7 +49,9 @@ function wranglerInteractive(argv) {
   const r = spawnSync(cmd, rest, { shell, stdio: 'inherit' });
   if (r.status !== 0) {
     console.error(c.r(`\n✗ Lệnh thất bại: npx wrangler ${argv.join(' ')}`));
-    console.error(c.y('  Tài khoản mới? Mở https://dash.cloudflare.com → Workers & Pages, chọn tên miền workers.dev rồi chạy lại "npm run setup".'));
+    console.error(c.y('  • Lỗi đăng nhập / "authentication error": chạy "npx wrangler logout", "npx wrangler login" rồi chạy lại.'));
+    console.error(c.y('  • Báo cần "workers.dev subdomain": chạy lại và trả lời Y khi được hỏi.'));
+    console.error(c.y('  • Lỗi "internal server error" của Cloudflare: chờ vài phút rồi chạy lại.'));
     process.exit(r.status ?? 1);
   }
 }
