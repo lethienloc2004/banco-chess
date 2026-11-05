@@ -60,7 +60,11 @@ export function openLogin(onDone?: () => void, reason?: string) {
         <p class="login-err" role="alert" hidden></p>
         <button class="btn primary" type="submit">${esc(L.sendCode)}</button>
         <p class="muted small">${esc(L.noPassword)}</p>
-      </form>` : ''}`;
+      </form>` : ''}
+      ${net.config?.dev ? `<button type="button" class="btn ghost" data-act="dev-admin">🛠 ${esc(s.devAdmin)}</button>` : ''}`;
+    body.querySelector<HTMLButtonElement>('[data-act="dev-admin"]')?.addEventListener('click', async () => {
+      try { await net.loginDevAdmin(); done(); } catch { toast(s.netError); }
+    });
     if (google) {
       void renderGoogleButton(body.querySelector('.gbtn')!, async credential => {
         try { await net.loginGoogle(credential); done(); } catch { toast(s.netError); }

@@ -70,6 +70,7 @@ app.innerHTML = `
     </a>
     <div class="top-actions">
       <button class="btn primary login-btn" id="login-btn" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span></button>
+      <button class="icon-btn account-btn" id="account-btn" hidden><span class="avatar sm"></span></button>
       <a class="icon-btn" id="admin-btn" href="#/admin" hidden>${ICON_SHIELD}</a>
       <button class="icon-btn" id="sound-btn"></button>
       <button class="icon-btn" id="settings-btn">
@@ -129,6 +130,11 @@ function applyGlobal() {
   loginBtn.querySelector('span')!.textContent = s.login.headerBtn;
   loginBtn.setAttribute('aria-label', s.login.title);
   loginBtn.title = s.login.title;
+  const accountBtn = $<HTMLButtonElement>('#account-btn');
+  accountBtn.hidden = !(net.available && net.member);
+  accountBtn.querySelector('.avatar')!.textContent = [...(net.me?.name ?? '?')][0]?.toUpperCase() ?? '?';
+  accountBtn.title = net.me ? `${s.account}: ${net.me.name}` : s.account;
+  accountBtn.setAttribute('aria-label', accountBtn.title);
   const adminBtn = $('#admin-btn');
   adminBtn.hidden = net.me?.role !== 'admin';
   adminBtn.title = s.adminPanel;
@@ -359,6 +365,15 @@ function accountGroup(close: () => void): HTMLElement {
   return g;
 }
 
+/** Account menu (header avatar): ratings, profile, name, admin, sign out. Signing in lives outside the settings. */
+function openAccount() {
+  const s = t();
+  const body = document.createElement('div');
+  body.className = 'settings-body';
+  const close = openDialog({ title: s.account, body, className: 'settings-dlg account-dlg', actions: [{ label: s.close, kind: 'primary' }] });
+  body.append(accountGroup(close));
+}
+
 function openSettings() {
   const s = t();
   const body = document.createElement('div');
@@ -382,7 +397,6 @@ function openSettings() {
   const C = s.colorLabels;
   const close = openDialog({ title: s.settings, body, className: 'settings-dlg', actions: [{ label: s.close, kind: 'primary' }] });
   body.append(
-    accountGroup(close),
     group(s.general,
       row(s.language, seg([['vi', 'Tiếng Việt'], ['en', 'English']], settings.lang, v => {
         settings.lang = v; settingsChanged(true);
@@ -413,6 +427,7 @@ $('.brand').onclick = e => { e.preventDefault(); nav.go('#/', 'back'); };
 $('#admin-btn').onclick = e => { e.preventDefault(); nav.go('#/admin'); };
 $('#settings-btn').onclick = openSettings;
 $<HTMLButtonElement>('#login-btn').onclick = () => openLogin();
+$<HTMLButtonElement>('#account-btn').onclick = openAccount;
 net.onChange(() => applyGlobal());
 window.addEventListener(ACCOUNT_EVENT, () => applyGlobal());
 $('#sound-btn').onclick = () => {

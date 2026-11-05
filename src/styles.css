@@ -842,3 +842,7 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6
 .gbtn { min-height: 44px; display: flex; justify-content: center; }
 .lock-note { font-size: 13px; }
 .net-card .btn.primary[data-act="login"] { margin-top: 8px; width: 100%; }
+/* Header account button: the signed-in player's initial */
+.account-btn { padding: 0; }
+.avatar.sm { width: 30px; height: 30px; font-size: 14px; }
+.account-dlg .set-group.account > h3 { display: none; }
