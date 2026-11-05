@@ -49,6 +49,16 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Thuật toán: PVS, aspiration window, bảng chuyển vị, null-move pruning, late move reductions, check extension, quiescence search.
   - Hàm đánh giá: cấu trúc tốt, tốt thông, cặp Tượng, Xe cột mở, độ linh hoạt của quân, an toàn Vua/Tướng.
   - **Đo thực tế:** đấu 20 ván với bot đời trước, cùng 150 ms mỗi nước. Cờ vua thắng 17, hòa 2, thua 1; cờ tướng thắng 16, hòa 4, không thua. Mạnh hơn khoảng **+380 Elo** ở cả hai.
+  - **Elo cờ vua ước lượng**: cho từng mức đấu với Stockfish 19 ở chế độ giới hạn sức mạnh (`UCI_Elo`), mỗi bên cùng thời gian mỗi nước.
+
+    | Mức | Thời gian/nước | Kết quả | Elo ước lượng |
+    |---|---|---|---|
+    | Dễ | 0,25 s | +1 =1 −10 trước Stockfish 1320 | ~1000 (dưới mức thấp nhất của Stockfish, rất không chắc) |
+    | Vừa | 0,7 s | +8 =1 −3 trước Stockfish 1900 | ~2050 |
+    | Khó | 2 s | +6 =1 −1 trước Stockfish 2200 | ~2450 |
+    | Rất khó | 5 s | chưa đo trực tiếp | cao hơn Khó, khoảng +50 đến +100 |
+
+    Cách hiểu: mỗi mức chỉ đấu 8–12 ván nên sai số còn lớn (±150–250 Elo). Stockfish khi bị giới hạn sức mạnh chơi yếu hơn mức ghi danh ở thời gian ngắn, nên các con số có thể **cao hơn** Elo thật trên Lichess/Chess.com. Cờ tướng và cờ úp chưa có thang Elo chuẩn để so.
 - 🎬 **Máy đấu máy để xem và học**:
   - Chọn mức độ cho từng bên và tốc độ (chậm / vừa / nhanh), có tạm dừng và đi từng nước.
   - **Thanh đánh giá** cho biết bên nào hơn và hơn bao nhiêu, hoặc "chiếu hết sau N nước".
@@ -311,6 +321,7 @@ friend on the same device, or online. The whole interface is available in Vietna
   cannot possibly checkmate).
 - **Stronger engine** (PVS, null move, LMR, aspiration windows, richer evaluation) with four levels up to Expert:
   +17 =2 −1 in chess, +16 =4 −0 in xiangqi and +12 =7 −1 in jieqi against the previous version (+215 to +380 Elo).
+  Rough chess Elo against limited-strength Stockfish 19: Easy ~1000, Medium ~2050, Hard ~2450 (small samples, likely optimistic).
 - **Bot vs bot** watch mode with an evaluation bar, expected line and per-move quality marks from a fixed referee engine.
 - **126 puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions, all proven unique forced mates.
 - **Sounds per piece**, synthesized with Web Audio: pawn tick, rook thud, queen chime, king bell, cannon pop / boom,
