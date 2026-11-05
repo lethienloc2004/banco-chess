@@ -115,6 +115,37 @@ const end = (await r1.wait(m => m.t === 'state' && m.state.status === 'over')).s
 ok(end.result.reason === 'checkmate' && end.result.winner === 1, 'checkmate detected by server');
 ok(end.ratingChange && end.ratingChange[1] > 0 && end.ratingChange[0] < 0, 'ratings updated ' + JSON.stringify(end.ratingChange));
 
+// --- Per-game ratings and leaderboard
+const blackTok = s1.you === 1 ? g1.token : g2.token, whiteTok = s1.you === 0 ? g1.token : g2.token;
+const blackId = s1.you === 1 ? g1.user.id : g2.user.id, whiteId = s1.you === 0 ? g1.user.id : g2.user.id;
+let meB = (await api('/me', { token: blackTok })).data.user;
+ok(meB.ratings.chess > 1200 && meB.ratings.xiangqi === 1200 && meB.ratings.jieqi === 1200, 'only the chess rating moved ' + JSON.stringify(meB.ratings));
+let lb = (await api('/leaderboard?kind=chess', { token: blackTok })).data;
+ok(lb.me === null && lb.myGames === 1 && !lb.entries.some(e => e.id === blackId), 'not on the board before 5 rated games');
+ok((await api('/leaderboard?kind=go')).status === 400, 'unknown game rejected');
+// Four more rated chess games: White resigns each time.
+for (let i = 0; i < 4; i++) {
+  l1.send({ t: 'queue', kind: 'chess' }); await l1.wait(m => m.t === 'queued');
+  l2.send({ t: 'queue', kind: 'chess' });
+  const mm = await l1.wait(m => m.t === 'matched'); await l2.wait(m => m.t === 'matched');
+  const wsW = await sock(`/rooms/${mm.room}/ws`, whiteTok), wsB = await sock(`/rooms/${mm.room}/ws`, blackTok);
+  await wsW.wait(m => m.t === 'state'); await wsB.wait(m => m.t === 'state');
+  wsW.send({ t: 'resign' });
+  await wsB.wait(m => m.t === 'state' && m.state.status === 'over');
+  wsW.ws.close(); wsB.ws.close();
+}
+lb = (await api('/leaderboard?kind=chess', { token: blackTok })).data;
+const rb = lb.entries.find(e => e.id === blackId), rw = lb.entries.find(e => e.id === whiteId);
+ok(rb && rw && rb.rank < rw.rank && rb.games === 5 && rb.wins === 5 && rw.wins === 0, `both ranked after 5 games: #${rb?.rank} ${rb?.rating}, #${rw?.rank} ${rw?.rating}`);
+ok(lb.me && lb.me.id === blackId && lb.me.rank === rb.rank && lb.total >= 2, 'caller row and total returned');
+ok((await api('/leaderboard?kind=xiangqi')).data.entries.every(e => e.id !== blackId), 'xiangqi board unaffected');
+const anon = (await api('/leaderboard?kind=chess')).data;
+ok(anon.me === null && anon.entries.length >= 2, 'leaderboard readable without signing in');
+const prof = (await api('/players/' + blackId)).data.profile;
+ok(prof.stats.chess.games === 5 && prof.stats.chess.rank === rb.rank && prof.stats.xiangqi.rank === null && prof.recent.length >= 5, 'profile: stats, rank and recent games');
+ok(prof.recent[0].opponent.id === whiteId && prof.recent[0].winner === prof.recent[0].side && !('email' in prof), 'profile: results from the player\'s side, no email');
+ok((await api('/players/u_nobody')).status === 404, 'unknown profile is 404');
+
 // --- Reports & admin
 const loserId = s1.you === 0 ? g1.user.id : g2.user.id;
 const winnerTok = s1.you === 0 ? g2.token : g1.token;
@@ -123,6 +154,12 @@ ok((await api('/admin/stats', { token: g1.token })).status === 403, 'non-admin b
 const adm = (await api('/auth/dev-admin', { method: 'POST' })).data;
 const stats = (await api('/admin/stats', { token: adm.token })).data;
 ok(stats.users >= 2 && stats.openReports >= 1 && stats.online >= 2, 'admin stats ' + JSON.stringify({ users: stats.users, online: stats.online, reports: stats.openReports, today: stats.gamesToday }));
+// Admin sets one game's rating only
+await api(`/admin/users/${whiteId}/action`, { token: adm.token, method: 'POST', body: { action: 'rating', kind: 'xiangqi', rating: 1555 } });
+const meW = (await api('/me', { token: whiteTok })).data.user;
+ok(meW.ratings.xiangqi === 1555 && meW.ratings.chess < 1200, 'admin set the xiangqi rating only ' + JSON.stringify(meW.ratings));
+const adminList = (await api('/admin/users?q=' + whiteId, { token: adm.token })).data.users;
+ok(adminList[0]?.ratings?.xiangqi === 1555, 'admin user list shows ratings per game');
 const games = (await api('/admin/games', { token: adm.token })).data.games;
 ok(games.length >= 3, 'admin sees games: ' + games.map(g => `${g.kind}:${g.status}:${g.reason ?? '-'}`).join(', '));
 const detail = (await api('/admin/games/' + games.find(g => g.kind === 'jieqi').id, { token: adm.token })).data.game;
@@ -145,6 +182,7 @@ const kickedSock = s1.you === 0 ? l1 : l2;
 ok((await kickedSock.wait(m => m.t === 'kicked')).t === 'kicked', 'banned user kicked from lobby');
 ok((await api('/rooms', { token: loserTok, method: 'POST', body: { kind: 'chess', side: 0, clock: 'none' } })).status === 403, 'banned user cannot create rooms');
 ok((await api('/me', { token: loserTok })).data.banned?.reason === 'test', '/me reports ban');
+ok(!(await api('/leaderboard?kind=chess')).data.entries.some(e => e.id === loserId), 'banned player hidden from the leaderboard');
 await api(`/admin/users/${loserId}/action`, { token: adm.token, method: 'POST', body: { action: 'unban' } });
 ok((await api('/admin/audit', { token: adm.token })).data.audit.length >= 5, 'audit log recorded');
 process.exit();

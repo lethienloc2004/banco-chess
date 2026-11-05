@@ -4,13 +4,13 @@
  */
 import { DurableObject } from 'cloudflare:workers';
 import type { GameKind } from '../src/engine/types';
-import { RANKED_CLOCK, type Announcement, type LobbyClientMsg, type LobbyServerMsg, type LobbyStats, type Seat } from '../src/shared/protocol';
+import { DEFAULT_RATING, RANKED_CLOCK, type Announcement, type LobbyClientMsg, type LobbyServerMsg, type LobbyStats, type Player, type Seat } from '../src/shared/protocol';
 import { roomId } from './auth';
-import { currentAnnouncement } from './db';
+import { currentAnnouncement, ratingsIn } from './db';
 import type { Env } from './env';
 import type { InitBody } from './room';
 
-interface Attachment extends Seat { queue: GameKind | null; since: number }
+interface Attachment extends Player { queue: GameKind | null; since: number }
 
 const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 
@@ -18,7 +18,7 @@ export class Lobby extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/ws') {
-      const user = JSON.parse(decodeURIComponent(request.headers.get('X-User') ?? 'null')) as Seat | null;
+      const user = JSON.parse(decodeURIComponent(request.headers.get('X-User') ?? 'null')) as Player | null;
       if (!user) return new Response('unauthorized', { status: 401 });
       const pair = new WebSocketPair();
       const [client, server] = [pair[0], pair[1]];
@@ -99,12 +99,15 @@ export class Lobby extends DurableObject<Env> {
       const first = waiting[0];
       const others = waiting.filter(x => x.a.id !== first.a.id);
       if (!others.length) return;
-      others.sort((x, y) => Math.abs(x.a.rating - first.a.rating) - Math.abs(y.a.rating - first.a.rating));
+      const r = (a: Attachment) => a.ratings?.[kind] ?? DEFAULT_RATING;
+      others.sort((x, y) => Math.abs(r(x.a) - r(first.a)) - Math.abs(r(y.a) - r(first.a)));
       const second = others[0];
       const id = roomId();
       const white = Math.random() < 0.5 ? first : second;
       const black = white === first ? second : first;
-      const seat = (a: Attachment): Seat => ({ id: a.id, name: a.name, rating: a.rating });
+      // Ratings change after every game while the lobby socket stays open: read them fresh.
+      const fresh = await ratingsIn(this.env.DB, kind, [white.a.id, black.a.id]);
+      const seat = (a: Attachment): Seat => ({ id: a.id, name: a.name, rating: fresh.get(a.id) ?? r(a) });
       const body: InitBody = { id, kind, rated: true, seats: [seat(white.a), seat(black.a)], clock: RANKED_CLOCK };
       const res = await this.env.ROOMS.get(this.env.ROOMS.idFromName(id)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(body) });
       if (!res.ok) return;

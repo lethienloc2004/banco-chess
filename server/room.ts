@@ -10,8 +10,9 @@ import { Xiangqi, type XiangqiJSON } from '../src/engine/xiangqi';
 import { Chess } from '../src/engine/chess';
 import {
   AUTO_ABANDON_MS, CLAIM_AFTER_MS, EMOTES, afterMove, elo, timeLeft,
-  type ClientMsg, type Clock, type MoveRec, type RoomState, type Seat, type ServerMsg, type RoomStatus,
+  DEFAULT_RATING, type ClientMsg, type Clock, type MoveRec, type Player, type RoomState, type Seat, type ServerMsg, type RoomStatus,
 } from '../src/shared/protocol';
+import { ratingsIn, recordRated } from './db';
 import type { Env } from './env';
 
 interface Stored {
@@ -99,13 +100,13 @@ export class GameRoom extends DurableObject<Env> {
 
     if (url.pathname === '/ws') {
       if (request.headers.get('Upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
-      const user = JSON.parse(decodeURIComponent(request.headers.get('X-User') ?? 'null')) as Seat | null;
+      const user = JSON.parse(decodeURIComponent(request.headers.get('X-User') ?? 'null')) as Player | null;
       if (!user) return new Response('unauthorized', { status: 401 });
       let side: 0 | 1 | null = s.seats[0]?.id === user.id ? 0 : s.seats[1]?.id === user.id ? 1 : null;
       if (side === null && s.status === 'waiting') {
         const empty = s.seats[0] ? (s.seats[1] ? null : 1) : 0;
         if (empty !== null) {
-          s.seats[empty] = { id: user.id, name: user.name, rating: user.rating };
+          s.seats[empty] = { id: user.id, name: user.name, rating: user.ratings?.[s.kind] ?? DEFAULT_RATING };
           side = empty;
           await this.startGame();
         }
@@ -286,17 +287,20 @@ export class GameRoom extends DurableObject<Env> {
     const [a, b] = s.seats;
     const counted = a && b && result.reason !== 'cancelled';
     if (counted) {
-      const rows = await this.env.DB.prepare('SELECT id, rating FROM users WHERE id IN (?, ?)').bind(a.id, b.id).all<{ id: string; rating: number }>();
-      const ra = rows.results.find(r => r.id === a.id)?.rating ?? a.rating;
-      const rb = rows.results.find(r => r.id === b.id)?.rating ?? b.rating;
+      // Each game has its own rating: only this game's rating moves.
+      const current = await ratingsIn(this.env.DB, s.kind, [a.id, b.id]);
+      const ra = current.get(a.id) ?? a.rating;
+      const rb = current.get(b.id) ?? b.rating;
       const score = result.winner === 0 ? 1 : result.winner === 1 ? 0 : 0.5;
       const [na, nb] = rated ? elo(ra, rb, score) : [ra, rb];
       if (rated) s.ratingChange = [na - ra, nb - rb];
       a.rating = na;
       b.rating = nb;
-      await this.env.DB.batch([
-        this.env.DB.prepare('UPDATE users SET rating = ?, games = games + 1, wins = wins + ? WHERE id = ?').bind(na, result.winner === 0 ? 1 : 0, a.id),
-        this.env.DB.prepare('UPDATE users SET rating = ?, games = games + 1, wins = wins + ? WHERE id = ?').bind(nb, result.winner === 1 ? 1 : 0, b.id),
+      const db = this.env.DB;
+      await db.batch([
+        db.prepare('UPDATE users SET games = games + 1, wins = wins + ? WHERE id = ?').bind(result.winner === 0 ? 1 : 0, a.id),
+        db.prepare('UPDATE users SET games = games + 1, wins = wins + ? WHERE id = ?').bind(result.winner === 1 ? 1 : 0, b.id),
+        ...(rated ? [recordRated(db, a.id, s.kind, na, score, now), recordRated(db, b.id, s.kind, nb, (1 - score) as 0 | 0.5 | 1, now)] : []),
       ]);
     }
     await this.env.DB.prepare('UPDATE games SET status = ?, winner = ?, reason = ?, moves = ?, ended = ?, rated = ? WHERE id = ?')

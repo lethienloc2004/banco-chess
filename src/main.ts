@@ -5,12 +5,13 @@ import { playSound, previewVoices, setSoundStyle, unlockAudio } from './sound';
 import { KINDS, saveSettings, settings, store, t } from './state';
 import { adminScreen } from './ui/admin';
 import { openDialog, toast } from './ui/dialog';
-import { homeScreen, modesScreen, type Nav, type Screen } from './ui/home';
+import { gameThumb, homeScreen, modesScreen, type Nav, type Screen } from './ui/home';
 import { matchScreen } from './ui/match';
 import { PlayScreen } from './ui/play';
 import { PuzzleScreen, puzzleListScreen } from './ui/puzzles';
 import { WatchScreen } from './ui/watch';
 import { AnalysisScreen, pendingAnalysis } from './ui/analysis';
+import { leaderboardScreen, profileScreen } from './ui/leaderboard';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -31,7 +32,9 @@ type Route =
   | { name: 'puzzles'; kind?: string }
   | { name: 'puzzle'; id: string }
   | { name: 'watch'; kind: GameKind }
-  | { name: 'analysis' };
+  | { name: 'analysis' }
+  | { name: 'leaderboard'; kind?: string }
+  | { name: 'player'; id: string };
 
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -39,6 +42,8 @@ function parseRoute(hash: string): Route {
   if ((parts[0] === 'r' || parts[0] === 'join') && parts[1]) return { name: 'room', room: parts[1] };
   if (parts[0] === 'match' && KINDS.includes(parts[1] as GameKind)) return { name: 'match', kind: parts[1] as GameKind };
   if (parts[0] === 'analysis') return { name: 'analysis' };
+  if (parts[0] === 'leaderboard') return { name: 'leaderboard', kind: parts[1] };
+  if (parts[0] === 'player' && parts[1]) return { name: 'player', id: parts[1] };
   if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview' };
   if (parts[0] === 'puzzles') return { name: 'puzzles', kind: parts[1] };
   if (parts[0] === 'puzzle' && parts[1] && findPuzzle(parts[1])) return { name: 'puzzle', id: parts[1] };
@@ -152,6 +157,8 @@ function build(r: Route): Screen {
     case 'puzzle': return new PuzzleScreen(r.id, nav);
     case 'watch': return new WatchScreen(r.kind, nav);
     case 'analysis': return new AnalysisScreen(nav);
+    case 'leaderboard': return leaderboardScreen(r.kind, nav);
+    case 'player': return profileScreen(r.id, nav);
   }
 }
 
@@ -163,6 +170,7 @@ function titleFor(r: Route): string {
   if (r.name === 'admin') return `${s.admin.title} — ${base}`;
   if (r.name === 'puzzles' || r.name === 'puzzle') return `${s.puzzles.title} — ${base}`;
   if (r.name === 'analysis') return `${s.analysis.title} — ${base}`;
+  if (r.name === 'leaderboard' || r.name === 'player') return `${s.board.title} — ${base}`;
   return `${s[r.kind]} — ${base}`;
 }
 
@@ -198,6 +206,7 @@ function backTarget(): string {
     case 'play': case 'match': case 'watch': return '#/' + route.kind;
     case 'puzzle': return '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
     case 'analysis': return pendingAnalysis()?.back ?? '#/';
+    case 'player': return '#/leaderboard';
     default: return '#/';
   }
 }
@@ -314,10 +323,14 @@ function accountGroup(close: () => void): HTMLElement {
   }
   g.innerHTML = `<h3>${esc(s.account)}</h3>
     <div class="acct"><span class="avatar">${esc([...me.name][0]?.toUpperCase() ?? '?')}</span>
-      <div><b>${esc(me.name)}</b><div class="muted small">${esc(me.google ? s.googleAccount : s.guestAccount)} · ${esc(s.rating)} ${me.rating} · ${me.games} ${esc(s.admin.gamesCount)}</div></div></div>
+      <div><b>${esc(me.name)}</b><div class="muted small">${esc(me.google ? s.googleAccount : s.guestAccount)} · ${me.games} ${esc(s.admin.gamesCount)}</div></div></div>
+    <div class="acct-ratings">${KINDS.map(k => `<a href="#/leaderboard/${k}"><span class="thumb">${gameThumb(k)}</span><span>${esc(s[k])}</span><b>${me.ratings?.[k] ?? 1200}</b></a>`).join('')}</div>
+    <p class="small"><a href="#/player/${esc(me.id)}">${esc(s.board.myProfile)}</a> · <a href="#/leaderboard">${esc(s.board.open)}</a></p>
     <div class="row"><span>${esc(s.changeName)}</span><div class="name-edit"><input class="inp" maxlength="20" value="${esc(me.name)}" /><button class="btn">${esc(s.save)}</button></div></div>
     <div class="google-slot"></div>
     <div class="acct-actions"></div>`;
+  // Links to the leaderboard / profile leave the settings dialog.
+  g.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach(a => a.addEventListener('click', () => close()));
   const input = g.querySelector<HTMLInputElement>('.name-edit input')!;
   g.querySelector<HTMLButtonElement>('.name-edit button')!.onclick = async () => {
     try { await net.rename(input.value); toast(s.nameSaved); lobby.restart(); } catch { toast(s.badName); }

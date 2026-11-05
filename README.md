@@ -18,6 +18,11 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
 
 - ♟️ **4 loại cờ trong một app**: Cờ vua, Cờ tướng, **Cờ tướng úp (Jieqi / 揭棋)** và **Cờ vua úp**, một biến thể cùng tinh thần cờ úp cho cờ vua. Rất hiếm có bản mã nguồn mở nào chơi được cờ úp.
 - ⚡ **Ghép ngẫu nhiên có xếp hạng (Elo)**: app tìm đối thủ có điểm gần nhất. Mỗi ván 10 phút, cộng 5 giây sau mỗi nước.
+- 🏆 **Bảng xếp hạng và hồ sơ người chơi**:
+  - **Mỗi loại cờ có điểm Elo và bảng xếp hạng riêng**: cờ vua, cờ tướng, cờ úp, cờ vua úp. Giỏi cờ tướng không kéo điểm cờ vua lên.
+  - Top 100 người chơi, có huy chương 🥇🥈🥉. Hạng của bạn luôn hiện, kể cả khi ngoài top 100.
+  - Phải chơi đủ **5 ván ghép trận** mới có tên trên bảng, để không ai lên đầu nhờ thắng may một ván. Người bị khóa không hiện.
+  - Bấm vào tên để xem hồ sơ: điểm, hạng, thắng/hòa/thua, điểm cao nhất của từng loại cờ, và các ván gần đây.
 - 🔗 **Chơi với bạn qua link**: tạo phòng, chọn màu quân và thời gian (không giới hạn, 3+2, 5+3, 10+5, 15+10), rồi gửi link qua Zalo hay Messenger. Ai vào khi phòng đã đủ người sẽ được xem ván.
 - 🛡️ **Máy chủ giữ ván cờ**:
   - Kiểm tra mọi nước đi, nên không thể gian lận bằng cách sửa code trên trình duyệt.
@@ -309,14 +314,14 @@ src/
   net.ts          Gọi API, tài khoản, WebSocket tự kết nối lại
   puzzles/        Dữ liệu thế cờ, bộ giải chiếu hết vét cạn, tiến độ người chơi
   analysis.ts     Chấm nước đi và độ chính xác cho phần phân tích ván
-  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ, phân tích ván
+  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ, phân tích ván, bảng xếp hạng
 server/
   index.ts        API: đăng nhập khách/Google, phòng, báo cáo
   room.ts         Durable Object phòng chơi
   lobby.ts        Durable Object sảnh chờ / ghép trận
   admin.ts        API quản trị
   auth.ts         Ký phiên (HMAC) và xác minh Google ID token
-migrations/       Lược đồ cơ sở dữ liệu D1
+migrations/       Lược đồ cơ sở dữ liệu D1 (0002: điểm Elo riêng cho từng loại cờ)
 scripts/          npm start, npm run setup, generate-puzzles.ts (tạo thế cờ mới)
 tests/            Perft chuẩn, luật, đăng nhập, bot, kiểm tra mọi thế cờ; tests/e2e: kiểm tra máy chủ
 ```
@@ -361,8 +366,6 @@ Toàn bộ mã nguồn được viết mới, **không dùng thư viện cờ n�
 Mọi đóng góp đều được hoan nghênh! Một vài ý tưởng:
 
 - [ ] Thêm thế cờ: chạy `npx tsx scripts/generate-puzzles.ts` để tìm thế mới (dạng chiếu hết, ăn quân, chiếu dai…)
-- [ ] Phân tích ván sau khi chơi, gợi ý nước đi
-- [ ] Bảng xếp hạng công khai, trang hồ sơ người chơi
 - [ ] Giải đấu / phòng chờ nhiều bàn
 - [ ] Phát hiện dùng máy hỗ trợ (so độ chính xác với bot)
 - [ ] Thêm biến thể: Chess960, cờ úp với luật biến thể…
@@ -380,6 +383,8 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
 (揭棋, xiangqi with face-down pieces) and **Hidden chess** (the same idea for chess): against a built-in bot, with a
 friend on the same device, or online. The whole interface is available in Vietnamese and English.
 
+- **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,
+  a 5-game minimum, and profiles with per-game record, peak rating and recent games.
 - **Online on Cloudflare** (Workers + Durable Objects + D1): rated quick matchmaking (Elo), friend rooms via link,
   spectators, clocks, draw offers, rematch, emotes, reports, reconnect after reloads, abandonment claims.
 - **Authoritative server**: every move is validated with the same rules engine; in Jieqi and Hidden chess the client
@@ -389,7 +394,7 @@ friend on the same device, or online. The whole interface is available in Vietna
   - Stats, live games and replays (face-down pieces shown to admins).
   - Cancel games or set results.
   - Handle reports.
-  - Manage players: warn, ban, rename, set rating, change roles, delete.
+  - Manage players: warn, ban, rename, set the rating of one game or all, change roles, delete.
   - Post live announcements.
   - Audit log of every admin action.
 - **Rules**: castling, en passant, promotion, FIDE draws; flying general, blocked horse/elephant, cannon screens,

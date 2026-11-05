@@ -1,17 +1,15 @@
 /** Bàn Cờ Cloudflare Worker: REST API, WebSocket routing and static assets. */
 import type { GameKind } from '../src/engine/types';
-import { CLOCKS, REPORT_REASONS, cleanName, type Seat } from '../src/shared/protocol';
+import { CLOCKS, LEADERBOARD_MIN_GAMES, LEADERBOARD_SIZE, REPORT_REASONS, cleanName, type BoardEntry, type KindStats, type Leaderboard, type PlayerProfile, type ProfileGame } from '../src/shared/protocol';
 import { adminRoute } from './admin';
 import { randomId, roomId, signToken, verifyGoogleIdToken, verifyToken } from './auth';
-import { createUser, currentAnnouncement, getUser, isBanned, publicUser, touchUser, type UserRow } from './db';
+import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow } from './db';
 import type { Env } from './env';
 import type { InitBody } from './room';
 import { CORS, fail, json } from './http';
 
 export { GameRoom } from './room';
 export { Lobby } from './lobby';
-
-const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 
 async function readJson<T>(req: Request): Promise<T | null> {
   try { return (await req.json()) as T; } catch { return null; }
@@ -37,11 +35,68 @@ function adminEmails(env: Env): string[] {
 }
 
 async function session(env: Env, user: UserRow) {
-  return json({ token: await signToken(user.id, env.AUTH_SECRET), user: publicUser(user, true) });
+  return json({ token: await signToken(user.id, env.AUTH_SECRET), user: publicUser(user, await ratingsOf(env.DB, user.id), true) });
 }
 
-function seatOf(u: UserRow): Seat {
-  return { id: u.id, name: u.name, rating: u.rating };
+/** X-User header for a room or the lobby: name plus the rating in every game. */
+async function playerHeader(env: Env, u: UserRow): Promise<string> {
+  return encodeURIComponent(JSON.stringify(await playerOf(env.DB, u)));
+}
+
+/** Top players of one game, plus the caller's own row. */
+async function leaderboard(env: Env, kind: GameKind, me: UserRow | null): Promise<Leaderboard> {
+  const db = env.DB, now = Date.now();
+  const [top, total, mine] = await Promise.all([
+    db.prepare(`SELECT r.user_id AS id, u.name, r.rating, r.games, r.wins, r.draws, r.peak FROM ratings r JOIN users u ON u.id = r.user_id
+      WHERE r.kind = ? AND ${RANKED} ORDER BY r.rating DESC, r.games DESC, r.updated ASC LIMIT ?`)
+      .bind(kind, now, LEADERBOARD_SIZE).all<Omit<BoardEntry, 'rank'>>(),
+    db.prepare(`SELECT COUNT(*) AS n FROM ratings r JOIN users u ON u.id = r.user_id WHERE r.kind = ? AND ${RANKED}`).bind(kind, now).first<{ n: number }>(),
+    me ? db.prepare('SELECT * FROM ratings WHERE user_id = ? AND kind = ?').bind(me.id, kind).first<RatingRow>() : Promise.resolve(null),
+  ]);
+  // Equal ratings share a place (1, 2, 2, 4…).
+  const entries: BoardEntry[] = [];
+  top.results.forEach((r, i) => {
+    const prev = entries[i - 1];
+    entries.push({ ...r, rank: prev && prev.rating === r.rating ? prev.rank : i + 1 });
+  });
+  let meRow: BoardEntry | null = null;
+  if (me && mine && mine.games >= LEADERBOARD_MIN_GAMES && !isBanned(me, now)) {
+    meRow = entries.find(e => e.id === me.id) ?? {
+      rank: await rankOf(db, kind, mine.rating, now), id: me.id, name: me.name,
+      rating: mine.rating, games: mine.games, wins: mine.wins, draws: mine.draws, peak: mine.peak,
+    };
+  }
+  return { kind, entries, me: meRow, myGames: mine?.games ?? 0, total: total?.n ?? 0, minGames: LEADERBOARD_MIN_GAMES };
+}
+
+/** Public profile: rating, place and record in every game, and recent games. */
+async function profile(env: Env, id: string): Promise<PlayerProfile | null> {
+  const db = env.DB, now = Date.now();
+  const u = await getUser(db, id);
+  if (!u) return null;
+  const [rows, games] = await Promise.all([
+    db.prepare('SELECT * FROM ratings WHERE user_id = ?').bind(id).all<RatingRow>(),
+    db.prepare(`SELECT id, kind, rated, p0_id, p0_name, p1_id, p1_name, winner, reason, ended FROM games
+      WHERE (p0_id = ? OR p1_id = ?) AND status = 'over' AND (reason IS NULL OR reason <> 'cancelled') ORDER BY ended DESC LIMIT 15`)
+      .bind(id, id).all<{ id: string; kind: GameKind; rated: number; p0_id: string | null; p0_name: string | null; p1_id: string | null; p1_name: string | null; winner: 0 | 1 | null; reason: string | null; ended: number | null }>(),
+  ]);
+  const banned = isBanned(u, now);
+  const stats = {} as Record<GameKind, KindStats>;
+  for (const kind of KINDS) {
+    const r = rows.results.find(x => x.kind === kind);
+    const base = { rating: r?.rating ?? 1200, games: r?.games ?? 0, wins: r?.wins ?? 0, draws: r?.draws ?? 0, peak: r?.peak ?? 1200 };
+    const ranked = !banned && base.games >= LEADERBOARD_MIN_GAMES;
+    stats[kind] = { ...base, rank: ranked ? await rankOf(db, kind, base.rating, now) : null };
+  }
+  const recent: ProfileGame[] = games.results.map(g => {
+    const side: 0 | 1 = g.p0_id === id ? 0 : 1;
+    return {
+      id: g.id, kind: g.kind, rated: !!g.rated, side,
+      opponent: side === 0 ? { id: g.p1_id, name: g.p1_name } : { id: g.p0_id, name: g.p0_name },
+      winner: g.winner, reason: g.reason, ended: g.ended,
+    };
+  });
+  return { id: u.id, name: u.name, created: u.created, banned, stats, recent };
 }
 
 async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
@@ -92,19 +147,31 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     return session(env, user);
   }
 
+  // ----- Public: leaderboards and profiles (the caller's own row when signed in) -----
+  if (path === '/leaderboard' && method === 'GET') {
+    const kind = url.searchParams.get('kind') as GameKind;
+    if (!KINDS.includes(kind)) return fail(400, 'bad-kind');
+    return json(await leaderboard(env, kind, await authUser(req, env)));
+  }
+  const player = path.match(/^\/players\/([\w-]{1,40})$/);
+  if (player && method === 'GET') {
+    const p = await profile(env, player[1]);
+    return p ? json({ profile: p }) : fail(404, 'not-found');
+  }
+
   const me = await authUser(req, env);
   if (!me) return fail(401, 'unauthorized');
 
   if (path === '/me' && method === 'GET') {
     await touchUser(env.DB, me.id);
-    return json({ user: publicUser(me, true), banned: isBanned(me) ? { until: me.banned_until, reason: me.ban_reason } : null });
+    return json({ user: publicUser(me, await ratingsOf(env.DB, me.id), true), banned: isBanned(me) ? { until: me.banned_until, reason: me.ban_reason } : null });
   }
   if (path === '/me' && method === 'PATCH') {
     const body = await readJson<{ name?: string }>(req);
     const name = cleanName(body?.name ?? '');
     if (!name) return fail(400, 'bad-name');
     await env.DB.prepare('UPDATE users SET name = ? WHERE id = ?').bind(name, me.id).run();
-    return json({ user: publicUser({ ...me, name }, true) });
+    return json({ user: publicUser({ ...me, name }, await ratingsOf(env.DB, me.id), true) });
   }
   if (path === '/me/notice' && method === 'DELETE') {
     await env.DB.prepare('UPDATE users SET notice = NULL WHERE id = ?').bind(me.id).run();
@@ -127,7 +194,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     const clock = CLOCKS[body.clock] ?? null;
     const id = roomId();
     const seats: InitBody['seats'] = [null, null];
-    seats[side] = seatOf(me);
+    seats[side] = { id: me.id, name: me.name, rating: (await ratingsOf(env.DB, me.id))[body.kind] };
     const init: InitBody = { id, kind: body.kind, rated: false, seats, clock };
     const res = await env.ROOMS.get(env.ROOMS.idFromName(id)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) });
     if (!res.ok) return fail(500, 'room-failed');
@@ -137,12 +204,12 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   const ws = path.match(/^\/rooms\/([\w-]{4,20})\/ws$/);
   if (ws && req.headers.get('Upgrade') === 'websocket') {
     const stub = env.ROOMS.get(env.ROOMS.idFromName(ws[1]));
-    return stub.fetch('https://room/ws', { headers: { Upgrade: 'websocket', 'X-User': encodeURIComponent(JSON.stringify(seatOf(me))) } });
+    return stub.fetch('https://room/ws', { headers: { Upgrade: 'websocket', 'X-User': await playerHeader(env, me) } });
   }
 
   if (path === '/lobby/ws' && req.headers.get('Upgrade') === 'websocket') {
     const stub = env.LOBBY.get(env.LOBBY.idFromName('main'));
-    return stub.fetch('https://lobby/ws', { headers: { Upgrade: 'websocket', 'X-User': encodeURIComponent(JSON.stringify(seatOf(me))) } });
+    return stub.fetch('https://lobby/ws', { headers: { Upgrade: 'websocket', 'X-User': await playerHeader(env, me) } });
   }
 
   // ----- Reports -----

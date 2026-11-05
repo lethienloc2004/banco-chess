@@ -4,10 +4,17 @@ import type { XiangqiJSON } from '../engine/xiangqi';
 
 export type Role = 'user' | 'admin';
 
+/** Elo rating per game: each game has its own rating and leaderboard. */
+export type Ratings = Record<GameKind, number>;
+export const DEFAULT_RATING = 1200;
+/** Rated games needed before a player appears on a leaderboard. */
+export const LEADERBOARD_MIN_GAMES = 5;
+export const LEADERBOARD_SIZE = 100;
+
 export interface PublicUser {
   id: string;
   name: string;
-  rating: number;
+  ratings: Ratings;
   games: number;
   wins: number;
   role: Role;
@@ -21,6 +28,67 @@ export interface Seat {
   id: string;
   name: string;
   rating: number;
+}
+
+/** Who connects to a room or the lobby: the rating used depends on the game. */
+export interface Player {
+  id: string;
+  name: string;
+  ratings: Ratings;
+}
+
+export interface BoardEntry {
+  rank: number;
+  id: string;
+  name: string;
+  rating: number;
+  games: number;
+  wins: number;
+  draws: number;
+  peak: number;
+}
+
+export interface Leaderboard {
+  kind: GameKind;
+  entries: BoardEntry[];
+  /** The caller's own row (also when outside the top list), null if not ranked yet. */
+  me: BoardEntry | null;
+  /** Rated games the caller has played in this game (to show progress to ranking). */
+  myGames: number;
+  /** Ranked players in total. */
+  total: number;
+  minGames: number;
+}
+
+export interface KindStats {
+  rating: number;
+  games: number;
+  wins: number;
+  draws: number;
+  peak: number;
+  /** Position on the leaderboard, null while below the minimum number of games. */
+  rank: number | null;
+}
+
+export interface ProfileGame {
+  id: string;
+  kind: GameKind;
+  rated: boolean;
+  /** Side the profile's player had. */
+  side: 0 | 1;
+  opponent: { id: string | null; name: string | null };
+  winner: 0 | 1 | null;
+  reason: string | null;
+  ended: number | null;
+}
+
+export interface PlayerProfile {
+  id: string;
+  name: string;
+  created: number;
+  banned: boolean;
+  stats: Record<GameKind, KindStats>;
+  recent: ProfileGame[];
 }
 
 export interface SeatView extends Seat {

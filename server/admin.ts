@@ -1,6 +1,7 @@
 /** Admin API: statistics, games, reports, users, announcements, audit log. */
-import { cleanName, type LobbyStats } from '../src/shared/protocol';
-import { audit, currentAnnouncement, getUser, publicUser, type UserRow } from './db';
+import type { GameKind } from '../src/engine/types';
+import { cleanName, type LobbyStats, type Ratings } from '../src/shared/protocol';
+import { KINDS, audit, currentAnnouncement, defaultRatings, getUser, publicUser, ratingsOf, setRating, type UserRow } from './db';
 import type { Env } from './env';
 import { fail, json } from './http';
 
@@ -134,7 +135,15 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
     const rows = await db.prepare(
       `SELECT * FROM users ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY last_seen DESC LIMIT 100`,
     ).bind(...args).all<UserRow>();
-    return json({ users: rows.results });
+    // Rating in every game for the listed users.
+    const ids = rows.results.map(u => u.id);
+    const ratings = new Map<string, Ratings>(ids.map(id => [id, defaultRatings()]));
+    if (ids.length) {
+      const rr = await db.prepare(`SELECT user_id, kind, rating FROM ratings WHERE user_id IN (${ids.map(() => '?').join(', ')})`)
+        .bind(...ids).all<{ user_id: string; kind: GameKind; rating: number }>();
+      for (const r of rr.results) { const m = ratings.get(r.user_id); if (m && r.kind in m) m[r.kind] = r.rating; }
+    }
+    return json({ users: rows.results.map(u => ({ ...u, ratings: ratings.get(u.id) })) });
   }
 
   const userMatch = path.match(/^\/users\/([\w-]+)$/);
@@ -146,12 +155,12 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
         .bind(u.id, u.id).all(),
       db.prepare('SELECT * FROM reports WHERE target_id = ? ORDER BY created DESC LIMIT 50').bind(u.id).all(),
     ]);
-    return json({ user: u, games: games.results, reports: reports.results });
+    return json({ user: { ...u, ratings: await ratingsOf(db, u.id) }, games: games.results, reports: reports.results });
   }
 
   const userAction = path.match(/^\/users\/([\w-]+)\/action$/);
   if (userAction && method === 'POST') {
-    const body = await readJson<{ action: string; days?: number | null; reason?: string; name?: string; role?: string; rating?: number }>(req);
+    const body = await readJson<{ action: string; days?: number | null; reason?: string; name?: string; role?: string; rating?: number; kind?: GameKind | 'all' }>(req);
     const u = await getUser(db, userAction[1]);
     if (!u || !body) return fail(404, 'not-found');
     const reason = String(body.reason ?? '').slice(0, 300);
@@ -183,20 +192,25 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
       case 'rating': {
         const rating = Math.round(Number(body.rating ?? 1200));
         if (!Number.isFinite(rating) || rating < 100 || rating > 3500) return fail(400, 'bad-rating');
-        await db.prepare('UPDATE users SET rating = ? WHERE id = ?').bind(rating, u.id).run();
+        const kinds = body.kind === 'all' || !body.kind ? KINDS : KINDS.includes(body.kind) ? [body.kind] : null;
+        if (!kinds) return fail(400, 'bad-kind');
+        await db.batch(kinds.map(k => setRating(db, u.id, k, rating, now)));
         break;
       }
       case 'delete':
         if (u.id === admin.id) return fail(400, 'self');
         await lobby(env).fetch('https://lobby/kick', { method: 'POST', body: JSON.stringify({ uid: u.id }) });
-        await db.prepare('DELETE FROM users WHERE id = ?').bind(u.id).run();
+        await db.batch([
+          db.prepare('DELETE FROM ratings WHERE user_id = ?').bind(u.id),
+          db.prepare('DELETE FROM users WHERE id = ?').bind(u.id),
+        ]);
         break;
       default:
         return fail(400, 'bad-action');
     }
     await audit(db, admin, 'user.' + body.action, u.id, body);
     const after = await getUser(db, u.id);
-    return json({ user: after ? publicUser(after) : null });
+    return json({ user: after ? publicUser(after, await ratingsOf(db, after.id)) : null });
   }
 
   // ----- Announcements -----

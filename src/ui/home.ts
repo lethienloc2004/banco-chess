@@ -8,6 +8,7 @@ import { CLOCKS, RANKED_CLOCK, clockLabel } from '../shared/protocol';
 import { toast } from './dialog';
 import { esc } from './util';
 import { puzzleThumb } from './puzzles';
+import { trophyThumb } from './leaderboard';
 import { PUZZLES } from '../puzzles';
 
 export interface Nav {
@@ -88,6 +89,15 @@ export function homeScreen(nav: Nav): Screen {
     </button>`;
   pli.querySelector('button')!.onclick = () => nav.go('#/puzzles');
   ul.appendChild(pli);
+  // Leaderboard
+  const lli = document.createElement('li');
+  lli.innerHTML = `<button class="item" style="--i:${KINDS.length + 1}">
+      <span class="thumb">${trophyThumb()}</span>
+      <span class="txt"><b>${s.board.title}</b><small>${s.board.homeDesc}</small></span>
+      ${chevron}
+    </button>`;
+  lli.querySelector('button')!.onclick = () => nav.go('#/leaderboard');
+  ul.appendChild(lli);
   return { el, dispose() { off(); } };
 }
 

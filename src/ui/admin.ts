@@ -2,8 +2,8 @@
 import { Match } from '../game';
 import type { GameKind } from '../engine/types';
 import { net } from '../net';
-import type { MoveRec } from '../shared/protocol';
-import { settings, t } from '../state';
+import { DEFAULT_RATING, type MoveRec, type Ratings } from '../shared/protocol';
+import { KINDS, settings, t } from '../state';
 import { BoardRenderer } from './board';
 import { confirmDialog, openDialog, toast } from './dialog';
 import type { Nav, Screen } from './home';
@@ -17,9 +17,13 @@ interface GameRow {
   status: string; winner: number | null; reason: string | null; created: number; ended: number | null; plies?: number;
 }
 interface UserRow {
-  id: string; name: string; email: string | null; role: string; rating: number; games: number; wins: number;
+  id: string; name: string; email: string | null; role: string; ratings?: Ratings; games: number; wins: number;
   warnings: number; banned_until: number | null; ban_reason: string | null; created: number; last_seen: number; google_sub: string | null;
 }
+
+const ratingOf = (u: UserRow, k: GameKind) => u.ratings?.[k] ?? DEFAULT_RATING;
+/** The four ratings in one cell, each titled with its game. */
+const ratingCell = (u: UserRow) => KINDS.map(k => `<span title="${esc(t()[k])}">${ratingOf(u, k)}</span>`).join(' · ');
 
 const fmtDate = (ts: number | null) => (ts ? new Date(ts).toLocaleString(settings.lang === 'vi' ? 'vi-VN' : 'en-GB') : '—');
 
@@ -133,7 +137,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       <div class="kv">
         <span>${esc(A.id)}</span><code>${esc(u.id)}</code>
         <span>${esc(A.email)}</span><span>${esc(u.email ?? (u.google_sub ? 'Google' : A.guest))}</span>
-        <span>${esc(s.rating)}</span><span>${u.rating} · ${u.games} ${esc(A.gamesCount)} · ${u.wins} ${esc(A.winsCount)}</span>
+        <span>${esc(s.rating)}</span><span>${KINDS.map(k => `${esc(s[k])} <b>${ratingOf(u, k)}</b>`).join(' · ')}<br>${u.games} ${esc(A.gamesCount)} · ${u.wins} ${esc(A.winsCount)} · <a href="#/player/${esc(u.id)}">${esc(s.board.profile)}</a></span>
         <span>${esc(A.role)}</span><span>${u.role === 'admin' ? '🛡️ ' + esc(A.adminRole) : esc(A.userRole)}</span>
         <span>${esc(A.warnings)}</span><span>${u.warnings}</span>
         <span>${esc(A.status)}</span><span>${banned ? `⛔ ${esc(A.bannedUntil(fmtDate(u.banned_until! > 8e15 ? null : u.banned_until)))} — ${esc(u.ban_reason ?? '')}` : '✅ ' + esc(A.active)}</span>
@@ -150,7 +154,8 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
         <div class="admin-actions">
           <input class="inp" name="name" maxlength="20" value="${esc(u.name)}" />
           <button class="btn" data-a="rename">${esc(A.rename)}</button>
-          <input class="inp narrow" name="rating" type="number" min="100" max="3500" value="${u.rating}" />
+          <select class="inp" name="rkind"><option value="all">${esc(A.allGames)}</option>${KINDS.map(k => `<option value="${k}">${esc(s[k])}</option>`).join('')}</select>
+          <input class="inp narrow" name="rating" type="number" min="100" max="3500" value="${ratingOf(u, 'chess')}" />
           <button class="btn" data-a="rating">${esc(A.setRating)}</button>
         </div>
         <div class="admin-actions">
@@ -167,7 +172,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       const payload: Record<string, unknown> = { action: a, reason: val('reason') };
       if (a === 'ban') payload.days = Number(val('days')) || null;
       if (a === 'rename') payload.name = val('name');
-      if (a === 'rating') payload.rating = Number(val('rating'));
+      if (a === 'rating') { payload.rating = Number(val('rating')); payload.kind = val('rkind'); }
       if (a === 'role') payload.role = u.role === 'admin' ? 'user' : 'admin';
       if ((a === 'ban' || a === 'delete' || a === 'role') && !(await confirmDialog(`${b.textContent} — ${u.name}?`, A.confirm, s.close))) return;
       if (await call(`/users/${u.id}/action`, 'POST', payload)) { toast(A.done); close(); if (a !== 'delete') void openUser(u.id); void load(); }
@@ -244,7 +249,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
         if (!r) return;
         area.innerHTML = r.users.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>${esc(A.name)}</th><th>${esc(s.rating)}</th><th>${esc(A.gamesCount)}</th><th>${esc(A.status)}</th><th>${esc(A.lastSeen)}</th></tr></thead><tbody>
           ${r.users.map(u => `<tr class="clickable" data-user="${esc(u.id)}"><td>${u.role === 'admin' ? '🛡️ ' : ''}${esc(u.name)}<div class="muted small">${esc(u.email ?? (u.google_sub ? 'Google' : A.guest))}</div></td>
-          <td>${u.rating}</td><td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}</td>
+          <td class="small">${ratingCell(u)}</td><td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}</td>
           <td class="muted small">${esc(timeAgo(u.last_seen, settings.lang))}</td></tr>`).join('')}</tbody></table></div>` : `<p class="muted">${esc(A.empty)}</p>`;
         bindGames(area);
       };
