@@ -3,7 +3,7 @@ import type { Match } from '../game';
 import { playThemed, type Theme } from '../sound';
 import { FRAME, boardDeco, boardFrame, boardTiles, boardWeather, riverBand } from './boards';
 import { settings } from '../state';
-import { chessPiece, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
+import { chessPiece, faceDown, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
 
 export interface BoardView {
   flipped: boolean;
@@ -137,7 +137,10 @@ export class BoardRenderer {
       const [x, y] = this.center(p.sq);
       // Inner group carries the entrance animation so it doesn't fight the position transform.
       parts.push(`<g class="piece" data-sq="${p.sq}" transform="translate(${x} ${y})"><g class="pi" style="--i:${index++}">`);
-      if (match.isChess && p.hidden && !view.peek) {
+      if (p.hidden && !view.peek && hasSkin(skins[p.color])) {
+        // Face-down piece of a skinned player: the skin's own back.
+        parts.push(faceDown(skins[p.color]!, p.color as 0 | 1, match.isChess ? 0.86 : 1));
+      } else if (match.isChess && p.hidden && !view.peek) {
         // Hidden chess: a face-down disc with the owner's colour on the rim.
         parts.push(`<circle class="cp-disc ${p.color ? 'b' : 'w'}" r="38"/>`,
           `<circle class="cp-ring" r="30"/>`,

@@ -22,7 +22,8 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - **3 nhiệm vụ mỗi ngày** và **2 nhiệm vụ mỗi tuần** (giống nhau cho mọi người, làm mới theo giờ Việt Nam): thắng máy, giải thế cờ, chơi online, phân tích ván… Hoàn thành được **xu**, giữ **chuỗi ngày liên tiếp**.
   - **9 thành tích**, mỗi thành tích mở một skin: Gỗ, Cẩm thạch, Đồng, Vàng, Pha lê, Ngọc bích, Neon, Rồng lửa, Thiên hà.
   - **Cửa hàng**: Mực tàu, Kẹo ngọt, Hoa anh đào. **Skin dịp lễ** chỉ có trong sự kiện: 🎃 Halloween, 🎄 Giáng sinh, 🧧 Tết, 🏮 Trung thu (mua bằng xu hoặc làm nhiệm vụ sự kiện).
-  - **Xem trước trước khi mua**: bấm vào bất kỳ skin nào để mở bàn cờ vua hoặc cờ tướng đầy đủ mặc skin đó (kèm bàn cờ lễ nếu có). Máy tự chơi vài nước có ăn quân để bạn xem hiệu ứng và nghe âm thanh, hoặc bạn tự đi thử cả hai bên; mua hoặc trang bị ngay trong cửa sổ xem trước.
+  - **Cờ úp và cờ vua úp cũng mặc skin**: quân còn úp dùng mặt sau theo skin (màu theo phe, giữa là biểu tượng của dịp lễ: bí ngô, bông tuyết, 福, trăng; skin thường là dấu ?), lật lên thì hiện đúng skin.
+  - **Xem trước trước khi mua**: bấm vào bất kỳ skin nào để mở bàn cờ vua, cờ tướng, cờ úp hoặc cờ vua úp đầy đủ mặc skin đó (kèm bàn cờ lễ nếu có). Máy tự chơi vài nước có ăn quân để bạn xem hiệu ứng và nghe âm thanh, hoặc bạn tự đi thử cả hai bên; mua hoặc trang bị ngay trong cửa sổ xem trước.
   - **Mỗi chủ đề có hình dáng quân riêng**, vẽ mới hoàn toàn bằng SVG nhưng vẫn dễ nhận ra từng quân. Cờ vua có 6 bộ:
     - **Khắc gỗ cổ điển** và **hình học hiện đại**.
     - 🎃 **Halloween**: Tốt là bí ngô có mặt cười, Tượng là con ma, Hậu là phù thủy, Vua là ma cà rồng.
@@ -466,7 +467,8 @@ friend on the same device, or online. The whole interface is available in Vietna
 
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
-  Any skin can be previewed on a full chess or xiangqi board (with its holiday board) before buying: a short demo
+  Face-down pieces (jieqi, hidden chess) wear the skin's own back with the holiday's emblem.
+  Any skin can be previewed on a full board of any of the four games (with its holiday board) before buying: a short demo
   with captures shows the effects and sounds, or move both sides yourself, then buy or equip from the preview.
   While an event runs the whole site is dressed for it (colours in light and dark, corner scenes, snow, petals,
   lanterns…; can be turned off in Settings), and each holiday has 6 holiday puzzles (mate in 1–3, chess and xiangqi)

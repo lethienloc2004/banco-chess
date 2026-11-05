@@ -219,6 +219,30 @@ export function xqPiece(id: string, side: 0 | 1, label: string, textCls: string,
     + (sk.deco?.('xq', side) ?? '');
 }
 
+/**
+ * A skinned face-down piece (jieqi, hidden chess): the skin's disc in the owner's colours with a
+ * dashed ring and an emblem instead of the label (the holiday's own emblem, or a question mark).
+ * Chess pieces are a little smaller (scale) than xiangqi discs.
+ */
+export function faceDown(id: string, side: 0 | 1, scale = 1): string {
+  const sk = SKINS[id], x = sk.xq;
+  const shape = discShape(sk.disc, x.ring[side]);
+  const paint = `fill:${x.disc[side]};stroke:${x.edge[side]};stroke-width:${x.edgeW ?? 3}px;`;
+  const ink = x.text[side];
+  const emblem = sk.theme === 'halloween'
+    ? `<g transform="scale(1.5)"><ellipse cx="-5" cy="1" rx="7" ry="8.5" fill="#d9661a"/><ellipse cx="5" cy="1" rx="7" ry="8.5" fill="#d9661a"/><ellipse cy="1" rx="7.5" ry="9" fill="#f08a24"/><path d="M0 -8 C0 -11 2 -13 4 -13" stroke="#3e5d1e" stroke-width="2.4" fill="none"/><path d="M-5 -1 L-2 -4 L-1 0Z M5 -1 L2 -4 L1 0Z M-5 4 L-3 6 L-1 4.6 L1 6.4 L3 4.6 L5 6 Q0 10 -5 4Z" fill="#ffd54f"/></g>`
+    : sk.theme === 'christmas'
+      ? `<path d="M0 -17V17M-17 0H17M-12 -12L12 12M-12 12L12 -12M0 -17L-4 -12M0 -17L4 -12M0 17L-4 12M0 17L4 12M-17 0L-12 -4M-17 0L-12 4M17 0L12 -4M17 0L12 4" stroke="${ink}" stroke-width="2.6" stroke-linecap="round" fill="none"/>`
+      : sk.theme === 'tet'
+        ? `<text y="2" text-anchor="middle" dominant-baseline="central" font-size="30" font-weight="700" fill="${ink}" font-family="'Noto Serif SC', 'Songti SC', serif">福</text>`
+        : sk.theme === 'midautumn'
+          ? `<circle r="15" fill="#ffe08a" opacity=".35"/><path d="M5 -13 A14 14 0 1 0 5 13 A10.5 10.5 0 1 1 5 -13Z" fill="#fff3c4" stroke="${ink}" stroke-width="1.6"/>`
+          : `<text class="xq-q" y="2" style="fill:${ink};opacity:.8">?</text>`;
+  return `<g class="face-down" transform="scale(${scale})"><g class="xq-shape-back" style="${paint}">${shape.back}</g>`
+    + `<g class="xq-disc sk hidden" style="${paint}${filt(x.discFilter)}">${shape.disc}</g>`
+    + `<circle r="34" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="5 5" opacity=".55"/>${emblem}</g>`;
+}
+
 export const skinFx = (id: string | null | undefined): Fx | null => (hasSkin(id) ? SKINS[id].fx ?? null : null);
 
 /** Burst drawn where a skinned piece captures (CSS animates and fades it). */

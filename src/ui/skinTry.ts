@@ -3,6 +3,7 @@
  * holiday board), where you can move pieces yourself or watch a short demo with
  * captures, to see the move and capture effects and hear the sounds.
  */
+import type { GameKind } from '../engine/types';
 import { Match } from '../game';
 import { skinById } from '../shared/quests';
 import { settings, t } from '../state';
@@ -12,9 +13,10 @@ import { moveSfx } from './sfx';
 import { skinTheme } from './skins';
 import { esc } from './util';
 
-type Game = 'chess' | 'xiangqi';
+type Game = GameKind;
+const GAMES: Game[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 /** Demo openings with a few captures: [file, rank] → [file, rank] (rank 0 = White's / Red's back rank). */
-const DEMO: Record<Game, [number, number, number, number][]> = {
+const DEMO: Partial<Record<Game, [number, number, number, number][]>> = {
   // Scotch: 1.e4 e5 2.Nf3 Nc6 3.d4 exd4 4.Nxd4 Nxd4 5.Qxd4
   chess: [[4, 1, 4, 3], [4, 6, 4, 4], [6, 0, 5, 2], [1, 7, 2, 5], [3, 1, 3, 3], [4, 4, 3, 3], [5, 2, 3, 3], [2, 5, 3, 3], [3, 0, 3, 3]],
   // Central cannon taking the middle soldier, the horse taking back, the other cannon taking the horse.
@@ -41,7 +43,7 @@ export function openSkinTry(skinId: string, o: TryOptions) {
   const body = document.createElement('div');
   body.className = 'try';
   body.innerHTML = `
-    <div class="try-top"><div class="seg try-game">${(['chess', 'xiangqi'] as const).map(g => `<button data-g="${g}">${esc(s[g])}</button>`).join('')}</div>
+    <div class="try-top"><div class="seg try-game">${GAMES.map(g => `<button data-g="${g}">${esc(s[g])}</button>`).join('')}</div>
       <div class="try-ctl"><button class="btn" data-act="demo">▶ <span>${esc(Q.tryDemo)}</span></button><button class="btn" data-act="reset">↺ <span>${esc(Q.tryReset)}</span></button><button class="btn" data-act="flip" title="${esc(s.flip)}">⇅</button></div></div>
     <div class="try-board"></div>
     <p class="muted small try-hint">${esc(Q.tryHint)}${theme ? ` ${esc(Q.tryBoard)}` : ''}</p>`;
@@ -60,9 +62,10 @@ export function openSkinTry(skinId: string, o: TryOptions) {
 
   const play = (m: number) => {
     const before = match.captured.length;
+    const reveal = !!match.pieceAt(match.moveFrom(m))?.hidden;
     match.play(m);
     selected = null;
-    moveSfx(match, m, before, false);
+    moveSfx(match, m, before, reveal);
     render(true);
   };
 
@@ -83,11 +86,23 @@ export function openSkinTry(skinId: string, o: TryOptions) {
     reset();
     const steps = DEMO[game];
     let i = 0;
+    // Face-down games start from a random deal: take a capture when there is one, else any move.
+    const pick = (): number | undefined => {
+      const legal = match.legalMoves();
+      if (steps) {
+        const st = steps[i];
+        if (!st) return undefined;
+        const from = match.sqOf({ file: st[0], rank: st[1] }), to = match.sqOf({ file: st[2], rank: st[3] });
+        return legal.find(mv => match.moveFrom(mv) === from && match.moveTo(mv) === to);
+      }
+      if (i >= 10 || !legal.length) return undefined;
+      const caps = legal.filter(mv => match.pieceAt(match.moveTo(mv)));
+      const pool = caps.length ? caps : legal;
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
     const next = () => {
-      const st = steps[i++];
-      if (!st) { demo = 0; return; }
-      const from = match.sqOf({ file: st[0], rank: st[1] }), to = match.sqOf({ file: st[2], rank: st[3] });
-      const m = match.legalMoves().find(mv => match.moveFrom(mv) === from && match.moveTo(mv) === to);
+      const m = pick();
+      i++;
       if (m === undefined) { demo = 0; return; }
       play(m);
       demo = window.setTimeout(next, 900);
