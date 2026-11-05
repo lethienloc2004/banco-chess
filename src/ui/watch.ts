@@ -2,10 +2,10 @@
  * Bot vs bot: watch two engines play, with an evaluation bar, the expected
  * line of play and a quality mark for every move — a way to learn.
  */
-import { Match } from '../game';
+import { Match, type SavedMatch } from '../game';
 import { LEVELS, type AIResult, type Level } from '../engine/ai';
 import { MATE, type GameKind } from '../engine/types';
-import { saveSettings, settings, t } from '../state';
+import { saveSettings, settings, store, t } from '../state';
 import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
@@ -47,6 +47,14 @@ function clampScore(v: number): number {
 
 const MATE_BOUND = MATE - 1000;
 
+/** The game being watched, kept for the tab so leaving (e.g. to analyse it) and coming back resumes it. */
+interface WatchSave {
+  match: SavedMatch;
+  ref: (Analysis | null)[];
+  quality: (Quality | null)[];
+  running: boolean;
+}
+
 export class WatchScreen implements Screen {
   readonly el: HTMLElement;
   private match: Match;
@@ -86,9 +94,38 @@ export class WatchScreen implements Screen {
         <div class="card"><h2 class="moves-title"></h2><ol class="moves"></ol></div>
       </aside>`;
     this.board = new BoardRenderer(this.el.querySelector('.board-box')!, () => {});
+    const saved = store.get<WatchSave>('watch:' + kind, true);
+    if (saved && saved.match.kind === kind && this.resume(saved)) return;
     this.render(false, true);
     this.queueReferee();
     this.schedule(600);
+  }
+
+  /** Continue a game watched earlier in this tab; referee gaps are filled in. */
+  private resume(saved: WatchSave): boolean {
+    try {
+      this.match = Match.restore(saved.match);
+    } catch {
+      return false;
+    }
+    const n = this.match.moves.length;
+    this.ref = (saved.ref ?? []).slice(0, n + 1).map(a => a ?? undefined);
+    this.quality = (saved.quality ?? []).slice(0, n);
+    this.running = saved.running ?? true;
+    const replay = new Match(this.kind, this.match.initial);
+    for (let ply = 0; ply <= n; ply++) {
+      if (!this.ref[ply]) this.refQueue.push({ ply, state: replay.botState(), game: this.game });
+      if (ply < n) replay.play(this.match.moves[ply]);
+    }
+    this.pumpReferee();
+    this.render(false, n === 0);
+    if (!this.match.outcome()) this.schedule(600);
+    return true;
+  }
+
+  private persist() {
+    const save: WatchSave = { match: this.match.save(), ref: this.ref.map(a => a ?? null), quality: this.quality, running: this.running };
+    store.set('watch:' + this.kind, save, true);
   }
 
   /** Ask the referee to evaluate the current position (processed in order). */
@@ -114,6 +151,7 @@ export class WatchScreen implements Screen {
         this.ref[job.ply] = { white: side === 0 ? e.data.score : -e.data.score, depth: e.data.depth, pv: [], side };
         this.judgeMove(job.ply - 1);
         this.judgeMove(job.ply);
+        this.persist();
         this.render();
       }
       this.pumpReferee();
@@ -205,6 +243,7 @@ export class WatchScreen implements Screen {
     const reveal = this.match.pieceAt(this.match.moveFrom(r.move))?.hidden ?? false;
     this.match.play(r.move);
     this.queueReferee();
+    this.persist();
     this.thinking = false;
     moveSfx(this.match, r.move, captures, reveal);
     void side;
@@ -242,6 +281,8 @@ export class WatchScreen implements Screen {
     this.ref = [];
     this.refQueue = [];
     this.quality = [];
+    this.running = true;
+    this.persist();
     this.render(false, true);
     this.queueReferee();
     this.schedule(600);
@@ -309,7 +350,7 @@ export class WatchScreen implements Screen {
       ${outcome ? `<button class="btn" data-act="analyse">📈<span>${esc(s.analysis.open)}</span></button>` : ''}`;
     controls.querySelectorAll<HTMLButtonElement>('button').forEach(b => (b.onclick = () => {
       const act = b.dataset.act;
-      if (act === 'toggle') { this.running = !this.running; this.render(); if (this.running) this.schedule(50); }
+      if (act === 'toggle') { this.running = !this.running; this.persist(); this.render(); if (this.running) this.schedule(50); }
       else if (act === 'step') { this.stepOnce = true; this.think(); }
       else if (act === 'new') this.newGame();
       else if (act === 'analyse') this.analyse();

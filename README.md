@@ -61,6 +61,7 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     Cách hiểu: mỗi mức chỉ đấu 8–12 ván nên sai số còn lớn (±150–250 Elo). Stockfish khi bị giới hạn sức mạnh chơi yếu hơn mức ghi danh ở thời gian ngắn, nên các con số có thể **cao hơn** Elo thật trên Lichess/Chess.com. Cờ tướng và cờ úp chưa có thang Elo chuẩn để so.
 - 🎬 **Máy đấu máy để xem và học**:
   - Chọn mức độ cho từng bên và tốc độ (chậm / vừa / nhanh), có tạm dừng và đi từng nước.
+  - Rời trang (ví dụ để phân tích ván) rồi quay lại vẫn xem tiếp đúng ván đó.
   - **Thanh đánh giá** cho biết bên nào hơn và hơn bao nhiêu, hoặc "chiếu hết sau N nước".
   - Xem **chuỗi nước máy dự tính**.
   - **Nhận xét từng nước**: ✓ tốt nhất, ?! không chính xác, ? sai lầm, ?? sai lầm nghiêm trọng. Nhận xét do một máy trọng tài cố định chấm, nên nhất quán dù hai bên chơi ở mức nào.
