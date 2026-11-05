@@ -2,7 +2,7 @@
 import type { GameKind } from '../src/engine/types';
 import puzzleData from '../src/puzzles/puzzles.json';
 import {
-  activeSeason, addDays, currentQuests, dayKey, questById, questValue, resetsIn, shopSkins, skinById, weekKey,
+  activeSeason, addDays, currentQuests, dayKey, holidayOf, holidayPuzzles, questById, questValue, resetsIn, shopSkins, skinById, weekKey,
   type BotLevel, type QuestEvent,
 } from '../src/shared/quests';
 import { KINDS, seasonConfig } from './db';
@@ -53,7 +53,7 @@ export async function recordOnline(db: D1Database, uid: string, kind: GameKind, 
 }
 
 export interface ClientEvent {
-  type: 'bot-game' | 'puzzle' | 'analysis' | 'watch';
+  type: 'bot-game' | 'puzzle' | 'holiday-puzzle' | 'analysis' | 'watch';
   key?: string;
   kind?: GameKind;
   level?: BotLevel;
@@ -66,7 +66,7 @@ export interface ClientEvent {
  * cosmetic, so this trusts the client, but every game/puzzle counts once and
  * reports are rate-limited.
  */
-export async function clientEvent(db: D1Database, uid: string, e: ClientEvent | null, now = Date.now()): Promise<{ completed: string[] } | { error: string }> {
+export async function clientEvent(db: D1Database, uid: string, e: ClientEvent | null, now = Date.now()): Promise<{ completed: string[]; coins?: number } | { error: string }> {
   if (!e || typeof e !== 'object') return { error: 'bad-request' };
   if (!(await rateHit(db, 'qe:' + uid, 120, now))) return { error: 'too-many' };
   const key = String(e.key ?? '').slice(0, 120);
@@ -84,6 +84,19 @@ export async function clientEvent(db: D1Database, uid: string, e: ClientEvent | 
       if (!(await firstTime(db, uid, `pd:${id}:${day}`, now))) return { completed: [] }; // once a day per puzzle
       const n = await db.prepare("SELECT COUNT(*) AS n FROM quest_events WHERE user_id = ? AND key LIKE 'pz:%'").bind(uid).first<{ n: number }>();
       return { completed: await applyEvent(db, uid, { t: 'puzzle', id, distinct: n?.n ?? 0 }, now) };
+    }
+    case 'holiday-puzzle': {
+      // Coins for each puzzle of the running holiday, once per event run.
+      const id = String(e.id ?? '');
+      const season = activeSeason(day, await seasonConfig(db));
+      const p = season && holidayOf(id)?.id === season.id ? holidayPuzzles(season.id).find(x => x.id === id) : null;
+      if (!season || !p) return { error: 'not-running' };
+      if (!(await firstTime(db, uid, `hp:${season.period}:${id}`, now))) return { completed: [], coins: 0 };
+      await db.prepare('UPDATE users SET coins = coins + ? WHERE id = ?').bind(p.coins, uid).run();
+      // It also counts for the "solve puzzles" quests of the day (not for the puzzle achievements).
+      await firstTime(db, uid, `pd:${id}:${day}`, now);
+      const n = await db.prepare("SELECT COUNT(*) AS n FROM quest_events WHERE user_id = ? AND key LIKE 'pz:%'").bind(uid).first<{ n: number }>();
+      return { completed: await applyEvent(db, uid, { t: 'puzzle', id, distinct: n?.n ?? 0 }, now), coins: p.coins };
     }
     case 'analysis':
     case 'watch': {
@@ -111,7 +124,11 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
   // A streak that skipped yesterday is over.
   const streakAlive = user?.streak_day === day || user?.streak_day === addDays(day, -1);
   const season = activeSeason(day, cfg);
+  const solvedHoliday = season
+    ? new Set((await db.prepare('SELECT key FROM quest_events WHERE user_id = ? AND key LIKE ?').bind(uid, `hp:${season.period}:%`).all<{ key: string }>()).results.map(r => r.key.split(':').pop()!))
+    : new Set<string>();
   return {
+    holidayPuzzles: season ? holidayPuzzles(season.id).map(p => ({ ...p, solved: solvedHoliday.has(p.id) })) : [],
     day, week: weekKey(now), resetsIn: resetsIn(now),
     season: season ? { id: season.id, end: season.end } : null,
     coins: user?.coins ?? 0, streak: streakAlive ? user?.streak ?? 0 : 0, equipped: user?.skin ?? null,

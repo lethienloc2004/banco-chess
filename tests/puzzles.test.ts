@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { Match } from '../src/game';
-import { PUZZLES, PUZZLE_KINDS } from '../src/puzzles';
+import { HOLIDAY_PUZZLES, PUZZLES, PUZZLE_KINDS, findPuzzle } from '../src/puzzles';
+import { SEASONS, holidayOf, holidayPuzzles } from '../src/shared/quests';
 import { isMated, mateMoves } from '../src/puzzles/solver';
 import type { SearchPosition } from '../src/engine/types';
 
 // Every puzzle must be a real, unique forced mate. Heavy (mate-in-3), so allow time.
 describe('puzzles', () => {
-  for (const kind of PUZZLE_KINDS) {
-    it(`${kind}: every puzzle is a unique forced mate`, { timeout: 600_000 }, () => {
-      expect(PUZZLES[kind].length).toBeGreaterThan(0);
+  for (const [set, name] of [[PUZZLES, ''], [HOLIDAY_PUZZLES, 'holiday ']] as const) for (const kind of PUZZLE_KINDS) {
+    it(`${name}${kind}: every puzzle is a unique forced mate`, { timeout: 600_000 }, () => {
+      expect(set[kind].length).toBeGreaterThan(0);
       const ids = new Set<string>();
-      for (const p of PUZZLES[kind]) {
+      for (const p of set[kind]) {
         expect(ids.has(p.id), p.id).toBe(false);
         ids.add(p.id);
         const match = new Match(kind, p.start);
@@ -29,4 +30,24 @@ describe('puzzles', () => {
       }
     });
   }
+
+  it('every holiday has six holiday puzzles of its own', () => {
+    const all = new Set<string>();
+    for (const season of SEASONS) {
+      const list = holidayPuzzles(season.id);
+      expect(list.length).toBe(6);
+      for (const p of list) {
+        const f = findPuzzle(p.id);
+        expect(f?.holiday, p.id).toBe(true);
+        expect(f?.kind).toBe(p.kind);
+        expect(f?.puzzle.mate).toBe(p.mate);
+        expect(holidayOf(p.id)?.id).toBe(season.id);
+        expect(all.has(p.id)).toBe(false);
+        all.add(p.id);
+      }
+    }
+    // Holiday positions are new, not copies of the normal puzzles.
+    const normal = new Set([...PUZZLES.chess, ...PUZZLES.xiangqi].map(p => JSON.stringify(p.start)));
+    for (const kind of PUZZLE_KINDS) for (const p of HOLIDAY_PUZZLES[kind]) expect(normal.has(JSON.stringify(p.start)), p.id).toBe(false);
+  });
 });

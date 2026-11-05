@@ -33,6 +33,8 @@ export interface Settings {
   showSkins: boolean;
   /** A holiday skin also dresses the board. */
   themedBoard: boolean;
+  /** Dress the whole site for the running holiday. */
+  themedSite: boolean;
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -84,6 +86,7 @@ const defaults: Settings = {
   soundStyle: 'piece',
   showSkins: true,
   themedBoard: true,
+  themedSite: true,
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

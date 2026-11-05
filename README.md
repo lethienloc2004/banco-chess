@@ -38,6 +38,12 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     - 🎄 Giáng sinh: khung băng có viền kẹo gậy đỏ trắng, tuyết phủ, sương giá, nhành nhựa ruồi và nơ đỏ; ô có vệt tuyết, sông đóng băng có vết nứt.
     - 🧧 Tết: khung sơn mài đỏ viền lượn sóng, chỉ vàng, chữ 福 ở giữa; ô viền chỉ vàng, sông sóng vàng.
     - 🏮 Trung thu: khung trời đêm có mây, trăng và đèn lồng treo; ô có quầng trăng, sông là dòng sông đêm có trăng in bóng.
+  - **Cả trang web đổi theo dịp lễ** khi sự kiện đang chạy (tắt được trong Cài đặt → *Giao diện theo dịp lễ*), có cả bản sáng và tối:
+    - 🎃 Halloween: tông tím, cam bí ngô; mạng nhện có nhện đu dây, trăng và dơi, nghĩa địa có bàn tay xương, bí ngô thắp nến, sương mù, ma và mắt phát sáng.
+    - 🎄 Giáng sinh: tông xanh băng và đỏ; tuyết rơi khắp trang, sương giá, nhũ băng, cây thông, hộp quà, người tuyết.
+    - 🧧 Tết: tông đỏ, vàng; cành mai đào, đèn lồng đung đưa, pháo dây, bao lì xì, chữ 福, cánh hoa rơi và pháo hoa.
+    - 🏮 Trung thu: trời đêm và đèn cam; trăng rằm có thỏ ngọc, đèn ông sao, đèn trời bay lên, bánh trung thu, đom đóm, sao băng.
+  - **Câu đố ngày lễ nhận xu**: mỗi dịp lễ có 6 câu đố riêng (chiếu hết sau 1, 2, 3 nước cho cờ vua và cờ tướng), nằm trong trang *Nhiệm vụ*. Giải được thưởng 🪙 20 / 30 / 50 xu, mỗi câu một lần trong mỗi đợt sự kiện; bàn và quân mặc đúng skin của dịp lễ. Câu đố cũng tính vào nhiệm vụ giải đố hằng ngày.
   - **Skin ngày lễ có hiệu ứng và âm thanh riêng** (tắt theo nút âm thanh và chế độ "giảm chuyển động" của máy):
     - 🎃 Halloween: đi quân để lại vệt khói tím; ăn quân thì **đàn dơi bay tán loạn**, khói ma và con ma bay lên, kèm tiếng "hú".
     - 🎄 Giáng sinh: tuyết rắc theo đường đi; ăn quân thì **tuyết bung ra kèm ngôi sao vàng**, tiếng chuông leng keng.
@@ -459,6 +465,9 @@ friend on the same device, or online. The whole interface is available in Vietna
 
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
+  While an event runs the whole site is dressed for it (colours in light and dark, corner scenes, snow, petals,
+  lanterns…; can be turned off in Settings), and each holiday has 6 holiday puzzles (mate in 1–3, chess and xiangqi)
+  worth 20 / 30 / 50 coins each, once per event.
   Holiday skins also dress the board (cobwebs and bats, snow and garlands, apricot blossoms and red envelopes, a full
   moon with the jade rabbit) and reshape it: each holiday has its own frame (jagged slime-dripping crypt with candle-lit jack-o'-lanterns, ice with a candy-cane trim,
   scalloped red lacquer with 福, a moonlit night sky), tile style and xiangqi river, while the 8×8 and 9×10 grids

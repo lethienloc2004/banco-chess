@@ -195,9 +195,9 @@ const driftCloud = (x: number, y: number, s: number, dur: number, off: number, c
  * Weather drawn ABOVE the pieces (it never takes clicks): Christmas snow, Tết apricot and
  * peach petals, Mid-Autumn fireflies. x0, y0, w, h is the visible area.
  */
-export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h: number): string {
+export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h: number, sparse = 1): string {
   if (theme === 'christmas') {
-    const n = Math.round((w * h) / 7000);
+    const n = Math.round((w * h) / 7000 / sparse);
     const flakes = scatter(n, w, 1, 41).map(([x], i) => {
       const near = i % 5 === 0, r = near ? 7 + (i % 3) * 1.2 : 3 + (i % 4) * 0.9;
       const dur = near ? 7 + (i % 4) : 11 + (i % 7) * 1.6;
@@ -210,7 +210,7 @@ export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h:
     return `<g class="bd-weather">${flakes}</g>`;
   }
   if (theme === 'tet') {
-    const n = Math.round((w * h) / 26000);
+    const n = Math.round((w * h) / 26000 / sparse);
     const petals = scatter(n, w, 1, 53).map(([x], i) => {
       const [fill, edge] = i % 2 ? ['#ffd23f', '#e09b00'] : ['#ffb3cf', '#e0628f'];
       const k = 0.8 + (i % 3) * 0.3;
@@ -220,7 +220,7 @@ export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h:
     return `<g class="bd-weather">${petals}</g>`;
   }
   if (theme === 'midautumn') {
-    const flies = scatter(Math.round((w * h) / 30000), w, h, 61).map(([x, y], i) =>
+    const flies = scatter(Math.round((w * h) / 30000 / sparse), w, h, 61).map(([x, y], i) =>
       `<g transform="translate(${(x0 + x).toFixed(1)} ${(y0 + y).toFixed(1)})"><g class="bd-firefly" style="${phase(7 + (i % 5) * 1.5, i * 2.3)}"><circle r="11" fill="#ffe680" opacity=".3"/><circle r="3.6" fill="#fff6c8" stroke="#ffd24a" stroke-width="1"/></g></g>`).join('');
     return `<g class="bd-weather">${flies}</g>`;
   }
@@ -417,4 +417,88 @@ export function riverBand(theme: Theme): string {
   else if (theme === 'midautumn') extra = `<ellipse cx="470" cy="${(top + bot) / 2 + 22}" rx="40" ry="5" fill="#ffe9a8" opacity=".45"/>`;
   return `<g class="bd-deco bd-river"><path d="${band}" fill="${fill}" opacity="${op}"/>`
     + `<path d="${wave(top + 24, 4, 14)} ${wave(bot - 22, 4, 14)}" fill="none" stroke="${line}" stroke-width="2" opacity=".55"/>${extra}</g>`;
+}
+
+// ---------- The whole site dressed for the holiday ----------
+
+const SCENE_DEFS = `<defs>`
+  + `<radialGradient id="bd-fog"><stop offset="0" stop-color="#d6cdea" stop-opacity=".5"/><stop offset=".55" stop-color="#c9bfe2" stop-opacity=".2"/><stop offset="1" stop-color="#c9bfe2" stop-opacity="0"/></radialGradient>`
+  + `<radialGradient id="bd-candle"><stop offset="0" stop-color="#ffcf5c" stop-opacity=".85"/><stop offset=".5" stop-color="#ff8a1c" stop-opacity=".35"/><stop offset="1" stop-color="#ff6a00" stop-opacity="0"/></radialGradient>`
+  + `<linearGradient id="bd-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a93ab"/><stop offset="1" stop-color="#5a5270"/></linearGradient>`
+  + `<radialGradient id="bd-warm"><stop offset="0" stop-color="#ffd27a" stop-opacity=".75"/><stop offset=".55" stop-color="#ff9a3c" stop-opacity=".25"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient>`
+  + `<linearGradient id="bd-tail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fffbe6" stop-opacity="0"/><stop offset="1" stop-color="#fffbe6"/></linearGradient>`
+  + `<linearGradient id="bd-ice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#cde8fa"/><stop offset="1" stop-color="#6fb0dd" stop-opacity=".85"/></linearGradient>`
+  + `</defs>`;
+
+const spider = (x: number, len: number, off: number) => `<g transform="translate(${x} 0)"><g class="bd-dangle" style="${phase(5, off)};--len:${len}px">`
+  + `<path d="M0 -400 V0" stroke="#cdb8ee" stroke-width="1.4" opacity=".8"/><g fill="#1b1027"><ellipse cy="8" rx="9" ry="11"/><circle cy="-4" r="6"/></g>`
+  + `<path d="M-8 4 l-12 -8 M-8 9 l-14 0 M-8 14 l-12 8 M8 4 l12 -8 M8 9 l14 0 M8 14 l12 8" stroke="#1b1027" stroke-width="2.2" fill="none"/><circle cx="-2.4" cy="-5" r="1.4" fill="#ff5252"/><circle cx="2.4" cy="-5" r="1.4" fill="#ff5252"/></g></g>`;
+const snowman = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})">`
+  + `<circle cy="-14" r="18" fill="#fff" stroke="#b9d3e6" stroke-width="1.5"/><circle cy="-42" r="13" fill="#fff" stroke="#b9d3e6" stroke-width="1.5"/>`
+  + `<path d="M-14 -54 H14 M-9 -54 V-70 H9 V-54" fill="#2b2b3a" stroke="#2b2b3a" stroke-width="3"/><rect x="-9" y="-60" width="18" height="4" fill="#c62828"/>`
+  + `<circle cx="-4.5" cy="-45" r="1.8" fill="#222"/><circle cx="4.5" cy="-45" r="1.8" fill="#222"/><path d="M0 -41 L10 -39 L0 -37Z" fill="#ff8a1c"/>`
+  + `<path d="M-12 -31 Q0 -26 12 -31 L14 -26 Q0 -21 -14 -26Z M8 -28 l4 14 h-6z" fill="#c62828"/><circle cy="-18" r="2" fill="#222"/><circle cy="-9" r="2" fill="#222"/>`
+  + `<path d="M-17 -20 L-34 -32 M-30 -29 l-4 -8 M17 -20 L34 -34 M30 -31 l6 -6" stroke="#6d4c2e" stroke-width="2.4" stroke-linecap="round"/></g>`;
+const gift = (x: number, y: number, s: number, c: string, rib: string) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-14" y="-24" width="28" height="24" fill="${c}"/><rect x="-16" y="-30" width="32" height="8" fill="${c}" stroke="#0002"/>`
+  + `<rect x="-3" y="-30" width="6" height="30" fill="${rib}"/><path d="M0 -30 C-10 -42 -18 -32 0 -30 C18 -32 10 -42 0 -30" fill="none" stroke="${rib}" stroke-width="3"/></g>`;
+function mooncake(x: number, y: number, s: number): string {
+  const pt = (a: number, r: number) => `${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`;
+  let d = `M${pt(0, 21)}`;
+  for (let i = 0; i < 12; i++) d += ` Q${pt(((i + 0.5) * Math.PI) / 6, 27)} ${pt(((i + 1) * Math.PI) / 6, 21)}`;
+  return `<g transform="translate(${x} ${y}) scale(${s})"><path d="${d}Z" fill="#c98a3a" stroke="#8a5a1f" stroke-width="1.5"/>`
+    + `<circle r="14" fill="#d9a050" stroke="#8a5a1f" stroke-width="1.2"/><path d="M0 -9 C5 -4 5 4 0 9 C-5 4 -5 -4 0 -9Z M-9 0 C-4 -5 4 -5 9 0 C4 5 -4 5 -9 0Z" fill="none" stroke="#8a5a1f" stroke-width="1.3"/><circle r="2.2" fill="#8a5a1f"/></g>`;
+}
+const fuDisk = (x: number, y: number, r: number) => `<g transform="translate(${x} ${y}) rotate(45)"><rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" fill="#d32f2f" stroke="#ffd54f" stroke-width="3"/><text transform="rotate(-45)" y="2" text-anchor="middle" dominant-baseline="central" font-size="${r * 1.3}" font-weight="700" fill="#ffd54f" font-family="'Noto Serif SC', 'Songti SC', serif">福</text></g>`;
+
+/** A holiday scene for the whole page: four corner pieces and a layer of moving things behind the content. */
+export function siteScene(theme: Theme): { corners: [string, string, string, string]; sky: string } {
+  const svg = (inner: string, vb = '0 0 300 300') => `<svg viewBox="${vb}" aria-hidden="true">${SCENE_DEFS}${inner}</svg>`;
+  const W = 1600, H = 1000;
+  let corners: [string, string, string, string], sky: string;
+  switch (theme) {
+    case 'halloween':
+      corners = [
+        cobweb(0, 0, 1, 1, 270, '#cdb8ee', 0.55) + spider(170, 150, 0) + spider(70, 90, 3),
+        moon(200, 95, 62, 0.95) + batShape(110, 70, 2.6, '#1b1027', 0.85) + batShape(240, 190, 1.9, '#1b1027', 0.8) + batShape(70, 160, 1.4, '#1b1027', 0.7),
+        `<ellipse cx="150" cy="292" rx="160" ry="16" fill="#120a1c" opacity=".55"/>` + tomb(60, 285, 2, 0, -6) + tomb(160, 290, 1.5, 1, 4) + tomb(245, 286, 1.7, 2, -3) + hand(112, 292, 1.7, 2),
+        `<ellipse cx="160" cy="292" rx="150" ry="14" fill="#120a1c" opacity=".55"/>` + tomb(250, 286, 1.4, 1, 6) + pumpkin(170, 262, 3.1, true) + pumpkin(70, 275, 2.2, true),
+      ];
+      sky = [[0.2, 0.3, 40, 0], [0.7, 0.55, 54, 11], [0.45, 0.85, 46, 23]].map(([fx, fy, d, o]) => `<g transform="translate(${fx * W} ${fy * H})"><ellipse class="bd-fog" style="${phase(d, o)}" rx="520" ry="90" fill="url(#bd-fog)"/></g>`).join('')
+        + ghost(W * 0.12, H * 0.6, 3, 19, 0) + ghost(W * 0.82, H * 0.35, 2.6, 23, 9) + ghost(W * 0.5, H * 0.75, 2.2, 27, 17)
+        + flyingBat(H * 0.2, W, 24, 4, 2) + flyingBat(H * 0.55, W, 31, 15, 1.5)
+        + eyes(W * 0.06, H * 0.45, 2, 1) + eyes(W * 0.94, H * 0.62, 2, 6, '#ff6a3d') + eyes(W * 0.9, H * 0.15, 1.6, 11);
+      break;
+    case 'christmas':
+      corners = [
+        frost(0, 0, 1, 1, 230) + icicles(0, 300, 0, 3, 60),
+        frost(300, 0, -1, 1, 230) + icicles(0, 300, 0, 7, 60),
+        snowDrift(-20, 320, 268, 1) + tree(80, 222, 4.2) + tree(185, 246, 2.8) + gift(250, 280, 1.4, '#c62828', '#ffd54f'),
+        snowDrift(-20, 320, 268, 1) + snowman(190, 290, 2.6) + gift(70, 288, 1.6, '#2e7d32', '#e53935') + gift(108, 290, 1.1, '#1e88e5', '#fff'),
+      ];
+      sky = boardWeather('christmas', 0, 0, W, H, 1.8).replace(/^<g class="bd-weather">|<\/g>$/g, '');
+      break;
+    case 'tet':
+      corners = [
+        branch(0, 6, 1, 1, '#ffd23f', '#e65100', 320) + swingLantern(220, 0, 1.7, 0) + swingLantern(130, 0, 1.2, 2),
+        branch(300, 6, -1, 1, '#ff9ec0', '#c2185b', 320) + swingLantern(80, 0, 1.7, 1),
+        firecrackers(40, 0, 16, 0) + envelope(150, 250, 3) + envelope(230, 262, 2.2),
+        fuDisk(200, 220, 46) + envelope(80, 262, 2.4),
+      ];
+      sky = boardWeather('tet', 0, 0, W, H, 0.7).replace(/^<g class="bd-weather">|<\/g>$/g, '')
+        + `<g opacity=".8">${firework(W * 0.18, H * 0.22, 90, '#ffd54f', 5.2, 0)}${firework(W * 0.82, H * 0.18, 80, '#ff5252', 6.4, 3)}${firework(W * 0.5, H * 0.12, 70, '#ff80ab', 7.1, 8)}${firework(W * 0.66, H * 0.4, 60, '#ffab40', 5.8, 13)}</g>`;
+      break;
+    case 'midautumn':
+      corners = [
+        starLantern(90, 130, 3, 0) + swingLantern(220, 0, 1.6, 1),
+        moon(185, 110, 82, 1) + rabbit(165, 122, 3.2) + driftCloud(170, 160, 2, 23, 0, '#c9d3f0'),
+        lantern(75, 220, 2.2) + rabbit(200, 262, 3) + starLantern(250, 160, 1.6, 3),
+        mooncake(110, 255, 2) + mooncake(210, 268, 1.5) + lantern(240, 170, 1.6),
+      ];
+      sky = stars(scatter(70, W, H, 7).map(([x, y], i) => [x, y, 2 + (i % 3)] as [number, number, number]))
+        + boardWeather('midautumn', 0, 0, W, H, 0.8).replace(/^<g class="bd-weather">|<\/g>$/g, '')
+        + skyLantern(W * 0.15, H * 0.95, 900, 2.2, 26, 0) + skyLantern(W * 0.42, H, 950, 1.8, 31, 9) + skyLantern(W * 0.7, H * 0.98, 900, 2, 28, 17) + skyLantern(W * 0.9, H, 950, 1.6, 34, 5)
+        + shootingStar(W * 0.2, H * 0.12, 11, 0) + shootingStar(W * 0.55, H * 0.25, 15, 7);
+      break;
+  }
+  return { corners: corners.map(c => svg(c)) as [string, string, string, string], sky: `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${SCENE_DEFS}${sky}</svg>` };
 }

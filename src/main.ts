@@ -13,7 +13,9 @@ import { WatchScreen } from './ui/watch';
 import { AnalysisScreen, pendingAnalysis } from './ui/analysis';
 import { leaderboardScreen, profileScreen } from './ui/leaderboard';
 import { ACCOUNT_EVENT, accountChanged, openLogin } from './ui/login';
-import { questsScreen } from './ui/quests';
+import { questsScreen, seasonNow } from './ui/quests';
+import { skinTheme } from './ui/skins';
+import { applySiteTheme } from './ui/siteTheme';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -118,6 +120,8 @@ function applyGlobal() {
     themeFor(CHESS_BOARDS, settings.chessBoard, 'chessBoard'), themeFor(CHESS_PIECES, settings.chessPieces, 'chessPieces'),
     themeFor(XQ_BOARDS, settings.xqBoard, 'xqBoard'), themeFor(XQ_PIECES, settings.xqPieces, 'xqPieces'),
   ]);
+  const season = settings.themedSite ? seasonNow() : null;
+  applySiteTheme(season ? (skinTheme(season.skin) ?? null) : null);
   $('#tagline').textContent = s.tagline;
   $('#src-link').textContent = s.source;
   $('#privacy-link').textContent = s.privacy;
@@ -226,7 +230,7 @@ function show(dir: 'forward' | 'back' | 'none' = 'none') {
 function backTarget(): string {
   switch (route.name) {
     case 'play': case 'match': case 'watch': return '#/' + route.kind;
-    case 'puzzle': return '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
+    case 'puzzle': return findPuzzle(route.id)?.holiday ? '#/quests' : '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
     case 'analysis': return pendingAnalysis()?.back ?? '#/';
     case 'player': return '#/leaderboard';
     default: return '#/';
@@ -416,6 +420,7 @@ function openSettings() {
       row(s.soundStyle, soundStyleControl()),
       row(s.quests.showSkins, seg([[true, s.on], [false, s.off]], settings.showSkins, v => { settings.showSkins = v; settingsChanged(); })),
       row(s.quests.themedBoard, seg([[true, s.on], [false, s.off]], settings.themedBoard, v => { settings.themedBoard = v; settingsChanged(); })),
+      row(s.quests.themedSite, seg([[true, s.on], [false, s.off]], settings.themedSite, v => { settings.themedSite = v; settingsChanged(); })),
     ),
     group(`${s.chess} · ${s.hiddenchess}`,
       row(s.boardColor, palette(CHESS_BOARDS, 'chessBoard', settings.chessBoard, [C.light, C.dark], id => { settings.chessBoard = id; settingsChanged(); })),

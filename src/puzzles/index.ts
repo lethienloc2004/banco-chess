@@ -2,6 +2,8 @@
 import type { XiangqiJSON } from '../engine/xiangqi';
 import { store } from '../state';
 import data from './puzzles.json';
+import holiday from './holiday.json';
+import { holidayOf, holidayPuzzles } from '../shared/quests';
 
 export type PuzzleKind = 'chess' | 'xiangqi';
 
@@ -17,11 +19,15 @@ export interface Puzzle {
 
 export const PUZZLES = data as unknown as Record<PuzzleKind, Puzzle[]>;
 export const PUZZLE_KINDS: PuzzleKind[] = ['chess', 'xiangqi'];
+/** Holiday puzzles: played from the quests screen during an event, for coins. */
+export const HOLIDAY_PUZZLES = holiday as unknown as Record<PuzzleKind, Puzzle[]>;
 
-export function findPuzzle(id: string): { kind: PuzzleKind; puzzle: Puzzle; index: number } | null {
-  for (const kind of PUZZLE_KINDS) {
-    const index = PUZZLES[kind].findIndex(p => p.id === id);
-    if (index >= 0) return { kind, puzzle: PUZZLES[kind][index], index };
+export function findPuzzle(id: string): { kind: PuzzleKind; puzzle: Puzzle; index: number; holiday: boolean } | null {
+  for (const [set, isHoliday] of [[PUZZLES, false], [HOLIDAY_PUZZLES, true]] as const) {
+    for (const kind of PUZZLE_KINDS) {
+      const index = set[kind].findIndex(p => p.id === id);
+      if (index >= 0) return { kind, puzzle: set[kind][index], index, holiday: isHoliday };
+    }
   }
   return null;
 }
@@ -64,5 +70,11 @@ export function unlocked(p: Puzzle, kind: PuzzleKind): boolean {
 export function nextPuzzle(id: string): Puzzle | null {
   const f = findPuzzle(id);
   if (!f) return null;
+  if (f.holiday) {
+    // The next holiday puzzle of the same event.
+    const list = holidayPuzzles(holidayOf(id)?.id ?? '');
+    const next = list[list.findIndex(p => p.id === id) + 1];
+    return next ? findPuzzle(next.id)!.puzzle : null;
+  }
   return PUZZLES[f.kind][f.index + 1] ?? null;
 }

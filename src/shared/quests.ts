@@ -171,6 +171,23 @@ export function seasonWindow(id: string, day: string): { start: string; end: str
   return [...windows(y), ...windows(y + 1)].filter(x => x.season === id && x.end >= day).sort((a, b) => a.start.localeCompare(b.start)).map(x => ({ start: x.start, end: x.end }))[0] ?? null;
 }
 
+// ---------- Holiday puzzles ----------
+
+/** Coins for solving a holiday puzzle (once per event), by mate length. */
+export const HOLIDAY_PUZZLE_COINS = { 1: 20, 2: 30, 3: 50 } as const;
+export interface HolidayPuzzle { id: string; kind: 'chess' | 'xiangqi'; mate: 1 | 2 | 3; coins: number }
+
+/** Six puzzles per holiday (mate in 1, 2, 3 for chess and xiangqi) from src/puzzles/holiday.json. */
+export function holidayPuzzles(season: string): HolidayPuzzle[] {
+  const i = SEASONS.findIndex(x => x.id === season);
+  if (i < 0) return [];
+  const n = String(i + 1).padStart(2, '0');
+  return ([1, 2, 3] as const).flatMap(mate => (['chess', 'xiangqi'] as const).map(kind =>
+    ({ id: `h-${kind === 'chess' ? 'c' : 'x'}${mate}-${n}`, kind, mate, coins: HOLIDAY_PUZZLE_COINS[mate] })));
+}
+/** The holiday a holiday puzzle belongs to. */
+export const holidayOf = (id: string): Season | null => SEASONS.find(x => holidayPuzzles(x.id).some(p => p.id === id)) ?? null;
+
 export const SEASON_QUESTS: QuestDef[] = SEASONS.map(s => quest(`s.${s.id}`, 'season', 3, { coins: 60, skin: s.skin },
   `${s.emoji} Dịp ${s.name.vi}: thắng 3 ván (với máy hoặc online)`, `${s.emoji} ${s.name.en}: win 3 games (bot or online)`,
   (ev, p) => plus(won(ev))(p), { season: s.id }));

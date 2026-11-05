@@ -13,7 +13,9 @@ import { openDialog } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { net } from '../net';
-import { myBoardTheme, reportQuest } from './quests';
+import { myBoardTheme, reportQuest, seasonNow } from './quests';
+import { holidayOf, type Season } from '../shared/quests';
+import { skinTheme } from './skins';
 import { esc } from './util';
 
 const STAR = '★';
@@ -84,6 +86,8 @@ export class PuzzleScreen implements Screen {
   private readonly kind: PuzzleKind;
   private readonly puzzle: Puzzle;
   private readonly index: number;
+  /** Set for a holiday puzzle (played from the quests screen for coins). */
+  private readonly holiday: Season | null;
   private match!: Match;
   private board: BoardRenderer;
   private attacker: 0 | 1 = 0;
@@ -104,6 +108,7 @@ export class PuzzleScreen implements Screen {
     this.kind = f.kind;
     this.puzzle = f.puzzle;
     this.index = group(f.kind, f.puzzle.mate).findIndex(p => p.id === id);
+    this.holiday = f.holiday ? holidayOf(id) : null;
     this.el = document.createElement('section');
     this.el.className = 'screen game puzzle';
     this.el.dataset.kind = this.kind;
@@ -247,7 +252,8 @@ export class PuzzleScreen implements Screen {
     this.phase = 'solved';
     const got = this.hinted ? Math.max(1, 2 - this.mistakes) : this.mistakes === 0 ? 3 : this.mistakes === 1 ? 2 : 1;
     record(this.puzzle.id, got);
-    reportQuest({ type: 'puzzle', id: this.puzzle.id });
+    if (this.holiday) reportQuest({ type: 'holiday-puzzle', id: this.puzzle.id });
+    else reportQuest({ type: 'puzzle', id: this.puzzle.id });
     if (settings.sound) playSound('solved');
     this.message = { text: P.solved, cls: 'over' };
     this.render(true);
@@ -258,7 +264,7 @@ export class PuzzleScreen implements Screen {
       openDialog({
         title: P.solvedTitle, icon: '🎉', className: 'over-dlg', body,
         actions: [
-          { label: P.levels, kind: 'ghost', onClick: () => this.nav.go(`#/puzzles/${this.kind}`, 'back') },
+          { label: this.holiday ? s.quests.title : P.levels, kind: 'ghost', onClick: () => this.nav.go(this.holiday ? '#/quests' : `#/puzzles/${this.kind}`, 'back') },
           { label: P.retry, onClick: () => { this.mistakes = 0; this.hinted = false; this.reset(); } },
           ...(next ? [{ label: P.next, kind: 'primary' as const, onClick: () => this.nav.go(`#/puzzle/${next.id}`) }] : []),
         ],
@@ -299,8 +305,11 @@ export class PuzzleScreen implements Screen {
     const P = s.puzzles;
     const m = this.match;
     const flipped = this.attacker === 1;
-    this.el.querySelector('.game-title h1')!.textContent = `${P.level(this.index + 1)} · ${s[this.kind]}`;
-    this.el.querySelector('.mode-line')!.textContent = P.mateIn(this.puzzle.mate);
+    this.el.querySelector('.game-title h1')!.textContent = this.holiday
+      ? `${this.holiday.emoji} ${s.quests.hpTitle(this.holiday.name[settings.lang])} · ${s[this.kind]}`
+      : `${P.level(this.index + 1)} · ${s[this.kind]}`;
+    this.el.querySelector('.mode-line')!.textContent = P.mateIn(this.puzzle.mate)
+      + (this.holiday && seasonNow()?.id !== this.holiday.id ? ` · ${s.quests.hpNoReward}` : '');
 
     const status = this.message?.text ?? P.task(this.sideName(this.attacker), this.puzzle.mate);
     const st = this.el.querySelector<HTMLElement>('.status')!;
@@ -340,12 +349,14 @@ export class PuzzleScreen implements Screen {
     if (this.selected !== null && this.phase === 'play') {
       for (const mv of m.legalMoves()) if (m.moveFrom(mv) === this.selected) targets.set(m.moveTo(mv), m.pieceAt(m.moveTo(mv)) !== null);
     }
-    const mine = net.me?.skin ?? null;
+    // Holiday puzzles are dressed for their holiday: its skin on both sides and its board.
+    const mine = this.holiday ? this.holiday.skin : net.me?.skin ?? null;
+    const theme = this.holiday ? (settings.themedBoard ? skinTheme(this.holiday.skin) : null) : myBoardTheme();
     this.board.render(m, {
       flipped, selected: this.selected, targets, labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
-      skins: this.attacker === 0 ? [mine, null] : [null, mine],
-      theme: myBoardTheme(),
+      skins: this.holiday ? [mine, mine] : this.attacker === 0 ? [mine, null] : [null, mine],
+      theme,
     }, animate, intro);
     this.board.svg.classList.toggle('locked', this.phase !== 'play');
     this.board.svg.classList.toggle('hinted', this.hint !== null);

@@ -4,7 +4,7 @@
  */
 import type { GameKind } from '../engine/types';
 import { net } from '../net';
-import { ACHIEVEMENTS, SEASONS, SKINS, activeSeason, dayKey, questById, skinById, type QuestDef } from '../shared/quests';
+import { ACHIEVEMENTS, SEASONS, SKINS, activeSeason, dayKey, questById, skinById, type HolidayPuzzle, type QuestDef } from '../shared/quests';
 import { settings, t } from '../state';
 import { confirmDialog, toast } from './dialog';
 import type { Nav, Screen } from './home';
@@ -17,7 +17,8 @@ export interface QuestRow {
 }
 export interface QuestState {
   day: string; week: string; resetsIn: { day: number; week: number };
-  season: { id: string; end: string } | null;
+  season: { id: string; end: string | null } | null;
+  holidayPuzzles: (HolidayPuzzle & { solved: boolean })[];
   coins: number; streak: number; equipped: string | null; owned: string[];
   quests: QuestRow[]; shop: { id: string; price: number }[];
 }
@@ -54,13 +55,15 @@ export function gameKey(...parts: unknown[]): string {
 type Report =
   | { type: 'bot-game'; kind: GameKind; level: string; result: 'win' | 'loss' | 'draw'; key: string }
   | { type: 'puzzle'; id: string }
+  | { type: 'holiday-puzzle'; id: string }
   | { type: 'analysis'; key: string }
   | { type: 'watch'; key: string };
 
 /** Tell the server; announce quests this completed. Never blocks or fails the game. */
 export function reportQuest(ev: Report) {
   if (!net.available || !net.me) return;
-  void net.api<{ completed: string[] }>('/quests/event', { method: 'POST', body: ev }).then(r => {
+  void net.api<{ completed: string[]; coins?: number }>('/quests/event', { method: 'POST', body: ev }).then(r => {
+    if (r.coins) { toast(`🪙 +${r.coins} ${t().quests.coins}`); void loadQuests(); }
     if (r.completed.length) {
       const names = r.completed.map(id => questById(id)?.title[settings.lang]).filter(Boolean);
       toast(`🎯 ${t().quests.completed}: ${names.join(' · ')}`);
@@ -149,6 +152,10 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
         + section(Qs.today, Qs.resets(fmtLeft(st.resetsIn.day)), daily)
         + section(Qs.week, Qs.resets(fmtLeft(st.resetsIn.week)), weekly)
         + (season ? section(`${season.emoji} ${Qs.event}`, '', event) : '')
+        + (season && st.holidayPuzzles.length ? `<div class="card q-section"><div class="q-head"><h2>🧩 ${esc(Qs.hpTitle(season.name[settings.lang]))}</h2><span class="muted small">${esc(Qs.hpSub)}</span></div>
+            <div class="hp-grid">${st.holidayPuzzles.map(p => `<a class="hp-card${p.solved ? ' solved' : ''}" href="#/puzzle/${p.id}" data-hp="${p.id}">
+              <span class="hp-kind">${esc(s[p.kind])}</span><b>${esc(s.puzzles.mateIn(p.mate))}</b>
+              <span class="hp-reward">${p.solved ? `✓ ${esc(Qs.hpSolved)}` : `🪙 +${p.coins}`}</span></a>`).join('')}</div></div>` : '')
         + section(Qs.achievements, Qs.achievementsSub, ach)
       : `<div class="card skin-now"><div><h2>${esc(Qs.wearing)}</h2><b>${esc(st.equipped ? skinById(st.equipped)?.name[settings.lang] ?? '' : Qs.noSkin)}</b>
           <p class="muted small">${esc(Qs.othersSee)}</p>
@@ -163,6 +170,7 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
       <nav class="pz-tabs q-tabs"><a href="#/quests" class="${current === 'quests' ? 'on' : ''}" data-tab="quests">🎯 ${esc(Qs.tabQuests)}${claimable ? ` <em class="badge">${claimable}</em>` : ''}</a><a href="#/quests/skins" class="${current === 'skins' ? 'on' : ''}" data-tab="skins">🎨 ${esc(Qs.tabSkins)}</a></nav>
       <div class="q-body">${body}</div>`;
     el.querySelectorAll<HTMLAnchorElement>('[data-tab]').forEach(a => (a.onclick = e => { e.preventDefault(); current = a.dataset.tab as typeof current; draw(); history.replaceState(null, '', a.getAttribute('href')!); }));
+    el.querySelectorAll<HTMLAnchorElement>('[data-hp]').forEach(a => (a.onclick = e => { e.preventDefault(); nav.go(a.getAttribute('href')!); }));
     el.querySelectorAll<HTMLButtonElement>('[data-g]').forEach(b => (b.onclick = () => { previewGame = b.dataset.g as typeof previewGame; draw(); }));
     el.querySelectorAll<HTMLButtonElement>('[data-claim]').forEach(b => (b.onclick = async () => {
       b.disabled = true;

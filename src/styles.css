@@ -1030,3 +1030,39 @@ svg.board[data-theme] .xq-river { opacity: .9; }
 .ev-prev { width: 96px; flex: none; background: var(--surface-2); border-radius: 10px; padding: 4px; }
 .ev-prev svg { width: 100%; height: auto; display: block; }
 .ev-shop { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+
+/* The site dressed for a holiday: a scene behind everything (never takes clicks). */
+.season-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.season-scene ~ #app, :root[data-season] #app { position: relative; z-index: 1; }
+.ss-sky, .ss-sky svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ss-sky { opacity: .6; }
+.ss-corner { position: absolute; width: clamp(130px, 22vw, 300px); opacity: .9; }
+.ss-corner svg { display: block; width: 100%; height: auto; }
+.ss-corner.tl { top: 0; left: 0; } .ss-corner.tr { top: 0; right: 0; }
+.ss-corner.bl { bottom: 0; left: 0; } .ss-corner.br { bottom: 0; right: 0; }
+/* Lanterns and branches hang below the header so the title stays readable. */
+:root[data-season='tet'] .ss-corner.tl, :root[data-season='tet'] .ss-corner.tr,
+:root[data-season='midautumn'] .ss-corner.tl, :root[data-season='midautumn'] .ss-corner.tr { top: 64px; }
+@media (max-width: 700px) { .ss-corner { width: 120px; opacity: .55; } .ss-sky { opacity: .45; } }
+:root[data-season] body { background: radial-gradient(1200px 700px at 50% -10%, var(--accent-soft), transparent 70%), var(--bg); background-attachment: fixed; }
+:root[data-season] .top { position: relative; }
+:root[data-season] .top::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -6px; height: 4px; border-radius: 4px; opacity: .85;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 18px, transparent 18px 26px); }
+:root[data-season='christmas'] .top::after { background: repeating-linear-gradient(90deg, #c62828 0 14px, #fff 14px 28px, #2e7d32 28px 42px, #fff 42px 56px); }
+:root[data-season='tet'] .top::after { background: repeating-linear-gradient(90deg, #c62828 0 22px, #ffca28 22px 30px); }
+:root[data-season='halloween'] .top::after { background: repeating-linear-gradient(90deg, #ff8a2b 0 16px, #2a1a3d 16px 24px, #7cff6b 24px 28px, #2a1a3d 28px 36px); }
+:root[data-season='midautumn'] .top::after { background: repeating-linear-gradient(90deg, #f0c050 0 6px, transparent 6px 22px); height: 6px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { .season-scene .ss-sky { display: none; } }
+
+/* Spider dangling on its thread (Halloween corner) */
+.bd-dangle { animation: bdDangle ease-in-out infinite alternate; }
+@keyframes bdDangle { from { transform: translateY(calc(var(--len) * .55)); } to { transform: translateY(var(--len)); } }
+
+/* Holiday puzzles on the quests screen */
+.hp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.hp-card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: var(--surface-2); color: var(--text); text-decoration: none; border: 1px solid var(--border); transition: transform .15s; }
+.hp-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.hp-card .hp-kind { font-size: 12px; color: var(--muted); }
+.hp-card .hp-reward { font-weight: 700; color: var(--accent); }
+.hp-card.solved { opacity: .7; }
+.hp-card.solved .hp-reward { color: #16a34a; }

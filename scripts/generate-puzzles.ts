@@ -6,6 +6,9 @@
  *
  *   npx tsx scripts/generate-puzzles.ts [minutesPerKind=6] [seed=1] [kinds=chess,xiangqi] [out=src/puzzles/puzzles.json]
  *
+ * Holiday puzzles (4 per mate length and game, ids h-c1-01…):
+ *   PUZZLE_TARGET=4,4,4 PUZZLE_PREFIX=h- npx tsx scripts/generate-puzzles.ts 5 7 chess,xiangqi src/puzzles/holiday.json
+ *
  * Positions are original (found by the app's own engine), MIT licensed.
  */
 import { writeFileSync } from 'node:fs';
@@ -21,7 +24,9 @@ interface Puzzle { id: string; mate: 1 | 2 | 3; start: string | XiangqiJSON; lin
 
 const minutes = Number(process.argv[2] ?? 6);
 const random = rngFloat(Number(process.argv[3] ?? 1));
-const TARGET = { 1: 24, 2: 24, 3: 12 } as const;
+const [t1, t2, t3] = (process.env.PUZZLE_TARGET ?? '24,24,12').split(',').map(Number);
+const TARGET = { 1: t1, 2: t2, 3: t3 } as const;
+const PREFIX = process.env.PUZZLE_PREFIX ?? '';
 const KINDS = (process.argv[4] ?? 'chess,xiangqi').split(',') as Kind[];
 const OUT = process.argv[5] ?? 'src/puzzles/puzzles.json';
 
@@ -122,7 +127,7 @@ for (const kind of KINDS) {
   for (const n of [1, 2, 3] as const) {
     // Simpler positions (fewer pieces) first inside each group.
     f[n].sort((a, b) => a.pieces - b.pieces);
-    f[n].forEach((p, i) => { p.id = `${kind === 'chess' ? 'c' : 'x'}${n}-${String(i + 1).padStart(2, '0')}`; });
+    f[n].forEach((p, i) => { p.id = `${PREFIX}${kind === 'chess' ? 'c' : 'x'}${n}-${String(i + 1).padStart(2, '0')}`; });
     out[kind].push(...f[n]);
   }
 }
