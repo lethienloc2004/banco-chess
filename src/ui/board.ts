@@ -131,7 +131,7 @@ export class BoardRenderer {
       } else if (match.isChess) {
         const sk = skins[p.color];
         parts.push(hasSkin(sk)
-          ? chessPiece(sk, p.color as 0 | 1, chessGlyph(p.type), `cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}`)
+          ? chessPiece(sk, p.color as 0 | 1, p.type, p.hidden)
           : `<text class="cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}" y="4">${chessGlyph(p.type)}</text>`);
       } else if (p.hidden && !view.peek) {
         parts.push(`<circle class="xq-disc hidden ${p.color ? 'b' : 'r'}" r="44"/>`,

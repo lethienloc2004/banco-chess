@@ -22,7 +22,13 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - **3 nhiệm vụ mỗi ngày** và **2 nhiệm vụ mỗi tuần** (giống nhau cho mọi người, làm mới theo giờ Việt Nam): thắng máy, giải thế cờ, chơi online, phân tích ván… Hoàn thành được **xu**, giữ **chuỗi ngày liên tiếp**.
   - **9 thành tích**, mỗi thành tích mở một skin: Gỗ, Cẩm thạch, Đồng, Vàng, Pha lê, Ngọc bích, Neon, Rồng lửa, Thiên hà.
   - **Cửa hàng**: Mực tàu, Kẹo ngọt, Hoa anh đào. **Skin dịp lễ** chỉ có trong sự kiện: 🎃 Halloween, 🎄 Giáng sinh, 🧧 Tết, 🏮 Trung thu (mua bằng xu hoặc làm nhiệm vụ sự kiện).
-  - Skin vẽ hoàn toàn bằng SVG (màu chuyển, phát sáng, trang trí, hiệu ứng khi ăn quân), dùng cho cả cờ vua lẫn cờ tướng. **Chơi online thì đối thủ cũng thấy skin của bạn** (có thể tắt trong Cài đặt).
+  - **Mỗi chủ đề có hình dáng quân riêng**, vẽ mới hoàn toàn bằng SVG nhưng vẫn dễ nhận ra từng quân. Cờ vua có 6 bộ:
+    - **Khắc gỗ cổ điển** và **hình học hiện đại**.
+    - 🎃 **Halloween**: Tốt là bí ngô có mặt cười, Tượng là con ma, Hậu là phù thủy, Vua là ma cà rồng.
+    - 🎄 **Giáng sinh**: Tốt là quả châu, Xe là ống khói phủ tuyết, Tượng là cây thông, Mã là tuần lộc, Vua đội mũ ông già Noel.
+    - 🧧 **Tết**: Tốt là đồng xu, Xe là ngôi chùa, Tượng là tràng pháo, Mã thắt nơ đỏ, Hậu cài hoa mai, Vua đội mũ cánh chuồn.
+    - 🏮 **Trung thu**: Tốt là đèn lồng, Mã là thỏ ngọc, Tượng là đèn ông sao, Hậu là Hằng Nga, Vua dưới trăng rằm.
+  - Quân cờ tướng đổi viền theo chủ đề (hoa, quả bí, quả châu, đèn lồng, viền lửa, hành tinh có vành, viên ngọc, viên kẹo, đồng xu…), chữ giữ nguyên để dễ đọc. Có thêm màu chuyển, phát sáng và hiệu ứng khi ăn quân. **Chơi online thì đối thủ cũng thấy skin của bạn** (có thể tắt trong Cài đặt).
   - Tiến độ lưu theo tài khoản trên máy chủ. Ván online do máy chủ tự chấm; mỗi ván, mỗi thế cờ chỉ được tính một lần.
 
   ![16 skin quân cờ](docs/skins.png)
@@ -437,7 +443,8 @@ friend on the same device, or online. The whole interface is available in Vietna
 
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
-  Skins are pure SVG (gradients, glow, decorations, capture effects) for chess and xiangqi; online opponents see yours.
+  Each theme has its own original piece shapes (classic carved, geometric, and Halloween, Christmas, Tết and Mid-Autumn
+  sets where pawns are pumpkins, baubles, coins or lanterns…) and themed xiangqi disc outlines; online opponents see yours.
 - **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,
   a 5-game minimum, and profiles with per-game record, peak rating and recent games.
 - **Online on Cloudflare** (Workers + Durable Objects + D1): rated quick matchmaking (Elo), friend rooms via link,

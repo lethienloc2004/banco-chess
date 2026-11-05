@@ -902,3 +902,8 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6
 .badge.season { background: transparent; padding: 0 2px; }
 @media (max-width: 520px) { .skin-now { grid-template-columns: 1fr; } .skin-grid { grid-template-columns: repeat(2, 1fr); } }
 .skin-now-prev { max-width: 240px; width: 100%; justify-self: center; }
+/* Skinned chess pieces drawn as shapes (instead of font glyphs) */
+.cp-shape { filter: drop-shadow(0 2px 1.5px rgba(0, 0, 0, .28)); }
+.cp-shape.peek { opacity: .75; }
+.cp-shape .shape { paint-order: stroke; }
+.xq-disc.sk > * { vector-effect: none; }
