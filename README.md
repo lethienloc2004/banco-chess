@@ -36,6 +36,10 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Cảnh cáo, khóa có thời hạn hoặc vĩnh viễn, đổi tên, chỉnh điểm, cấp quyền quản trị, xóa tài khoản.
   - Đăng thông báo toàn hệ thống, hiện ngay trên máy người chơi.
   - Nhật ký mọi thao tác của quản trị viên.
+- 🧩 **Giải thế cờ theo màn** cho cờ vua và cờ tướng: chiếu hết sau 1, 2, 3 nước, từ dễ đến khó.
+  - Mở khóa lần lượt từng màn, có sao đánh giá, gợi ý, làm lại và xem đáp án.
+  - Đối thủ luôn chống cự theo cách khó nhất.
+  - Mọi thế cờ do chính engine của app tìm ra qua các ván tự đấu, rồi được kiểm tra vét cạn: chiếu hết được đúng số nước đã ghi, không có cách nhanh hơn, và nước đầu là duy nhất.
 - 🤖 **Máy chơi cùng** với 3 mức Dễ / Vừa / Khó (alpha-beta, quiescence, bảng chuyển vị), chạy trong Web Worker nên không giật.
 - 🎭 **Bot cờ úp không ăn gian**: máy không biết quân úp là gì. Nó thử nhiều cách xếp ngẫu nhiên rồi chọn nước tốt nhất tính trung bình.
 - ✅ **Đúng luật**:
@@ -193,7 +197,8 @@ src/
   game.ts         Ván cờ: lịch sử, đi lại, lặp thế, chiếu dai/đuổi dai, lật quân úp theo máy chủ
   shared/         Giao thức và kiểu dữ liệu dùng chung cho app và máy chủ
   net.ts          Gọi API, tài khoản, WebSocket tự kết nối lại
-  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu
+  puzzles/        Dữ liệu thế cờ, bộ giải chiếu hết vét cạn, tiến độ người chơi
+  ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ
 server/
   index.ts        API: đăng nhập khách/Google, phòng, báo cáo
   room.ts         Durable Object phòng chơi
@@ -201,8 +206,8 @@ server/
   admin.ts        API quản trị
   auth.ts         Ký phiên (HMAC) và xác minh Google ID token
 migrations/       Lược đồ cơ sở dữ liệu D1
-scripts/          npm start (chạy trên máy) và npm run setup (cài lên Cloudflare)
-tests/            Perft chuẩn, luật, đăng nhập, bot; tests/e2e: kiểm tra máy chủ
+scripts/          npm start, npm run setup, generate-puzzles.ts (tạo thế cờ mới)
+tests/            Perft chuẩn, luật, đăng nhập, bot, kiểm tra mọi thế cờ; tests/e2e: kiểm tra máy chủ
 ```
 
 ## 🔒 Bảo mật & giới hạn hiện tại
@@ -240,6 +245,7 @@ Toàn bộ mã nguồn được viết mới, **không dùng thư viện cờ n�
 
 Mọi đóng góp đều được hoan nghênh! Một vài ý tưởng:
 
+- [ ] Thêm thế cờ: chạy `npx tsx scripts/generate-puzzles.ts` để tìm thế mới (dạng chiếu hết, ăn quân, chiếu dai…)
 - [ ] Phân tích ván sau khi chơi, gợi ý nước đi
 - [ ] Bảng xếp hạng công khai, trang hồ sơ người chơi
 - [ ] Giải đấu / phòng chờ nhiều bàn
@@ -272,6 +278,8 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
   - Audit log of every admin action.
 - **Rules**: castling, en passant, promotion, FIDE draws; flying general, blocked horse/elephant, cannon screens,
   Asian-rules perpetual check / chase (simplified). Verified with standard perft counts.
+- **Puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions. Every position was
+  found by the app's own engine in self-play and proven with an exhaustive solver (unique first move, no faster mate).
 - Many board/piece colour themes plus a custom colour picker, sound, dark mode, Vietnamese / English, PWA.
 
 ```bash

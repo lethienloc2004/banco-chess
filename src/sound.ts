@@ -1,5 +1,5 @@
 /** Tiny synthesized sound effects (Web Audio, no asset files). */
-export type SoundName = 'move' | 'capture' | 'check' | 'reveal' | 'end' | 'lowtime';
+export type SoundName = 'move' | 'capture' | 'check' | 'reveal' | 'end' | 'lowtime' | 'wrong' | 'solved';
 
 let ctx: AudioContext | null = null;
 let noise: AudioBuffer | null = null;
@@ -99,6 +99,13 @@ export function playSound(name: SoundName) {
     case 'lowtime':
       tone(a, t, 1046, 0.1, 0.09, 'square');
       tone(a, t + 0.16, 1046, 0.1, 0.09, 'square');
+      break;
+    case 'wrong':
+      tone(a, t, 220, 0.12, 0.16, 'sawtooth');
+      tone(a, t + 0.12, 165, 0.12, 0.22, 'sawtooth');
+      break;
+    case 'solved':
+      [659, 784, 988, 1319].forEach((f, i) => tone(a, t + i * 0.09, f, 0.12, 0.35));
       break;
     case 'end':
       [523, 659, 784, 1047].forEach((f, i) => tone(a, t + i * 0.11, f, 0.12, 0.3));

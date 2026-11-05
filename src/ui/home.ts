@@ -7,6 +7,8 @@ import { lobby, net } from '../net';
 import { CLOCKS, RANKED_CLOCK } from '../shared/protocol';
 import { toast } from './dialog';
 import { esc } from './util';
+import { puzzleThumb } from './puzzles';
+import { PUZZLES } from '../puzzles';
 
 export interface Nav {
   go(hash: string, dir?: 'forward' | 'back' | 'none'): void;
@@ -74,6 +76,16 @@ export function homeScreen(nav: Nav): Screen {
     li.querySelector('button')!.onclick = () => nav.go('#/' + kind);
     ul.appendChild(li);
   });
+  // Puzzles
+  const pli = document.createElement('li');
+  const solvedCount = Object.keys(store.get<Record<string, number>>('puzzles') ?? {}).length;
+  pli.innerHTML = `<button class="item" style="--i:${KINDS.length}">
+      <span class="thumb">${puzzleThumb()}</span>
+      <span class="txt"><b>${s.puzzles.title}${solvedCount ? ` <em class="badge">${s.puzzles.solvedBadge(solvedCount)}</em>` : ''}</b><small>${s.puzzles.homeDesc(PUZZLES.chess.length + PUZZLES.xiangqi.length)}</small></span>
+      ${chevron}
+    </button>`;
+  pli.querySelector('button')!.onclick = () => nav.go('#/puzzles');
+  ul.appendChild(pli);
   return { el, dispose() { off(); } };
 }
 
