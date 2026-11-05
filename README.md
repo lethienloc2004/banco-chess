@@ -23,7 +23,12 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Kiểm tra mọi nước đi, nên không thể gian lận bằng cách sửa code trên trình duyệt.
   - Mất mạng hay tải lại trang vẫn vào lại được ván.
   - Ở cờ úp, trình duyệt **không biết trước** quân úp là gì. Máy chủ chỉ báo khi quân được lật.
-- ⏱️ **Đồng hồ thi đấu cho mọi chế độ** (cả chơi với máy và 2 người cùng máy): không giới hạn, 1+0, 3+2, 5+3, 10+5, 15+10, 30+20. Có cộng giờ sau mỗi nước, nút tạm dừng và tiếng cảnh báo khi còn dưới 10 giây. **Hết giờ là thua, trừ khi đối thủ không còn cách nào thắng thì hòa** (luật FIDE 6.9; cờ tướng: đối thủ không còn quân tấn công).
+- ⏱️ **Đồng hồ thi đấu cho mọi chế độ** (cả chơi với máy và 2 người cùng máy), đủ các kiểu cộng giờ:
+  - **Fischer** (cộng giờ sau mỗi nước): 1+0, 3+2, 5+3, 10+5, 15+10, 30+20.
+  - **US delay** (`5 d3`): mỗi nước đồng hồ chờ 3 giây rồi mới chạy.
+  - **Bronstein** (`5 b3`): được trả lại thời gian đã dùng, tối đa 3 giây.
+  - **Cổ điển FIDE** (`90/40+30 +30s`): 90 phút cho 40 nước đầu, rồi cộng thêm 30 phút, kèm 30 giây mỗi nước.
+  - Có nút tạm dừng và tiếng cảnh báo khi còn dưới 10 giây. **Hết giờ là thua, trừ khi đối thủ không còn cách nào thắng thì hòa** (luật FIDE 6.9; cờ tướng: đối thủ không còn quân tấn công).
 - 🤝 Online có thêm: cầu hòa, đầu hàng, chơi lại (tự đổi màu quân), biểu tượng cảm xúc.
 - 🚪 **Đối thủ bỏ đi**: sau 60 giây bạn được bấm xử thắng. Sau 5 phút máy chủ tự xử.
 - 🚩 **Báo cáo người chơi**: gian lận, xúc phạm, cố tình kéo dài, tên không phù hợp.

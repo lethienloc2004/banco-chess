@@ -27,18 +27,66 @@ export interface SeatView extends Seat {
   online: boolean;
 }
 
-/** Time control in seconds: base time per side + increment per move. */
-export interface Clock { base: number; inc: number }
+/**
+ * Time control, in seconds.
+ * - inc: Fischer increment added after every move.
+ * - delay + delayType 'simple' (US delay): the clock waits `delay` seconds each
+ *   move before it starts running; unused delay is not banked.
+ * - delay + delayType 'bronstein': time used on a move is given back, up to `delay`.
+ * - stage: bonus time once a player completes `moves` moves (classical time controls).
+ */
+export interface Clock {
+  base: number;
+  inc: number;
+  delay?: number;
+  delayType?: 'simple' | 'bronstein';
+  stage?: { moves: number; add: number };
+}
 
 export const CLOCKS: Record<string, Clock | null> = {
   none: null,
   '1+0': { base: 60, inc: 0 },
   '3+2': { base: 180, inc: 2 },
   '5+3': { base: 300, inc: 3 },
+  '5d3': { base: 300, inc: 0, delay: 3, delayType: 'simple' },
+  '5b3': { base: 300, inc: 0, delay: 3, delayType: 'bronstein' },
   '10+5': { base: 600, inc: 5 },
   '15+10': { base: 900, inc: 10 },
   '30+20': { base: 1800, inc: 20 },
+  // FIDE classical: 90 minutes for 40 moves, +30 minutes, 30 s increment from move 1.
+  classical: { base: 5400, inc: 30, stage: { moves: 40, add: 1800 } },
 };
+
+/** Clock time actually consumed by a move that took `elapsedMs`. */
+export function timeUsed(tc: Clock, elapsedMs: number): number {
+  return tc.delayType === 'simple' && tc.delay ? Math.max(0, elapsedMs - tc.delay * 1000) : elapsedMs;
+}
+
+/** What the mover's clock shows `elapsedMs` into the move. */
+export function timeLeft(tc: Clock, remainingMs: number, elapsedMs: number): number {
+  return remainingMs - timeUsed(tc, elapsedMs);
+}
+
+/**
+ * Remaining time after completing a move. `ownMoves` = the mover's move count
+ * including this move. A result <= 0 means the flag fell during the move.
+ */
+export function afterMove(tc: Clock, remainingMs: number, elapsedMs: number, ownMoves: number): number {
+  let r = remainingMs - timeUsed(tc, elapsedMs);
+  if (r <= 0) return r;
+  if (tc.delayType === 'bronstein' && tc.delay) r += Math.min(elapsedMs, tc.delay * 1000);
+  r += tc.inc * 1000;
+  if (tc.stage && ownMoves === tc.stage.moves) r += tc.stage.add * 1000;
+  return r;
+}
+
+/** Short label: "5+3", "5 d3", "5 b3", "90/40+30 +30s". */
+export function clockLabel(tc: Clock): string {
+  const min = (s: number) => (s >= 60 ? String(s / 60) : `${s}s`);
+  if (tc.stage) return `${min(tc.base)}/${tc.stage.moves}+${min(tc.stage.add)}${tc.inc ? ` +${tc.inc}s` : ''}`;
+  if (tc.delay) return `${min(tc.base)} ${tc.delayType === 'bronstein' ? 'b' : 'd'}${tc.delay}`;
+  return `${min(tc.base)}+${tc.inc}`;
+}
 export const RANKED_CLOCK: Clock = { base: 600, inc: 5 };
 
 /** A move as sent to clients; r / c reveal jieqi identities (mover / captured). */

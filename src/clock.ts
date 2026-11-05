@@ -4,7 +4,7 @@
  * first move; after that the side to move loses time and gains the increment
  * when it completes a move (Fischer increment).
  */
-import type { Clock } from './shared/protocol';
+import { afterMove, timeLeft, type Clock } from './shared/protocol';
 
 export interface ClockState { tc: Clock; remaining: [number, number]; plies: number }
 
@@ -20,6 +20,7 @@ export class GameClock {
     this.remaining = state ? [...state.remaining] : [ms, ms];
     this.plies = state?.plies ?? 0;
     // A resumed game continues from now (time spent away is not counted).
+    this.firstSide = (this.plies % 2 === 0 ? sideToMove : sideToMove ^ 1) as 0 | 1;
     if (this.plies >= 2) { this.running = sideToMove; this.since = now; }
   }
 
@@ -28,9 +29,16 @@ export class GameClock {
     return this.running;
   }
 
+  /** Which side made the first move (move counts per side follow from it). */
+  private firstSide: 0 | 1;
+
+  private ownMoves(side: 0 | 1, plies: number): number {
+    return side === this.firstSide ? Math.ceil(plies / 2) : Math.floor(plies / 2);
+  }
+
   left(side: 0 | 1, now = Date.now()): number {
     const ticking = this.running === side && !this.paused;
-    return this.remaining[side] - (ticking ? now - this.since : 0);
+    return ticking ? timeLeft(this.tc, this.remaining[side], now - this.since) : this.remaining[side];
   }
 
   /** The side that has run out of time, if any. */
@@ -41,8 +49,8 @@ export class GameClock {
   /** Call after `side` completed a move; `plies` = number of moves played so far. */
   moved(side: 0 | 1, plies: number, now = Date.now()) {
     if (this.running === side) {
-      if (!this.paused) this.remaining[side] -= now - this.since;
-      this.remaining[side] += this.tc.inc * 1000;
+      const elapsed = this.paused ? 0 : now - this.since;
+      this.remaining[side] = Math.max(0, afterMove(this.tc, this.remaining[side], elapsed, this.ownMoves(side, plies)));
     }
     this.plies = plies;
     this.running = plies >= 2 ? ((side ^ 1) as 0 | 1) : null;
@@ -75,9 +83,10 @@ export class GameClock {
     this.running = null;
   }
 
+  /** Charge the running side for the time spent so far (pause, take-back, game end). */
   private settle(now: number) {
     if (this.running !== null && !this.paused) {
-      this.remaining[this.running] = Math.max(0, this.remaining[this.running] - (now - this.since));
+      this.remaining[this.running] = Math.max(0, timeLeft(this.tc, this.remaining[this.running], now - this.since));
     }
     this.since = now;
   }

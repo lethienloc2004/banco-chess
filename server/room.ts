@@ -8,7 +8,7 @@ import { Match } from '../src/game';
 import type { GameKind, Outcome } from '../src/engine/types';
 import { Xiangqi, type XiangqiJSON } from '../src/engine/xiangqi';
 import {
-  AUTO_ABANDON_MS, CLAIM_AFTER_MS, EMOTES, elo,
+  AUTO_ABANDON_MS, CLAIM_AFTER_MS, EMOTES, afterMove, elo, timeLeft,
   type ClientMsg, type Clock, type MoveRec, type RoomState, type Seat, type ServerMsg, type RoomStatus,
 } from '../src/shared/protocol';
 import type { Env } from './env';
@@ -45,6 +45,11 @@ export interface InitBody {
 }
 
 const DAY = 86400_000;
+
+/** With a US delay the flag falls `delay` seconds later than the bare remaining time. */
+function flagDelay(tc: Clock): number {
+  return tc.delayType === 'simple' && tc.delay ? tc.delay * 1000 : 0;
+}
 
 export class GameRoom extends DurableObject<Env> {
   private s: Stored | null = null;
@@ -161,13 +166,14 @@ export class GameRoom extends DurableObject<Env> {
         if (!Number.isInteger(msg.m) || !match.legalMoves().includes(msg.m)) return this.send(ws, { t: 'error', code: 'illegal' });
         // Clocks start once both sides have made their first move.
         if (s.clock && s.turnStart !== null) {
-          s.remaining[side] -= now - s.turnStart;
-          if (s.remaining[side] <= 0) {
+          const ownMoves = Math.floor(s.moves.length / 2) + 1; // this move included
+          const left = afterMove(s.clock, s.remaining[side], now - s.turnStart, ownMoves);
+          if (left <= 0) {
             s.remaining[side] = 0;
             await this.finish(this.getMatch().timeoutResult(side));
             return;
           }
-          s.remaining[side] += s.clock.inc * 1000;
+          s.remaining[side] = left;
         }
         const rec: MoveRec = { m: msg.m, ...match.revealOf(msg.m) };
         match.play(msg.m);
@@ -267,7 +273,7 @@ export class GameRoom extends DurableObject<Env> {
     const now = Date.now();
     if (s.clock && s.turnStart !== null) {
       const stm = (this.getMatch().side) as 0 | 1;
-      s.remaining[stm] = Math.max(0, s.remaining[stm] - (now - s.turnStart));
+      s.remaining[stm] = Math.max(0, timeLeft(s.clock, s.remaining[stm], now - s.turnStart));
     }
     s.status = 'over';
     s.result = result;
@@ -333,7 +339,7 @@ export class GameRoom extends DurableObject<Env> {
     if (!s) return;
     const times: number[] = [];
     if (s.status === 'playing') {
-      if (s.clock && s.turnStart !== null) times.push(s.turnStart + s.remaining[this.getMatch().side as 0 | 1]);
+      if (s.clock && s.turnStart !== null) times.push(s.turnStart + s.remaining[this.getMatch().side as 0 | 1] + flagDelay(s.clock));
       for (const d of s.disconnectedAt) if (d !== null) times.push(d + AUTO_ABANDON_MS);
       times.push(s.lastActivity + 3 * DAY); // stale game
     } else if (s.status === 'waiting') times.push(s.created + DAY);
@@ -347,7 +353,7 @@ export class GameRoom extends DurableObject<Env> {
     const now = Date.now();
     if (s.status === 'playing') {
       const stm = this.getMatch().side as 0 | 1;
-      if (s.clock && s.turnStart !== null && now >= s.turnStart + s.remaining[stm]) {
+      if (s.clock && s.turnStart !== null && now >= s.turnStart + s.remaining[stm] + flagDelay(s.clock)) {
         s.remaining[stm] = 0;
         s.turnStart = null;
         await this.finish(this.getMatch().timeoutResult(stm));

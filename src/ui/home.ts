@@ -4,7 +4,7 @@ import type { GameKind } from '../engine/types';
 import { LEVELS, type Level } from '../engine/ai';
 import { KINDS, saveSettings, settings, store, t, type SavedGame } from '../state';
 import { lobby, net } from '../net';
-import { CLOCKS, RANKED_CLOCK } from '../shared/protocol';
+import { CLOCKS, RANKED_CLOCK, clockLabel } from '../shared/protocol';
 import { toast } from './dialog';
 import { esc } from './util';
 import { puzzleThumb } from './puzzles';
@@ -161,8 +161,19 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     ul.appendChild(li);
   };
 
-  const clockOptions = (): [string, string][] => Object.keys(CLOCKS).map(k => [k, k === 'none' ? s.noClock : k]);
-  const clockRow = () => optRow(s.timeControl, seg<string>(clockOptions(), settings.localClock, v => { settings.localClock = v; saveSettings(); }));
+  const clockOptions = (): [string, string][] => Object.keys(CLOCKS).map(k => [k, CLOCKS[k] ? clockLabel(CLOCKS[k]!) : s.noClock]);
+  /** Time control picker with a one-line explanation of the selected control. */
+  const clockPicker = (value: string, onPick: (v: string) => void): HTMLElement => {
+    const wrap = document.createElement('div');
+    wrap.className = 'clock-pick';
+    const hint = document.createElement('p');
+    hint.className = 'note';
+    const describe = (k: string) => { hint.textContent = CLOCKS[k] ? s.clockDesc(CLOCKS[k]!) : s.noClockDesc; };
+    wrap.append(optRow(s.timeControl, seg<string>(clockOptions(), value, v => { onPick(v); describe(v); })), hint);
+    describe(value);
+    return wrap;
+  };
+  const clockRow = () => clockPicker(settings.localClock, v => { settings.localClock = v; saveSettings(); });
   const freshClock = () => {
     const tc = CLOCKS[settings.localClock];
     return tc ? { tc, remaining: [tc.base * 1000, tc.base * 1000] as [number, number], plies: 0 } : null;
@@ -236,7 +247,7 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     });
     panel.append(
       optRow(s.youPlay, seg<0 | 1 | 'random'>([[0, red], [1, s.black], ['random', s.random]], settings.onlineSide, v => { settings.onlineSide = v; saveSettings(); })),
-      optRow(s.timeControl, seg<string>(clockOptions(), settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); })),
+      clockPicker(settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); }),
       create,
     );
     void net.init().then(ok => { if (!ok || net.banned) { create.disabled = true; offline(panel); } });

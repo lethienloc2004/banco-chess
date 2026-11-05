@@ -5,7 +5,7 @@ import { LEVELS, type Level } from '../engine/ai';
 import type { GameKind, Outcome } from '../engine/types';
 import { net, ReSocket, type SocketStatus } from '../net';
 import {
-  CLAIM_AFTER_MS, CLOCKS, EMOTES, REPORT_REASONS,
+  CLAIM_AFTER_MS, CLOCKS, EMOTES, REPORT_REASONS, clockLabel, timeLeft,
   type ClientMsg, type RoomState, type ServerMsg,
 } from '../shared/protocol';
 import { playSound } from '../sound';
@@ -440,7 +440,7 @@ export class PlayScreen implements Screen {
     const r = this.room;
     if (!r?.clock) return 0;
     const running = r.status === 'playing' && r.turnStart !== null && this.match.side === side;
-    return r.remaining[side] - (running ? Date.now() + this.clockOffset - r.turnStart! : 0);
+    return running ? timeLeft(r.clock, r.remaining[side], Date.now() + this.clockOffset - r.turnStart!) : r.remaining[side];
   }
 
   /** A local clock ran out: decide the game (loss, or draw if the opponent cannot win). */
@@ -582,7 +582,7 @@ export class PlayScreen implements Screen {
 
   private clockLabel(): string {
     const tc = this.clock?.tc;
-    return tc ? `${tc.base >= 60 ? tc.base / 60 : tc.base + 's'}+${tc.inc}` : '';
+    return tc ? clockLabel(tc) : '';
   }
 
   private sideName(side: number): string {
@@ -604,7 +604,7 @@ export class PlayScreen implements Screen {
     this.q('.mode-line').textContent = mode === 'bot'
       ? [`${s.bot} · ${s.youPlay.toLowerCase()} ${this.sideName(this.humanSide)}`, this.clockLabel()].filter(Boolean).join(' · ')
       : mode === 'pvp' ? [s.pvp, this.clockLabel()].filter(Boolean).join(' · ')
-      : r ? [r.rated ? s.ranked : s.friendRoom, r.clock ? `${r.clock.base / 60}+${r.clock.inc}` : s.noClock,
+      : r ? [r.rated ? s.ranked : s.friendRoom, r.clock ? clockLabel(r.clock) : s.noClock,
         this.you === null ? s.spectating : `${s.youPlay.toLowerCase()} ${this.sideName(this.you)}`].join(' · ') : s.online;
 
     // Status
@@ -675,6 +675,7 @@ export class PlayScreen implements Screen {
       const paused = this.clock.paused;
       cc.innerHTML = `<div class="row"><span>⏱ ${esc(s.timeControl)}: <b>${esc(this.clockLabel())}</b></span>
         <button class="btn" data-act="pause"${outcome ? ' disabled' : ''}>${esc(paused ? s.resume : s.pause)}</button></div>
+        <p class="muted small">${esc(s.clockDesc(this.clock.tc))}</p>
         ${!outcome && this.clock.active === null ? `<p class="muted small">${esc(s.clockStartsHint)}</p>` : ''}`;
       cc.querySelector<HTMLButtonElement>('[data-act="pause"]')!.onclick = () => this.togglePause();
     }

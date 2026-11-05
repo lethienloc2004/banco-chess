@@ -72,3 +72,48 @@ describe('clock display', () => {
     expect(formatClock(-50)).toBe('0:00.0');
   });
 });
+
+import { CLOCKS, afterMove, clockLabel, timeLeft } from '../src/shared/protocol';
+describe('delay and multi-stage time controls', () => {
+  it('US (simple) delay: the first seconds of each move are free and not banked', () => {
+    const tc = CLOCKS['5d3']!;
+    expect(timeLeft(tc, 60_000, 2_000)).toBe(60_000);
+    expect(timeLeft(tc, 60_000, 5_000)).toBe(58_000);
+    expect(afterMove(tc, 60_000, 2_000, 10)).toBe(60_000);
+    expect(afterMove(tc, 60_000, 5_000, 10)).toBe(58_000);
+    expect(afterMove(tc, 1_000, 4_500, 10)).toBeLessThanOrEqual(0); // flag: 1 s + 3 s delay < 4.5 s
+  });
+  it('Bronstein delay: time used is given back, up to the delay', () => {
+    const tc = CLOCKS['5b3']!;
+    expect(timeLeft(tc, 60_000, 2_000)).toBe(58_000); // the clock runs normally during the move
+    expect(afterMove(tc, 60_000, 2_000, 10)).toBe(60_000);
+    expect(afterMove(tc, 60_000, 5_000, 10)).toBe(58_000);
+  });
+  it('FIDE classical: +30 s every move and +30 min after move 40', () => {
+    const tc = CLOCKS.classical!;
+    expect(afterMove(tc, 600_000, 60_000, 39)).toBe(570_000);
+    expect(afterMove(tc, 600_000, 60_000, 40)).toBe(570_000 + 1_800_000);
+    expect(afterMove(tc, 600_000, 60_000, 41)).toBe(570_000);
+  });
+  it('labels', () => {
+    expect(clockLabel(CLOCKS['3+2']!)).toBe('3+2');
+    expect(clockLabel(CLOCKS['5d3']!)).toBe('5 d3');
+    expect(clockLabel(CLOCKS['5b3']!)).toBe('5 b3');
+    expect(clockLabel(CLOCKS.classical!)).toBe('90/40+30 +30s');
+  });
+  it('local clock applies the move-40 bonus to the right player', () => {
+    const c = new GameClock(CLOCKS.classical!, { remaining: [600_000, 600_000], plies: 78 }, 0, 0);
+    c.moved(0, 79, 10_000); // white's 40th move
+    expect(c.remaining[0]).toBe(600_000 - 10_000 + 30_000 + 1_800_000);
+    c.moved(1, 80, 20_000); // black's 40th move
+    expect(c.remaining[1]).toBe(600_000 - 10_000 + 30_000 + 1_800_000);
+    c.moved(0, 81, 30_000); // white's 41st: no bonus
+    expect(c.remaining[0]).toBe(2_420_000 - 10_000 + 30_000);
+  });
+  it('local clock with US delay does not lose time within the delay', () => {
+    const c = new GameClock(CLOCKS['5d3']!, { remaining: [60_000, 60_000], plies: 2 }, 0, 0);
+    expect(c.left(0, 2_500)).toBe(60_000);
+    expect(c.flagged(60_000 + 2_999)).toBeNull();
+    expect(c.flagged(60_000 + 3_001)).toBe(0);
+  });
+});

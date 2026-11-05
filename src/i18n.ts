@@ -238,6 +238,17 @@ const vi = {
     expects: (side: string) => `${side} dự tính:`,
     quality: { best: 'Nước tốt nhất', good: 'Nước tốt', inaccuracy: 'Không chính xác', mistake: 'Sai lầm', blunder: 'Sai lầm nghiêm trọng' },
   },
+  noClockDesc: 'Không tính giờ.',
+  clockDesc: (tc: { base: number; inc: number; delay?: number; delayType?: 'simple' | 'bronstein'; stage?: { moves: number; add: number } }) => {
+    const t = (sec: number) => (sec >= 60 ? `${sec / 60} phút` : `${sec} giây`);
+    const parts = [`Mỗi bên ${t(tc.base)}`];
+    if (tc.stage) parts.push(`đi đủ ${tc.stage.moves} nước được cộng thêm ${t(tc.stage.add)}`);
+    if (tc.inc) parts.push(`cộng ${tc.inc} giây sau mỗi nước (Fischer)`);
+    if (tc.delay && tc.delayType === 'simple') parts.push(`mỗi nước đồng hồ chờ ${tc.delay} giây rồi mới chạy (US delay)`);
+    if (tc.delay && tc.delayType === 'bronstein') parts.push(`mỗi nước được trả lại thời gian đã dùng, tối đa ${tc.delay} giây (Bronstein)`);
+    if (!tc.inc && !tc.delay && !tc.stage) parts.push('không cộng giờ');
+    return parts.join(', ') + '.';
+  },
   source: 'Mã nguồn',
 };
 
@@ -479,6 +490,17 @@ const en: Strings = {
     refereeNote: 'Evaluation and move marks come from a fixed-strength referee engine, whatever levels play.',
     expects: (side: string) => `${side} expects:`,
     quality: { best: 'Best move', good: 'Good move', inaccuracy: 'Inaccuracy', mistake: 'Mistake', blunder: 'Blunder' },
+  },
+  noClockDesc: 'No clock.',
+  clockDesc: (tc: { base: number; inc: number; delay?: number; delayType?: 'simple' | 'bronstein'; stage?: { moves: number; add: number } }) => {
+    const t = (sec: number) => (sec >= 60 ? `${sec / 60} min` : `${sec} s`);
+    const parts = [`${t(tc.base)} each`];
+    if (tc.stage) parts.push(`+${t(tc.stage.add)} after move ${tc.stage.moves}`);
+    if (tc.inc) parts.push(`+${tc.inc} s per move (Fischer increment)`);
+    if (tc.delay && tc.delayType === 'simple') parts.push(`the clock waits ${tc.delay} s each move before running (US delay)`);
+    if (tc.delay && tc.delayType === 'bronstein') parts.push(`time used on a move is given back, up to ${tc.delay} s (Bronstein delay)`);
+    if (!tc.inc && !tc.delay && !tc.stage) parts.push('no increment');
+    return parts.join(', ') + '.';
   },
   source: 'Source',
 };
