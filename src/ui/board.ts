@@ -1,7 +1,7 @@
 /** SVG rendering of chess and xiangqi boards. */
 import type { Match } from '../game';
 import { playThemed, type Theme } from '../sound';
-import { FRAME, boardDeco, boardFrame, boardTiles, riverBand } from './boards';
+import { FRAME, boardDeco, boardFrame, boardTiles, boardWeather, riverBand } from './boards';
 import { settings } from '../state';
 import { chessPiece, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
 
@@ -166,6 +166,8 @@ export class BoardRenderer {
       }
       parts.push('</g></g>');
     }
+    // Weather over the pieces (Christmas snow); it lets clicks through.
+    if (view.theme) parts.push(boardWeather(view.theme, -F, -F, svgW + 2 * F, svgH + 2 * F));
 
     for (const a of view.arrows ?? []) {
       const [x1, y1] = this.center(a.from), [x2, y2] = this.center(a.to);

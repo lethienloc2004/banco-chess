@@ -29,13 +29,13 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     - 🧧 **Tết**: Tốt là đồng xu, Xe là ngôi chùa, Tượng là tràng pháo, Mã thắt nơ đỏ, Hậu cài hoa mai, Vua đội mũ cánh chuồn.
     - 🏮 **Trung thu**: Tốt là đèn lồng, Mã là thỏ ngọc, Tượng là đèn ông sao, Hậu là Hằng Nga, Vua dưới trăng rằm.
   - **Skin ngày lễ đi kèm bàn cờ cùng chủ đề** (cờ vua và cờ tướng, chỉ hiện trên máy của bạn, tắt được trong Cài đặt):
-    - 🎃 Halloween: nền tím, mạng nhện, dơi, bí ngô, trăng mờ.
-    - 🎄 Giáng sinh: ô tuyết và ô xanh thông, dây đèn màu, bông tuyết, cây thông, tuyết đọng.
+    - 🎃 Halloween: nền tím u tối, sương mù trôi lững lờ, bóng ma bay lên, đôi mắt phát sáng chớp trong bóng tối, dơi vỗ cánh bay ngang, bí ngô thắp nến lập lòe, chớp xa, mạng nhện, trăng mờ.
+    - 🎄 Giáng sinh: tông băng giá xanh lạnh, **tuyết rơi thật trên khắp bàn** (bay theo gió, không che thao tác), gió cuốn tuyết, sương giá kết hoa ở các góc, nhũ băng treo, tinh thể băng lấp lánh, cây thông phủ tuyết, tuyết đọng.
     - 🧧 Tết: cành mai vàng và đào hồng, bao lì xì, đèn lồng, đường kẻ đỏ.
     - 🏮 Trung thu: trời đêm có sao lấp lánh, trăng rằm với thỏ ngọc, đèn lồng.
   - **Hình dạng bàn cờ cũng đổi theo dịp lễ** (lưới 8×8 và 9×10 giữ nguyên để luật chơi không đổi):
     - 🎃 Halloween: khung viền răng cưa màu tối, chất nhờn xanh nhỏ giọt, bí ngô ở góc; ô cờ nứt, sông cờ tướng là dòng nước độc.
-    - 🎄 Giáng sinh: khung kẹo gậy sọc đỏ trắng, tuyết phủ, nhành nhựa ruồi và nơ đỏ; ô có vệt tuyết, sông đóng băng có vết nứt.
+    - 🎄 Giáng sinh: khung băng có viền kẹo gậy đỏ trắng, tuyết phủ, sương giá, nhành nhựa ruồi và nơ đỏ; ô có vệt tuyết, sông đóng băng có vết nứt.
     - 🧧 Tết: khung sơn mài đỏ viền lượn sóng, chỉ vàng, chữ 福 ở giữa; ô viền chỉ vàng, sông sóng vàng.
     - 🏮 Trung thu: khung trời đêm có mây, trăng và đèn lồng treo; ô có quầng trăng, sông là dòng sông đêm có trăng in bóng.
   - **Skin ngày lễ có hiệu ứng và âm thanh riêng** (tắt theo nút âm thanh và chế độ "giảm chuyển động" của máy):
@@ -459,9 +459,10 @@ friend on the same device, or online. The whole interface is available in Vietna
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
   Holiday skins also dress the board (cobwebs and bats, snow and garlands, apricot blossoms and red envelopes, a full
-  moon with the jade rabbit) and reshape it: each holiday has its own frame (jagged slime-dripping, candy cane,
+  moon with the jade rabbit) and reshape it: each holiday has its own frame (jagged slime-dripping crypt with candle-lit jack-o'-lanterns, ice with a candy-cane trim,
   scalloped red lacquer with 福, a moonlit night sky), tile style and xiangqi river, while the 8×8 and 9×10 grids
-  stay the same. They also bring their own move trails, capture shows and sounds.
+  stay the same. Halloween adds rolling fog, rising ghosts, glowing eyes, a passing bat and far-off lightning;
+  Christmas turns icy with snow falling over the whole board, frost ferns and icicles. They also bring their own move trails, capture shows and sounds.
   Each theme has its own original piece shapes (classic carved, geometric, and Halloween, Christmas, Tết and Mid-Autumn
   sets where pawns are pumpkins, baubles, coins or lanterns…) and themed xiangqi disc outlines; online opponents see yours.
 - **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,

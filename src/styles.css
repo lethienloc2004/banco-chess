@@ -958,13 +958,37 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6
 .hb-christmas, .trail-christmas, .land-christmas { filter: drop-shadow(0 0 1.5px rgba(40, 90, 160, .9)); }
 
 /* ================= Holiday boards ================= */
-svg.board[data-theme='halloween'] { --sq-light: #cdbfdc; --sq-dark: #5b4380; --xq-bg: #3b2a54; --xq-line: #cdb8ee; }
-svg.board[data-theme='christmas'] { --sq-light: #f2f7fb; --sq-dark: #86b19a; --xq-bg: #eef5f9; --xq-line: #2f6b45; }
+svg.board[data-theme='halloween'] { --sq-light: #b4a6c6; --sq-dark: #45325f; --xq-bg: #261a39; --xq-line: #b9a2df; }
+svg.board[data-theme='christmas'] { --sq-light: #eef6fc; --sq-dark: #86adcb; --xq-bg: #e3eff8; --xq-line: #2b5b7e; }
 svg.board[data-theme='tet'] { --sq-light: #fdf1d8; --sq-dark: #5b9a80; --xq-bg: #fbe3b3; --xq-line: #a3271b; }
 svg.board[data-theme='midautumn'] { --sq-light: #f5e6c3; --sq-dark: #4a5a94; --xq-bg: #1f2b55; --xq-line: #f0d58c; }
 svg.board[data-theme] .xq-river { opacity: .9; }
 .bd-deco { pointer-events: none; }
 .bd-star { animation: twinkle 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .bd-star:nth-child(3n) { animation-delay: -1.1s; } .bd-star:nth-child(3n + 1) { animation-delay: -2.2s; }
-@media (prefers-reduced-motion: reduce) { .bd-star { animation: none; } }
+/* Halloween gloom: fog rolls past, ghosts drift up, eyes blink in the dark, candles flicker, far lightning. */
+.bd-fog { animation: bdFog linear infinite; }
+@keyframes bdFog { 0% { transform: translateX(-180px); opacity: 0; } 20%, 75% { opacity: 1; } 100% { transform: translateX(180px); opacity: 0; } }
+.bd-ghost { animation: bdGhost ease-in-out infinite; opacity: 0; }
+@keyframes bdGhost { 0% { opacity: 0; transform: translate(0, 30px); } 25% { opacity: .2; } 50% { opacity: .26; transform: translate(34px, -10px); } 75% { opacity: .14; } 100% { opacity: 0; transform: translate(70px, -50px); } }
+.bd-eyes { animation: bdEyes ease-in-out infinite; transform-box: fill-box; transform-origin: center; opacity: 0; }
+@keyframes bdEyes { 0%, 100% { opacity: 0; } 12%, 44%, 50%, 70% { opacity: .95; transform: scaleY(1); } 46%, 48% { transform: scaleY(.08); } 78% { opacity: 0; } }
+.bd-flicker { animation: bdFlicker ease-in-out infinite; }
+@keyframes bdFlicker { 0%, 100% { opacity: .95; } 20% { opacity: .6; } 35% { opacity: 1; } 55% { opacity: .7; } 70% { opacity: .9; } 85% { opacity: .55; } }
+.bd-flash { animation: bdFlash linear infinite; opacity: 0; }
+@keyframes bdFlash { 0%, 88%, 89.6%, 91%, 100% { opacity: 0; } 89% { opacity: .2; } 90.3% { opacity: .13; } }
+.bd-batfly { animation: bdBatFly linear infinite; }
+@keyframes bdBatFly { 0% { transform: translate(-60px, 0); opacity: 0; } 4% { opacity: 1; } 25% { transform: translate(calc(var(--w) * .25), -40px); } 50% { transform: translate(calc(var(--w) * .5), 10px); } 75% { transform: translate(calc(var(--w) * .75), -30px); } 30%, 96% { opacity: 1; } 100% { transform: translate(var(--w), 0); opacity: 0; } }
+.bd-flap { animation: flap .32s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+/* Christmas: snow falls over the whole board, swaying in the wind. */
+.bd-weather { pointer-events: none; }
+.bd-fall { animation: bdFall linear infinite; }
+@keyframes bdFall { from { transform: translateY(0); } to { transform: translateY(var(--fy)); } }
+.bd-sway { animation: bdSway ease-in-out infinite alternate; }
+@keyframes bdSway { from { transform: translateX(-14px); } to { transform: translateX(14px); } }
+@media (prefers-reduced-motion: reduce) {
+  .bd-star, .bd-fog, .bd-eyes, .bd-flicker, .bd-flap, .bd-sway { animation: none; }
+  .bd-ghost, .bd-batfly, .bd-flash, .bd-weather { display: none; }
+  .bd-eyes { opacity: .8; }
+}
 .board-too { color: var(--accent); font-weight: 600; flex: none !important; }

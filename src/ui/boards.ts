@@ -23,23 +23,18 @@ function cobweb(x: number, y: number, sx: number, sy: number, r: number, c = '#f
 
 const batShape = (x: number, y: number, s: number, c = '#1b1027', o = 0.28) =>
   `<path transform="translate(${x} ${y}) scale(${s})" d="M0 2 C-3 -3 -8 -5 -14 -2 C-11 -1 -11 2 -12 4 C-8 2 -6 4 -4 6 C-3 3 -1 3 0 4 C1 3 3 3 4 6 C6 4 8 2 12 4 C11 2 11 -1 14 -2 C8 -5 3 -3 0 2Z" fill="${c}" opacity="${o}"/>`;
-const pumpkin = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="-7" rx="9" ry="11" fill="#e8741c"/><ellipse cx="7" rx="9" ry="11" fill="#e8741c"/><ellipse rx="10" ry="12" fill="#ff8c1a"/><path d="M0 -12 C0 -16 2 -18 5 -19" stroke="#3e7d1e" stroke-width="3" fill="none"/><path d="M-6 -3 L-3 -6 L-2 -2Z M6 -3 L3 -6 L2 -2Z M-6 4 Q0 9 6 4" fill="#3b1300"/></g>`;
+/** A pumpkin; `lit` carves a jack-o'-lantern face glowing from a flickering candle inside. */
+const pumpkin = (x: number, y: number, s: number, lit = false) => `<g transform="translate(${x} ${y}) scale(${s})">`
+  + (lit ? `<circle class="bd-flicker" r="24" fill="url(#bd-candle)" style="${phase(2.3, x + y)}"/>` : '')
+  + `<ellipse cx="-7" rx="9" ry="11" fill="#c95a12"/><ellipse cx="7" rx="9" ry="11" fill="#c95a12"/><ellipse rx="10" ry="12" fill="#e8741c"/><path d="M0 -12 C0 -16 2 -18 5 -19" stroke="#3e5d1e" stroke-width="3" fill="none"/>`
+  + (lit
+    ? `<path class="bd-flicker" style="${phase(1.7, x)}" d="M-7 -2 L-3 -7 L-1 -1Z M7 -2 L3 -7 L1 -1Z M-7 3 L-4 6 L-2 4 L0 7 L2 4 L4 6 L7 3 Q0 11 -7 3Z" fill="#ffd54f"/>`
+    : `<path d="M-6 -3 L-3 -6 L-2 -2Z M6 -3 L3 -6 L2 -2Z M-6 4 Q0 9 6 4" fill="#3b1300"/>`)
+  + `</g>`;
 const snowflake = (x: number, y: number, s: number, o = 0.5, c = '#fff') =>
   `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -10V10M-10 0H10M-7 -7L7 7M-7 7L7 -7M0 -10L-3 -7M0 -10L3 -7M0 10L-3 7M0 10L3 7" stroke="${c}" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="${o}"/>`;
 const holly = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 0 C-6 -8 -16 -6 -20 -2 C-14 0 -10 4 -12 8 C-6 4 -2 4 0 0Z" fill="#2e7d32"/><path d="M0 0 C6 -8 16 -6 20 -2 C14 0 10 4 12 8 C6 4 2 4 0 0Z" fill="#388e3c"/><circle cx="-3" cy="1" r="3.4" fill="#e53935"/><circle cx="3" cy="2" r="3.4" fill="#c62828"/></g>`;
-const tree = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-3" y="10" width="6" height="7" fill="#6d4c2e"/><path d="M0 -18 L12 2 H6 L14 12 H-14 L-6 2 H-12Z" fill="#2e7d32"/><circle cy="-19" r="3" fill="#f9d342"/><circle cx="-4" cy="2" r="1.8" fill="#e53935"/><circle cx="5" cy="8" r="1.8" fill="#42a5f5"/></g>`;
-const garland = (x0: number, x1: number, y: number, sag: number, n: number) => {
-  let d = `M${x0} ${y}`;
-  const step = (x1 - x0) / n;
-  const bulbs: string[] = [];
-  const colors = ['#e53935', '#f9d342', '#42a5f5', '#43a047'];
-  for (let i = 0; i < n; i++) {
-    const a = x0 + i * step, b = a + step;
-    d += ` Q${(a + b) / 2} ${y + sag} ${b} ${y}`;
-    bulbs.push(`<circle cx="${(a + b) / 2}" cy="${y + sag / 2 + 4}" r="5" fill="${colors[i % 4]}"/>`);
-  }
-  return `<path d="${d}" fill="none" stroke="#2e7d32" stroke-width="5" stroke-linecap="round"/>${bulbs.join('')}`;
-};
+const tree = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-3" y="10" width="6" height="7" fill="#6d4c2e"/><path d="M0 -18 L12 2 H6 L14 12 H-14 L-6 2 H-12Z" fill="#2e6b4a"/><path d="M-5 -9 L0 -18 L5 -9 Q0 -6 -5 -9Z M-11 2 Q-4 -1 0 1 Q5 -1 11 2 L8 4 Q0 2 -8 4Z M-13 12 Q-5 8 0 10 Q6 8 13 12 L10 13 Q0 11 -10 13Z" fill="#fff"/><circle cy="-19" r="3" fill="#f9d342"/><circle cx="-4" cy="2" r="1.8" fill="#e53935"/><circle cx="5" cy="8" r="1.8" fill="#42a5f5"/></g>`;
 const snowDrift = (x0: number, x1: number, y: number, o = 0.85) =>
   `<path d="M${x0} ${y} C${x0 + 80} ${y - 16} ${x0 + 160} ${y + 4} ${x0 + 240} ${y - 10} S${x1 - 160} ${y - 14} ${x1} ${y - 4} V${y + 30} H${x0}Z" fill="#fff" opacity="${o}"/>`;
 const blossom = (x: number, y: number, r: number, petal: string, heart: string) =>
@@ -60,6 +55,100 @@ const moon = (x: number, y: number, r: number, o = 1) => `<g opacity="${o}"><cir
 const stars = (pts: [number, number, number][], c = '#fff4c2') => pts.map(([x, y, r]) => `<circle class="bd-star" cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join('');
 const rabbit = (x: number, y: number, s: number) => `<g transform="translate(${x} ${y}) scale(${s})" fill="#f5f0ff" opacity=".85"><ellipse cx="0" cy="6" rx="10" ry="8"/><circle cx="-8" cy="-2" r="6"/><ellipse cx="-11" cy="-13" rx="2.4" ry="8" transform="rotate(-12 -11 -13)"/><ellipse cx="-6" cy="-14" rx="2.4" ry="8" transform="rotate(10 -6 -14)"/></g>`;
 
+/**
+ * Inline style for a looping animation whose phase follows the clock, so it keeps flowing
+ * smoothly when the board is redrawn after every move instead of starting over.
+ */
+function phase(dur: number, offset = 0): string {
+  const t = (Date.now() / 1000 + offset * 0.37) % dur;
+  return `animation-duration:${dur}s;animation-delay:${(-t).toFixed(2)}s`;
+}
+
+const ghost = (x: number, y: number, s: number, dur: number, off: number) =>
+  `<g transform="translate(${x} ${y})"><g class="bd-ghost" style="${phase(dur, off)}"><g transform="scale(${s})">`
+  + `<path d="M-20 14 V-6 A20 20 0 0 1 20 -6 V20 L13 13 L7 20 L0 13 L-7 20 L-13 13 L-20 20Z" fill="#efe8ff"/>`
+  + `<ellipse cx="-7" cy="-4" rx="3.6" ry="5" fill="#140a22"/><ellipse cx="7" cy="-4" rx="3.6" ry="5" fill="#140a22"/><ellipse cy="7" rx="4" ry="5.5" fill="#140a22"/></g></g></g>`;
+/** Glowing eyes peering out of the dark, blinking now and then. */
+const eyes = (x: number, y: number, s: number, off: number, c = '#d4ff5c') =>
+  `<g transform="translate(${x} ${y}) scale(${s})"><g class="bd-eyes" style="${phase(9 + (off % 4), off)}">`
+  + `<ellipse cx="-6" rx="6" ry="4" fill="${c}" opacity=".25"/><ellipse cx="6" rx="6" ry="4" fill="${c}" opacity=".25"/>`
+  + `<path d="M-9 0 Q-6 -3.4 -2.6 0 Q-6 3 -9 0Z M9 0 Q6 -3.4 2.6 0 Q6 3 9 0Z" fill="${c}"/><circle cx="-5.8" r="1" fill="#120818"/><circle cx="5.8" r="1" fill="#120818"/></g></g>`;
+/** A bat that flaps its wings while crossing the board from left to right. */
+const flyingBat = (y: number, w: number, dur: number, off: number, s = 1.6) =>
+  `<g transform="translate(0 ${y})"><g class="bd-batfly" style="${phase(dur, off)};--w:${w + 120}px"><g class="bd-flap">${batShape(0, 0, s, '#0d0616', 0.85)}</g></g></g>`;
+
+/** Halloween gloom: dark vignette, rolling fog, ghosts, peering eyes, a passing bat and far lightning. */
+function spooky(W: number, H: number, chess: boolean): string {
+  const defs = `<defs><radialGradient id="bd-vig" cx=".5" cy=".5" r=".72"><stop offset=".45" stop-color="#07020e" stop-opacity="0"/><stop offset="1" stop-color="#07020e" stop-opacity=".72"/></radialGradient>`
+    + `<radialGradient id="bd-fog"><stop offset="0" stop-color="#d6cdea" stop-opacity=".5"/><stop offset=".55" stop-color="#c9bfe2" stop-opacity=".2"/><stop offset="1" stop-color="#c9bfe2" stop-opacity="0"/></radialGradient></defs>`;
+  const fog = ([[0.3, 0.28, 38, 0], [0.62, 0.52, 52, 11], [0.4, 0.78, 44, 23], [0.75, 0.12, 34, 5], [0.2, 0.62, 60, 31]] as const)
+    .map(([fx, fy, d, o]) => `<g transform="translate(${fx * W} ${fy * H})"><ellipse class="bd-fog" style="${phase(d, o)}" rx="${W * 0.45}" ry="${H * 0.1}" fill="url(#bd-fog)"/></g>`).join('');
+  const edge = chess ? 12 : 30;
+  const peer = [eyes(edge + 10, H * 0.36, 1.7, 1), eyes(W - edge - 10, H * 0.58, 1.7, 6), eyes(W * 0.5, H * 0.44, 1.2, 3, '#ff6a3d')].join('');
+  return defs + `<rect class="bd-flash" style="${phase(17, 2)}" x="0" y="0" width="${W}" height="${H}" fill="#e6dcff"/>`
+    + fog + ghost(W * 0.22, H * 0.55, 2.4, 19, 0) + ghost(W * 0.7, H * 0.3, 2, 23, 9) + ghost(W * 0.5, H * 0.8, 1.7, 27, 17)
+    + peer + flyingBat(H * 0.4, W, 21, 4) + flyingBat(H * 0.7, W, 29, 15, 1.2)
+    + `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#bd-vig)"/>`;
+}
+
+/** Icicles hanging from a horizontal edge at height y. */
+function icicles(x0: number, x1: number, y: number, seed: number, max = 30): string {
+  let d = '';
+  const n = Math.floor((x1 - x0) / 26);
+  for (let i = 0; i < n; i++) {
+    const x = x0 + 10 + i * 26 + ((i * 7 + seed) % 9), len = 8 + (((i + seed) * 37) % max), half = 4 + ((i * 3) % 4);
+    d += `M${x - half} ${y} Q${x - 1} ${y + len * 0.6} ${x} ${y + len} Q${x + 1} ${y + len * 0.6} ${x + half} ${y}Z`;
+  }
+  return `<path d="${d}" fill="url(#bd-ice)" stroke="#ffffff" stroke-opacity=".8" stroke-width="1"/>`;
+}
+/** A frost fern growing from a corner (sx, sy mirror it). */
+function frost(x: number, y: number, sx: number, sy: number, r: number): string {
+  let d = '';
+  for (const a of [8, 30, 52, 74]) {
+    const t = (a * Math.PI) / 180, ex = Math.cos(t) * r, ey = Math.sin(t) * r;
+    d += `M0 0 L${ex.toFixed(1)} ${ey.toFixed(1)}`;
+    for (const f of [0.3, 0.5, 0.7, 0.88]) {
+      const bx = ex * f, by = ey * f, l = r * 0.22 * (1 - f * 0.6);
+      for (const side of [-1, 1]) {
+        const tt = t + side * 0.75;
+        d += `M${bx.toFixed(1)} ${by.toFixed(1)} l${(Math.cos(tt) * l).toFixed(1)} ${(Math.sin(tt) * l).toFixed(1)}`;
+      }
+    }
+  }
+  return `<g transform="translate(${x} ${y}) scale(${sx} ${sy})" fill="none" stroke-linecap="round"><path d="${d}" stroke="#8fbfe0" stroke-width="4" opacity=".55"/><path d="${d}" stroke="#fff" stroke-width="1.8"/></g>`;
+}
+/** Christmas cold: frosted edges, frost ferns in the corners, icicles and glinting ice. */
+function wintry(W: number, H: number, top: number): string {
+  const defs = `<defs><radialGradient id="bd-frost" cx=".5" cy=".5" r=".75"><stop offset=".45" stop-color="#cfe6f7" stop-opacity="0"/><stop offset="1" stop-color="#bcdcf3" stop-opacity=".75"/></radialGradient>`
+    + `<linearGradient id="bd-ice" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#cde8fa"/><stop offset="1" stop-color="#6fb0dd" stop-opacity=".85"/></linearGradient>`
+    + `<radialGradient id="bd-gust"><stop offset="0" stop-color="#ffffff" stop-opacity=".75"/><stop offset=".6" stop-color="#eef7ff" stop-opacity=".3"/><stop offset="1" stop-color="#eef7ff" stop-opacity="0"/></radialGradient></defs>`;
+  const gusts = ([[0.3, 0.92, 15, 0], [0.7, 0.62, 21, 8], [0.4, 0.3, 26, 17]] as const)
+    .map(([fx, fy, d, o]) => `<g transform="translate(${fx * W} ${fy * H})"><ellipse class="bd-fog" style="${phase(d, o)}" rx="${W * 0.4}" ry="${H * 0.07}" fill="url(#bd-gust)"/></g>`).join('');
+  return defs + `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#bd-frost)"/>` + gusts
+    + frost(0, 0, 1, 1, 170) + frost(W, 0, -1, 1, 170) + frost(0, H, 1, -1, 170) + frost(W, H, -1, -1, 170)
+    + stars(scatter(18, W, H, 19).map(([x, y], i) => [x, y, 1.4 + (i % 3) * 0.6] as [number, number, number]), '#ffffff')
+    + icicles(0, W, top, 3, 34);
+}
+
+/**
+ * Weather drawn ABOVE the pieces (it never takes clicks): Christmas snowfall over the
+ * whole board and frame. x0, y0, w, h is the visible area.
+ */
+export function boardWeather(theme: Theme, x0: number, y0: number, w: number, h: number): string {
+  if (theme !== 'christmas') return '';
+  const n = Math.round((w * h) / 7000);
+  const flakes = scatter(n, w, 1, 41).map(([x], i) => {
+    const near = i % 5 === 0, r = near ? 7 + (i % 3) * 1.2 : 3 + (i % 4) * 0.9;
+    const dur = near ? 7 + (i % 4) : 11 + (i % 7) * 1.6;
+    const body = near && i % 2
+      ? `<g transform="scale(${(r / 6).toFixed(2)})">${snowflake(0, 0, 0.95, 1, '#7ea7c6')}${snowflake(0, 0, 0.9, 1)}</g>`
+      : `<circle r="${r.toFixed(1)}" fill="#fff" stroke="#7ea7c6" stroke-opacity=".8" stroke-width="1"/>`;
+    return `<g transform="translate(${(x0 + x).toFixed(1)} ${y0 - 12})"><g class="bd-fall" style="${phase(dur, i * 2.7)};--fy:${h + 24}px">`
+      + `<g class="bd-sway" style="${phase(3 + (i % 4), i)}" opacity="${near ? 0.8 : 0.92}">${body}</g></g></g>`;
+  }).join('');
+  return `<g class="bd-weather">${flakes}</g>`;
+}
+
 /** Pseudo-random but fixed scatter, so decorations do not jump between renders. */
 function scatter(n: number, w: number, h: number, seed: number): [number, number][] {
   const out: [number, number][] = [];
@@ -78,11 +167,10 @@ export function boardDeco(theme: Theme, chess: boolean): string {
   if (chess) {
     switch (theme) {
       case 'halloween':
-        return g(cobweb(0, 0, 1, 1, 150) + cobweb(800, 800, -1, -1, 150) + moon(720, 80, 46, 0.35)
-          + batShape(560, 140, 2.2) + batShape(140, 520, 1.8) + batShape(620, 620, 1.6));
+        return g(moon(720, 80, 46, 0.3) + cobweb(0, 0, 1, 1, 170, '#e8e0f5', 0.4) + cobweb(800, 800, -1, -1, 170, '#e8e0f5', 0.4)
+          + cobweb(800, 0, -1, 1, 110, '#e8e0f5', 0.3) + batShape(560, 140, 2.2) + batShape(140, 520, 1.8) + spooky(800, 800, true));
       case 'christmas':
-        return g(scatter(26, 800, 760, 7).map(([x, y], i) => snowflake(x, y, 0.7 + (i % 3) * 0.3, 0.45)).join('')
-          + `<g opacity=".55">${garland(0, 800, -6, 34, 8)}</g>` + snowDrift(0, 800, 792, 0.75));
+        return g(wintry(800, 800, 0) + snowDrift(0, 800, 792, 0.85));
       case 'tet':
         return g(`<g opacity=".5">${branch(0, 30, 1, 1, '#ffd23f', '#e65100')}${branch(800, 770, -1, -1, '#ff9ec0', '#c2185b')}</g>`);
       case 'midautumn':
@@ -92,13 +180,13 @@ export function boardDeco(theme: Theme, chess: boolean): string {
   const W = 940, H = 1040, riverY = 520;
   switch (theme) {
     case 'halloween':
-      return g(cobweb(0, 0, 1, 1, 120) + cobweb(940, 0, -1, 1, 120) + cobweb(0, 1040, 1, -1, 120) + cobweb(940, 1040, -1, -1, 120)
-        + pumpkin(130, riverY + 2, 1.6) + pumpkin(810, riverY + 2, 1.6) + batShape(470, riverY - 4, 2.4, '#1b1027', 0.55)
-        + batShape(300, 32, 1.6, '#cdb8ee', 0.5) + batShape(640, 1010, 1.6, '#cdb8ee', 0.5) + moon(470, 34, 18, 0.6));
+      return g(spooky(W, H, false) + cobweb(0, 0, 1, 1, 130, '#e8e0f5', 0.4) + cobweb(940, 0, -1, 1, 130, '#e8e0f5', 0.4)
+        + cobweb(0, 1040, 1, -1, 130, '#e8e0f5', 0.4) + cobweb(940, 1040, -1, -1, 130, '#e8e0f5', 0.4)
+        + pumpkin(130, riverY + 2, 1.6, true) + pumpkin(810, riverY + 2, 1.6, true) + batShape(470, riverY - 4, 2.4, '#0d0616', 0.6)
+        + moon(470, 34, 18, 0.5));
     case 'christmas':
-      return g(garland(30, 910, 14, 26, 10) + snowDrift(0, W, H - 22, 0.95)
-        + scatter(20, W, 60, 11).map(([x, y]) => snowflake(x, H - 70 + y * 0.5, 0.8, 0.6, '#9ab8cc')).join('')
-        + tree(120, riverY - 2, 1.4) + tree(820, riverY - 2, 1.4) + snowflake(470, riverY, 2.4, 0.5, '#9ab8cc'));
+      return g(wintry(W, H, 0) + snowDrift(0, W, H - 22, 0.95)
+        + tree(120, riverY - 2, 1.4) + tree(820, riverY - 2, 1.4) + snowflake(470, riverY, 2.4, 0.6, '#7fa9c6'));
     case 'tet':
       return g(branch(0, 8, 1, 1, '#ffd23f', '#e65100', 200) + branch(W, H - 8, -1, -1, '#ff9ec0', '#c2185b', 200)
         + envelope(128, riverY, 1.3) + envelope(812, riverY, 1.3) + lantern(470, riverY, 1.2)
@@ -146,18 +234,25 @@ export function boardFrame(theme: Theme, chess: boolean, w: number, h: number): 
         const x = 20 + i * 46 + ((i * 17) % 13), len = 10 + ((i * 29) % 22);
         return `M${x - 6} -2 C${x - 6} ${len * 0.6} ${x - 3} ${len} ${x} ${len} C${x + 3} ${len} ${x + 6} ${len * 0.6} ${x + 6} -2Z`;
       }).join('');
-      return `<g class="bd-frame">`
-        + `<path d="${ring(x0, y0, x1, y1, ix0, iy0, ix1, iy1, outer)}" fill-rule="evenodd" fill="#241632" stroke="#0f0818" stroke-width="3"/>`
+      return `<g class="bd-frame"><defs><radialGradient id="bd-candle"><stop offset="0" stop-color="#ffcf5c" stop-opacity=".85"/><stop offset=".5" stop-color="#ff8a1c" stop-opacity=".35"/><stop offset="1" stop-color="#ff6a00" stop-opacity="0"/></radialGradient>`
+        + `<linearGradient id="bd-crypt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d1129"/><stop offset=".5" stop-color="#2a1a3d"/><stop offset="1" stop-color="#120a1c"/></linearGradient></defs>`
+        + `<path d="${ring(x0, y0, x1, y1, ix0, iy0, ix1, iy1, outer)}" fill-rule="evenodd" fill="url(#bd-crypt)" stroke="#07030c" stroke-width="3"/>`
         + `<path d="M${-F / 2} ${-F / 2}H${w + F / 2}V${h + F / 2}H${-F / 2}Z" fill="none" stroke="#7cff6b" stroke-width="1.6" stroke-dasharray="2 9" opacity=".6"/>`
         + `<path d="${drips}" fill="#7cff6b" opacity=".75"/>`
-        + [[-F / 2, -F / 2], [w + F / 2, -F / 2], [-F / 2, h + F / 2], [w + F / 2, h + F / 2]].map(([x, y]) => pumpkin(x, y, 1.15)).join('')
+        + [[-F / 2, -F / 2], [w + F / 2, -F / 2], [-F / 2, h + F / 2], [w + F / 2, h + F / 2]].map(([x, y]) => pumpkin(x, y, 1.15, true)).join('')
         + batShape(w * 0.3, -F / 2, 1.4, '#cdb8ee', 0.8) + batShape(w * 0.72, h + F / 2, 1.3, '#cdb8ee', 0.8)
+        + eyes(-F / 2, h * 0.3, 0.9, 2) + eyes(w + F / 2, h * 0.7, 0.9, 7, '#ff6a3d') + eyes(w * 0.55, h + F / 2, 0.8, 12)
+        + eyes(-F / 2, h * 0.78, 0.8, 5, '#ff6a3d') + eyes(w * 0.15, -F / 2, 0.8, 9)
         + `</g>`;
     }
     case 'christmas': {
       const blobs = Array.from({ length: Math.ceil((w + 2 * F) / 38) }, (_, i) => `<circle cx="${x0 + i * 38 + 10}" cy="${y0 + 6}" r="${14 + ((i * 7) % 8)}"/>`).join('');
-      return `<g class="bd-frame"><defs><pattern id="bd-cane" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="13" height="26" fill="#d62828"/><rect x="13" width="13" height="26" fill="#fff"/></pattern></defs>`
-        + `<path d="${ring(x0, y0, x1, y1, ix0, iy0, ix1, iy1, `M${x0 + 12} ${y0}H${x1 - 12}Q${x1} ${y0} ${x1} ${y0 + 12}V${y1 - 12}Q${x1} ${y1} ${x1 - 12} ${y1}H${x0 + 12}Q${x0} ${y1} ${x0} ${y1 - 12}V${y0 + 12}Q${x0} ${y0} ${x0 + 12} ${y0}Z`)}" fill-rule="evenodd" fill="url(#bd-cane)" stroke="#8e1414" stroke-width="2"/>`
+      return `<g class="bd-frame"><defs><pattern id="bd-cane" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="20" fill="#d62828"/><rect x="10" width="10" height="20" fill="#fff"/></pattern>`
+        + `<linearGradient id="bd-glacier" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4fbff"/><stop offset=".45" stop-color="#bfe0f4"/><stop offset=".55" stop-color="#e6f5ff"/><stop offset="1" stop-color="#8fbedc"/></linearGradient></defs>`
+        + `<path d="${ring(x0, y0, x1, y1, ix0, iy0, ix1, iy1, `M${x0 + 12} ${y0}H${x1 - 12}Q${x1} ${y0} ${x1} ${y0 + 12}V${y1 - 12}Q${x1} ${y1} ${x1 - 12} ${y1}H${x0 + 12}Q${x0} ${y1} ${x0} ${y1 - 12}V${y0 + 12}Q${x0} ${y0} ${x0 + 12} ${y0}Z`)}" fill-rule="evenodd" fill="url(#bd-glacier)" stroke="#6f9fc0" stroke-width="2"/>`
+        + `<path d="${ring(-12, -12, w + 12, h + 12, ix0, iy0, ix1, iy1)}" fill-rule="evenodd" fill="url(#bd-cane)"/>`
+        + frost(x0, y0, 1, 1, 54) + frost(x1, y0, -1, 1, 54) + frost(x0, y1, 1, -1, 54) + frost(x1, y1, -1, -1, 54)
+        + stars(scatter(22, w + 2 * F, 1, 29).map(([x], i) => [x0 + x, i % 2 ? y1 - 16 : -F / 2 + 8, 1.5 + (i % 3) * 0.5] as [number, number, number]), '#ffffff')
         + `<g fill="#fff" stroke="#cfe0ec" stroke-width="1.5">${blobs}</g><rect x="${x0}" y="${y0 + 2}" width="${w + 2 * F}" height="14" fill="#fff"/>`
         + [[-F / 2, h + F / 2], [w + F / 2, h + F / 2]].map(([x, y]) => holly(x, y, 1.3)).join('')
         + `<g transform="translate(${w / 2} ${-F / 2 + 4})"><path d="M0 0 C-14 -16 -30 -10 -24 2 C-20 10 -8 6 0 0 C8 6 20 10 24 2 C30 -10 14 -16 0 0Z" fill="#d62828" stroke="#8e1414" stroke-width="1.5"/><path d="M-3 2 L-12 22 M3 2 L12 22" stroke="#d62828" stroke-width="6" stroke-linecap="round"/><circle r="5" fill="#b71c1c"/></g>`
