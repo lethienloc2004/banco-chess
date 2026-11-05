@@ -267,6 +267,8 @@ Người chơi chỉ cần nhập email, app gửi một **mã 6 số** để đ
 1. Tạo tài khoản miễn phí tại **https://app.brevo.com**.
 2. Xác minh email người gửi: **Settings → Senders, domains & IPs → Senders → Add a sender**. Điền tên `Bàn Cờ` và email của bạn (ví dụ Gmail), rồi bấm mã xác minh Brevo gửi tới hộp thư đó.
 3. Tạo khóa API: **Settings → SMTP & API → API keys → Generate a new API key**. Copy khóa (dạng `xkeysib-…`). Khóa chỉ hiện một lần.
+   - Chọn **Restricted** (Hạn chế) và chỉ cho **Transactional emails → All**; các mục khác để *None*.
+   - Khóa API của Brevo tự hết hạn sau ngày hết hạn đã chọn, **hoặc sau 90 ngày liền không dùng**. Khi đó tạo khóa mới và chạy lại `npm run setup`.
    - Nếu Brevo báo *"Unauthorized IP addresses are blocked"* / *"Les adresses IP non autorisées sont bloquées"*: vào **Settings → Security → Authorized IPs** và **tắt chặn IP** (*Deactivate blocking*). Máy chủ Cloudflare gửi thư từ nhiều IP thay đổi liên tục, nên không thể khai từng IP. Hãy giữ bí mật khóa API.
 4. Chạy `npm run setup`, điền **Email gửi mã đăng nhập** (email ở bước 2) và dán **Brevo API key**. Các câu khác bấm Enter.
 5. Mở app → **Đăng nhập** → nhập email của bạn → kiểm tra hộp thư (cả mục **Thư rác / Quảng cáo**).
