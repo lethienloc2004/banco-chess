@@ -3,7 +3,7 @@ import type { GameKind } from './engine/types';
 import { lobby, net } from './net';
 import { playSound, previewVoices, setSoundStyle, unlockAudio } from './sound';
 import { KINDS, saveSettings, settings, store, t } from './state';
-import { adminScreen } from './ui/admin';
+import { SEASONS_EVENT, adminScreen } from './ui/admin';
 import { openDialog, toast } from './ui/dialog';
 import { gameThumb, homeScreen, modesScreen, type Nav, type Screen } from './ui/home';
 import { matchScreen } from './ui/match';
@@ -443,6 +443,7 @@ $('#settings-btn').onclick = openSettings;
 $<HTMLButtonElement>('#login-btn').onclick = () => openLogin();
 $<HTMLButtonElement>('#account-btn').onclick = openAccount;
 net.onChange(() => applyGlobal());
+window.addEventListener(SEASONS_EVENT, () => applyGlobal());
 window.addEventListener(ACCOUNT_EVENT, () => applyGlobal());
 $('#sound-btn').onclick = () => {
   settings.sound = !settings.sound;

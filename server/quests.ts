@@ -114,10 +114,11 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
   const cfg = await seasonConfig(db);
   const running = currentQuests(now, cfg);
   const periods = [...new Set(running.map(r => r.period))];
-  const [rows, user, skins] = await Promise.all([
+  const [rows, user, skins, leftovers] = await Promise.all([
     db.prepare(`SELECT quest_id, period, progress, done, claimed FROM quest_progress WHERE user_id = ? AND period IN (${periods.map(() => '?').join(', ')})`).bind(uid, ...periods).all<Row>(),
     db.prepare('SELECT coins, skin, streak, streak_day FROM users WHERE id = ?').bind(uid).first<{ coins: number; skin: string | null; streak: number; streak_day: string | null }>(),
     db.prepare('SELECT skin_id FROM user_skins WHERE user_id = ?').bind(uid).all<{ skin_id: string }>(),
+    db.prepare("SELECT quest_id, period FROM quest_progress WHERE user_id = ? AND period LIKE 's:%' AND done = 1 AND claimed = 0").bind(uid).all<{ quest_id: string; period: string }>(),
   ]);
   const byKey = new Map(rows.results.map(r => [`${r.quest_id}|${r.period}`, r]));
   const day = dayKey(now);
@@ -133,10 +134,17 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
     season: season ? { id: season.id, end: season.end } : null,
     coins: user?.coins ?? 0, streak: streakAlive ? user?.streak ?? 0 : 0, equipped: user?.skin ?? null,
     owned: skins.results.map(s => s.skin_id),
-    quests: running.map(({ quest, period }) => {
-      const r = byKey.get(`${quest.id}|${period}`);
-      return { id: quest.id, scope: quest.scope, period, progress: questValue(quest, r?.progress ?? 0), target: quest.target, done: !!r?.done, claimed: !!r?.claimed, reward: quest.reward };
-    }),
+    quests: [
+      ...running.map(({ quest, period }) => {
+        const r = byKey.get(`${quest.id}|${period}`);
+        return { id: quest.id, scope: quest.scope, period, progress: questValue(quest, r?.progress ?? 0), target: quest.target, done: !!r?.done, claimed: !!r?.claimed, reward: quest.reward };
+      }),
+      // Event quests finished before their event ended but not claimed yet.
+      ...leftovers.results.filter(r => !running.some(x => x.quest.id === r.quest_id && x.period === r.period)).flatMap(r => {
+        const quest = questById(r.quest_id);
+        return quest ? [{ id: quest.id, scope: quest.scope, period: r.period, progress: quest.target, target: quest.target, done: true, claimed: false, reward: quest.reward }] : [];
+      }),
+    ],
     shop: shopSkins(now, cfg).map(s => ({ id: s.id, price: s.price! })),
   };
 }
@@ -144,7 +152,10 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
 /** Take the reward of a finished quest. */
 export async function claim(db: D1Database, uid: string, questId: string, period: string, now = Date.now()): Promise<{ ok: true; completed: string[] } | { error: string }> {
   const quest = questById(questId);
-  if (!quest || !currentQuests(now, await seasonConfig(db)).some(r => r.quest.id === questId && r.period === period)) return { error: 'not-found' };
+  if (!quest) return { error: 'not-found' };
+  // A finished event quest can still be claimed after its event ended (the UPDATE below checks it was done).
+  const pastEvent = quest.scope === 'season' && period.startsWith(`s:${quest.season}:`);
+  if (!pastEvent && !currentQuests(now, await seasonConfig(db)).some(r => r.quest.id === questId && r.period === period)) return { error: 'not-found' };
   const r = await db.prepare('UPDATE quest_progress SET claimed = 1 WHERE user_id = ? AND quest_id = ? AND period = ? AND done = 1 AND claimed = 0')
     .bind(uid, questId, period).run();
   if (!r.meta.changes) return { error: 'not-claimable' };

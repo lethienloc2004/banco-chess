@@ -9,6 +9,7 @@ import { settings, t } from '../state';
 import { confirmDialog, toast } from './dialog';
 import type { Nav, Screen } from './home';
 import { skinPreview, skinTheme } from './skins';
+import { openSkinTry } from './skinTry';
 import { esc } from './util';
 
 export interface QuestRow {
@@ -134,7 +135,7 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
       else if (season && sale) how = Qs.orEvent;
     }
     return `<div class="skin-card${owned ? ' owned' : ''}${equipped ? ' on' : ''}">
-      ${skinPreview(id, previewGame)}
+      <button class="skin-try" data-try="${id}" title="${esc(Qs.tryOn)}">${skinPreview(id, previewGame)}<span class="skin-try-tag">👁 ${esc(Qs.tryOn)}</span></button>
       <b>${esc(def.name[settings.lang])}</b>
       ${def.how === 'season' ? `<p class="small board-too">🖼 ${esc(Qs.boardToo)}</p>` : ''}
       ${how ? `<p class="muted small">${esc(how)}</p>` : ''}
@@ -151,7 +152,7 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
       ? (season ? `<div class="season-banner">${season.emoji} <b>${esc(Qs.eventNow(season.name[settings.lang]))}</b> <span>${esc(st.season!.end ? Qs.eventEnds(st.season!.end.split('-').reverse().join('/')) : Qs.eventOpen)}</span></div>` : '')
         + section(Qs.today, Qs.resets(fmtLeft(st.resetsIn.day)), daily)
         + section(Qs.week, Qs.resets(fmtLeft(st.resetsIn.week)), weekly)
-        + (season ? section(`${season.emoji} ${Qs.event}`, '', event) : '')
+        + (season || event.length ? section(`${season?.emoji ?? '🎁'} ${Qs.event}`, '', event) : '')
         + (season && st.holidayPuzzles.length ? `<div class="card q-section"><div class="q-head"><h2>🧩 ${esc(Qs.hpTitle(season.name[settings.lang]))}</h2><span class="muted small">${esc(Qs.hpSub)}</span></div>
             <div class="hp-grid">${st.holidayPuzzles.map(p => `<a class="hp-card${p.solved ? ' solved' : ''}" href="#/puzzle/${p.id}" data-hp="${p.id}">
               <span class="hp-kind">${esc(s[p.kind])}</span><b>${esc(s.puzzles.mateIn(p.mate))}</b>
@@ -181,21 +182,33 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
         st = r.state; setState(st); draw();
       } catch { toast(s.netError); b.disabled = false; }
     }));
-    el.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => (b.onclick = async () => {
-      const id = b.dataset.buy!;
-      const price = st!.shop.find(x => x.id === id)?.price ?? 0;
-      if (!(await confirmDialog(Qs.confirmBuy(skinById(id)!.name[settings.lang], price), Qs.buy, s.close))) return;
-      try {
-        const r = await net.api<{ state: QuestState }>('/skins/buy', { method: 'POST', body: { skin: id } });
-        st = r.state; setState(st); toast(`🎨 ${skinById(id)!.name[settings.lang]}`); draw();
-      } catch { toast(Qs.notEnough); }
-    }));
-    el.querySelectorAll<HTMLButtonElement>('[data-equip]').forEach(b => (b.onclick = async () => {
-      try {
-        const r = await net.api<{ state: QuestState }>('/skins/equip', { method: 'POST', body: { skin: b.dataset.equip || null } });
-        st = r.state; setState(st); draw();
-      } catch { toast(s.netError); }
-    }));
+    el.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach(b => (b.onclick = () => void buy(b.dataset.buy!)));
+    el.querySelectorAll<HTMLButtonElement>('[data-equip]').forEach(b => (b.onclick = () => void equip(b.dataset.equip || null)));
+    el.querySelectorAll<HTMLButtonElement>('[data-try]').forEach(b => (b.onclick = () => tryOn(b.dataset.try!)));
+  };
+
+  const buy = async (id: string) => {
+    const price = st!.shop.find(x => x.id === id)?.price ?? 0;
+    if (!(await confirmDialog(Qs.confirmBuy(skinById(id)!.name[settings.lang], price), Qs.buy, s.close))) return;
+    try {
+      const r = await net.api<{ state: QuestState }>('/skins/buy', { method: 'POST', body: { skin: id } });
+      st = r.state; setState(st); toast(`🎨 ${skinById(id)!.name[settings.lang]}`); draw();
+    } catch { toast(Qs.notEnough); }
+  };
+  const equip = async (id: string | null) => {
+    try {
+      const r = await net.api<{ state: QuestState }>('/skins/equip', { method: 'POST', body: { skin: id } });
+      st = r.state; setState(st); draw();
+    } catch { toast(s.netError); }
+  };
+  /** Full-board preview, with the same buy / equip button as the card. */
+  const tryOn = (id: string) => {
+    const owned = st!.owned.includes(id), sale = st!.shop.find(x => x.id === id);
+    const action = st!.equipped === id ? undefined
+      : owned ? { label: Qs.equip, kind: 'primary' as const, onClick: () => void equip(id) }
+      : sale && st!.coins >= sale.price ? { label: `🪙 ${sale.price} · ${Qs.buy}`, kind: 'primary' as const, onClick: () => void buy(id) }
+      : undefined;
+    openSkinTry(id, { game: previewGame === 'xq' ? 'xiangqi' : 'chess', action });
   };
 
   el.innerHTML = `<p class="muted">${esc(s.board.loading)}</p>`;

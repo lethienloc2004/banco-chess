@@ -1066,3 +1066,15 @@ svg.board[data-theme] .xq-river { opacity: .9; }
 .hp-card .hp-reward { font-weight: 700; color: var(--accent); }
 .hp-card.solved { opacity: .7; }
 .hp-card.solved .hp-reward { color: #16a34a; }
+
+/* Skin cards open a full-board preview */
+.skin-try { position: relative; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 10px; display: block; width: 100%; color: inherit; }
+.skin-try .skin-try-tag { position: absolute; right: 6px; bottom: 6px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); opacity: .9; }
+.skin-try:hover .skin-try-tag, .skin-try:focus-visible .skin-try-tag { background: var(--accent); color: var(--accent-text); opacity: 1; }
+.try-dlg { width: min(640px, calc(100vw - 24px)); }
+.try { display: flex; flex-direction: column; gap: 10px; }
+.try-top { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.try-ctl { display: flex; gap: 6px; }
+.try-board { width: min(100%, calc(100vh - 290px)); margin: 0 auto; }
+.try-board svg { width: 100%; height: auto; display: block; }
+.try-hint { margin: 0; text-align: center; }

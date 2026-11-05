@@ -156,9 +156,14 @@ export function activeSeason(day: string, cfg: SeasonConfig = {}): ActiveSeason 
   const forced = SEASONS.filter(x => cfg[x.id]?.mode === 'on')
     .sort((a, b) => (cfg[b.id]!.since ?? '').localeCompare(cfg[a.id]!.since ?? ''))[0];
   if (forced) {
-    const w = all.find(x => x.season === forced.id && day >= x.start && day <= x.end);
-    const start = w?.start ?? cfg[forced.id]!.since ?? day;
-    return { ...forced, start, end: w?.end ?? null, period: `s:${forced.id}:${start}`, forced: true };
+    // One run from the day it was turned on: if that day was inside its calendar window it is the
+    // calendar run itself. Either way the run (quest progress, holiday puzzle coins) never restarts
+    // because a window begins or ends while it is on.
+    const since = cfg[forced.id]!.since ?? day;
+    const inWin = (d: string) => (x: { season: string; start: string; end: string }) => x.season === forced.id && d >= x.start && d <= x.end;
+    const now = all.find(inWin(day)), began = all.find(inWin(since));
+    const start = began?.start ?? since;
+    return { ...forced, start, end: now?.end ?? null, period: `s:${forced.id}:${start}`, forced: true };
   }
   const w = all.find(x => day >= x.start && day <= x.end && cfg[x.season]?.mode !== 'off');
   if (!w) return null;

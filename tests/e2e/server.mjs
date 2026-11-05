@@ -321,8 +321,16 @@ const other = ['h-c1-01', 'h-c1-02', 'h-c1-03', 'h-c1-04'].find(id => !hp.some(p
 ok((await HP(other)).status >= 400, 'another holiday\'s puzzle pays nothing');
 uq = (await api('/quests', { token: blackTok })).data;
 ok(uq.coins === coins0 + hp[0].coins && uq.holidayPuzzles.find(p => p.id === hp[0].id).solved, 'coins added and puzzle marked solved');
+// finish the event quest (3 wins), then end the event before claiming: the reward is kept
+for (let i = 0; i < 3; i++) await api('/quests/event', { token: blackTok, method: 'POST', body: { type: 'bot-game', kind: 'chess', level: 'easy', result: 'win', key: `ev-${tag}-${i}` } });
 await SE(forcedId, { mode: 'off' });
 ok((await HP(hp[1].id)).status >= 400, 'no holiday puzzle coins when the event is off');
+uq = (await api('/quests', { token: blackTok })).data;
+const left = uq.quests.find(q => q.id === 's.' + forcedId);
+ok(left?.done && !left.claimed, 'a finished event quest stays claimable after the event ends');
+ok((await api('/quests/claim', { token: blackTok, method: 'POST', body: { quest: left.id, period: left.period } })).status === 200, 'claimed after the event');
+ok(!(await api('/quests', { token: blackTok })).data.quests.some(q => q.id === 's.' + forcedId), 'claimed event quest leaves the list');
+ok((await api('/quests/claim', { token: blackTok, method: 'POST', body: { quest: left.id, period: left.period } })).status === 409, 'and cannot be claimed twice');
 await SE(forcedId, { mode: 'auto', shop: false });
 ok((await SE('nope', { mode: 'on' })).status === 404, 'unknown event rejected');
 ok((await api('/admin/audit', { token: adm.token })).data.audit.length >= 5, 'audit log recorded');

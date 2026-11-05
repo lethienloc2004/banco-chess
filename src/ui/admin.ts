@@ -11,6 +11,9 @@ import { confirmDialog, openDialog, toast } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, timeAgo } from './util';
 
+/** Fired when the admin changed the holiday events, so the site look follows at once. */
+export const SEASONS_EVENT = 'banco:seasons';
+
 type Tab = 'overview' | 'games' | 'reports' | 'users' | 'announcements' | 'events' | 'audit';
 const TABS: Tab[] = ['overview', 'games', 'reports', 'users', 'announcements', 'events', 'audit'];
 
@@ -326,7 +329,7 @@ export function adminScreen(tab: Tab | string, nav: Nav, openUserId?: string): S
           const id = card.dataset.season!;
           const save = async (data: { mode?: SeasonMode; shop?: boolean }) => {
             const r = await call<View>(`/seasons/${id}`, 'POST', data);
-            if (r && !disposed) { toast(A.done); draw(r); if (net.config) net.config.seasons = Object.fromEntries(r.seasons.map(y => [y.id, { mode: y.mode, since: y.since, shop: y.shop }])); }
+            if (r && !disposed) { toast(A.done); draw(r); if (net.config) net.config.seasons = Object.fromEntries(r.seasons.map(y => [y.id, { mode: y.mode, since: y.since, shop: y.shop }])); window.dispatchEvent(new Event(SEASONS_EVENT)); }
           };
           card.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => (b.onclick = () => void save({ mode: b.dataset.mode as SeasonMode })));
           card.querySelector<HTMLInputElement>('.ev-shop input')!.onchange = e => void save({ shop: (e.target as HTMLInputElement).checked });

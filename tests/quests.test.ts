@@ -72,6 +72,13 @@ describe('quest scoring', () => {
     expect(tet?.period).toBe('s:tet:2026-11-19');
     // Forced on during its own window: same run (and progress) as the calendar one.
     expect(activeSeason('2026-11-05', { halloween: { mode: 'on', since: '2026-11-01' } })?.period).toBe('s:halloween:2026-10-15');
+    // …and kept on past the window's last day it is still that run (no reset of progress or puzzle coins).
+    const late = activeSeason('2026-11-20', { halloween: { mode: 'on', since: '2026-11-01' } });
+    expect(late?.period).toBe('s:halloween:2026-10-15');
+    expect(late?.end).toBeNull();
+    // Turned on before its window, the window starting does not restart it either.
+    expect(activeSeason('2026-11-25', { christmas: { mode: 'on', since: '2026-11-20' } })?.period).toBe('s:christmas:2026-11-20');
+    expect(activeSeason('2026-12-03', { christmas: { mode: 'on', since: '2026-11-20' } })?.period).toBe('s:christmas:2026-11-20');
     // A forced event wins over the calendar one; the latest forced wins over older ones.
     expect(activeSeason('2026-11-05', { christmas: { mode: 'on', since: '2026-11-02' } })?.id).toBe('christmas');
     expect(activeSeason('2026-11-20', { tet: { mode: 'on', since: '2026-11-01' }, midautumn: { mode: 'on', since: '2026-11-10' } })?.id).toBe('midautumn');
