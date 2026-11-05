@@ -6,7 +6,7 @@ import { DEFAULT_RATING, type MoveRec, type Ratings } from '../shared/protocol';
 import { KINDS, settings, t } from '../state';
 import { BoardRenderer } from './board';
 import { confirmDialog, openDialog, toast } from './dialog';
-import type { Nav, Screen } from './home';
+import { gameThumb, type Nav, type Screen } from './home';
 import { esc, timeAgo } from './util';
 
 type Tab = 'overview' | 'games' | 'reports' | 'users' | 'announcements' | 'audit';
@@ -24,7 +24,12 @@ interface UserRow {
 
 const ratingOf = (u: UserRow, k: GameKind) => u.ratings?.[k] ?? DEFAULT_RATING;
 /** The four ratings in one cell, each titled with its game. */
-const ratingCell = (u: UserRow) => KINDS.map(k => `<span title="${esc(t()[k])}">${ratingOf(u, k)}</span>`).join(' · ');
+/** One cell per game; the untouched starting rating is shown dimmed. */
+const ratingCells = (u: UserRow) => KINDS.map(k => {
+  const r = ratingOf(u, k);
+  return `<td class="elo${r === DEFAULT_RATING ? ' muted' : ''}">${r}</td>`;
+}).join('');
+const ratingHeads = () => KINDS.map(k => `<th class="elo" title="Elo ${esc(t()[k])}"><span class="thumb tiny">${gameThumb(k)}</span><span>${esc(t()[k])}</span></th>`).join('');
 
 const fmtDate = (ts: number | null) => (ts ? new Date(ts).toLocaleString(settings.lang === 'vi' ? 'vi-VN' : 'en-GB') : '—');
 
@@ -257,9 +262,9 @@ export function adminScreen(tab: Tab | string, nav: Nav, openUserId?: string): S
       const fetchUsers = async () => {
         const r = await call<{ users: UserRow[] }>(`/users?q=${encodeURIComponent(q.value)}&filter=${sel.value}`);
         if (!r) return;
-        area.innerHTML = r.users.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>${esc(A.name)}</th><th>${esc(s.rating)}</th><th>${esc(A.gamesCount)}</th><th>${esc(A.status)}</th><th>${esc(A.lastSeen)}</th></tr></thead><tbody>
+        area.innerHTML = r.users.length ? `<div class="table-wrap"><table class="tbl"><thead><tr><th>${esc(A.name)}</th>${ratingHeads()}<th>${esc(A.gamesCount)}</th><th>${esc(A.status)}</th><th>${esc(A.lastSeen)}</th></tr></thead><tbody>
           ${r.users.map(u => `<tr class="clickable" data-user="${esc(u.id)}"><td>${u.role === 'admin' ? '🛡️ ' : ''}${esc(u.name)}<div class="muted small">${esc(u.email ?? (u.google_sub ? 'Google' : A.guest))}</div></td>
-          <td class="small">${ratingCell(u)}</td><td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}${u.board_hidden ? ' 🙈' : ''}</td>
+          ${ratingCells(u)}<td>${u.games}</td><td>${u.banned_until && u.banned_until > Date.now() ? `<span class="tag danger">${esc(A.banned)}</span>` : u.warnings ? `⚠️ ${u.warnings}` : '✅'}${u.board_hidden ? ' 🙈' : ''}</td>
           <td class="muted small">${esc(timeAgo(u.last_seen, settings.lang))}</td></tr>`).join('')}</tbody></table></div>` : `<p class="muted">${esc(A.empty)}</p>`;
         bindGames(area);
       };

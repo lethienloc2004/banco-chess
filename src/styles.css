@@ -814,3 +814,9 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .pf-manage { margin-left: auto; }
 @media (max-width: 520px) { .profile .screen-head { flex-wrap: wrap; } .pf-manage { margin-left: 0; } }
+/* Admin user list: one Elo column per game */
+.tbl th.elo { text-align: center; white-space: nowrap; }
+.tbl th.elo span { vertical-align: middle; }
+.tbl th.elo .thumb.tiny { margin-right: 6px; }
+.tbl td.elo { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tbl td.elo.muted { font-weight: 400; color: var(--muted); }
