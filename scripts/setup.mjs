@@ -7,7 +7,7 @@
  * Non-interactive: npm run setup -- --yes   (reads APP_NAME, ADMIN_EMAILS, GOOGLE_CLIENT_ID from the environment)
  * Preview only:    npm run setup -- --dry-run
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
@@ -23,7 +23,8 @@ const step = (n, s) => console.log(`\n${c.b(`[${n}/7]`)} ${s}`);
 /** Run wrangler; returns stdout. `show` streams output to the terminal. */
 function wrangler(argv, { show = false, input, allowFail = false, env } = {}) {
   if (DRY) { console.log(c.d(`  (dry-run) npx wrangler ${argv.join(' ')}`)); return ''; }
-  const r = spawnSync('npx', ['wrangler', ...argv], {
+  const [cmd, rest] = npxWrangler(argv);
+  const r = spawnSync(cmd, rest, {
     encoding: 'utf8', shell, input, env: env ? { ...process.env, ...env } : process.env,
     stdio: show ? ['inherit', 'inherit', 'inherit'] : input !== undefined ? ['pipe', 'pipe', 'pipe'] : ['inherit', 'pipe', 'pipe'],
   });
@@ -35,23 +36,22 @@ function wrangler(argv, { show = false, input, allowFail = false, env } = {}) {
   return (r.stdout ?? '') + (r.stderr ?? '');
 }
 
+/** Our wrangler arguments never contain spaces or user text, so joining them is safe (and avoids Node's DEP0190 warning). */
+const npxWrangler = (argv) => (shell ? [`npx wrangler ${argv.join(' ')}`, []] : ['npx', ['wrangler', ...argv]]);
+
 /**
- * Run wrangler showing its output live (so any question it asks, such as
- * registering a workers.dev subdomain on a new account, is visible and can be
- * answered) while also capturing it.
+ * Run wrangler attached to this terminal, so it can ask questions (such as
+ * registering a workers.dev subdomain on a new account) and you can answer.
  */
-function wranglerLive(argv) {
-  if (DRY) { console.log(c.d(`  (dry-run) npx wrangler ${argv.join(' ')}`)); return Promise.resolve(''); }
-  return new Promise(resolve => {
-    const child = spawn('npx', ['wrangler', ...argv], { shell, stdio: ['inherit', 'pipe', 'pipe'] });
-    let out = '';
-    child.stdout.on('data', d => { out += d; process.stdout.write(d); });
-    child.stderr.on('data', d => { out += d; process.stderr.write(d); });
-    child.on('close', code => {
-      if (code !== 0) { console.error(c.r(`\n✗ Lệnh thất bại: npx wrangler ${argv.join(' ')}`)); process.exit(code ?? 1); }
-      resolve(out);
-    });
-  });
+function wranglerInteractive(argv) {
+  if (DRY) { console.log(c.d(`  (dry-run) npx wrangler ${argv.join(' ')}`)); return; }
+  const [cmd, rest] = npxWrangler(argv);
+  const r = spawnSync(cmd, rest, { shell, stdio: 'inherit' });
+  if (r.status !== 0) {
+    console.error(c.r(`\n✗ Lệnh thất bại: npx wrangler ${argv.join(' ')}`));
+    console.error(c.y('  Tài khoản mới? Mở https://dash.cloudflare.com → Workers & Pages, chọn tên miền workers.dev rồi chạy lại "npm run setup".'));
+    process.exit(r.status ?? 1);
+  }
 }
 
 export function setTomlString(toml, key, value) {
@@ -139,8 +139,8 @@ async function main() {
   // ---- 6. Migrate + deploy
   step(6, 'Tạo bảng dữ liệu và đưa app lên mạng');
   wrangler(['d1', 'migrations', 'apply', 'DB', '--remote'], { show: true });
-  const deployOut = await wranglerLive(['deploy']);
-  const url = deployOut.match(/https:\/\/[^\s]+\.workers\.dev/)?.[0] ?? `https://${app}.<tài-khoản>.workers.dev`;
+  wranglerInteractive(['deploy']);
+  const url = `https://${app}.<tên-miền-workers.dev-của-bạn>.workers.dev`;
 
   // ---- 7. Secret
   step(7, 'Khóa bí mật cho phiên đăng nhập');
@@ -151,7 +151,7 @@ async function main() {
     console.log(c.g('  ✓ Đã tạo AUTH_SECRET ngẫu nhiên'));
   }
 
-  console.log(`\n${c.g(c.b('🎉 Xong!'))} App của bạn: ${c.b(url)}\n`);
+  console.log(`\n${c.g(c.b('🎉 Xong!'))} Link app là dòng ${c.b('https://….workers.dev')} wrangler in ở bước 6 phía trên (dạng ${url}).\n`);
   if (admins) console.log(`• Đăng nhập Google bằng ${admins} để vào trang quản trị (biểu tượng khiên 🛡️).`);
   if (google) console.log(`• Nhớ thêm ${url} vào "Authorized JavaScript origins" của Google Client ID.`);
   else console.log('• Muốn có đăng nhập Google: tạo Client ID rồi chạy lại "npm run setup".');
