@@ -267,6 +267,7 @@ Người chơi chỉ cần nhập email, app gửi một **mã 6 số** để đ
 1. Tạo tài khoản miễn phí tại **https://app.brevo.com**.
 2. Xác minh email người gửi: **Settings → Senders, domains & IPs → Senders → Add a sender**. Điền tên `Bàn Cờ` và email của bạn (ví dụ Gmail), rồi bấm mã xác minh Brevo gửi tới hộp thư đó.
 3. Tạo khóa API: **Settings → SMTP & API → API keys → Generate a new API key**. Copy khóa (dạng `xkeysib-…`). Khóa chỉ hiện một lần.
+   - Nếu Brevo báo *"Unauthorized IP addresses are blocked"* / *"Les adresses IP non autorisées sont bloquées"*: vào **Settings → Security → Authorized IPs** và **tắt chặn IP** (*Deactivate blocking*). Máy chủ Cloudflare gửi thư từ nhiều IP thay đổi liên tục, nên không thể khai từng IP. Hãy giữ bí mật khóa API.
 4. Chạy `npm run setup`, điền **Email gửi mã đăng nhập** (email ở bước 2) và dán **Brevo API key**. Các câu khác bấm Enter.
 5. Mở app → **Đăng nhập** → nhập email của bạn → kiểm tra hộp thư (cả mục **Thư rác / Quảng cáo**).
 
@@ -289,7 +290,7 @@ Người chơi chỉ cần nhập email, app gửi một **mã 6 số** để đ
 | Nút "Đăng nhập Google" không hiện | `GOOGLE_CLIENT_ID` đang trống |
 | Bấm đăng nhập Google báo lỗi | Link app chưa có trong *Authorized JavaScript origins* |
 | Báo "Máy chủ chưa bật đăng nhập bằng email" | Chưa điền email người gửi hoặc Brevo API key: chạy lại `npm run setup` |
-| Báo "Không gửi được thư" | Email người gửi chưa được xác minh trong Brevo, hoặc API key sai. Xem nhật ký: `npx wrangler tail` |
+| Báo "Không gửi được thư" | Email người gửi chưa được xác minh trong Brevo, API key sai, hoặc Brevo đang **chặn IP lạ** (tắt ở *Settings → Security → Authorized IPs*). Xem nhật ký: `npx wrangler tail` |
 | Không nhận được mã | Xem mục **Thư rác / Quảng cáo**; trong Brevo xem **Transactional → Logs** để biết thư đã đi chưa |
 | `npm run setup` báo lỗi đăng nhập | Chạy `npx wrangler login` rồi chạy lại setup |
 
