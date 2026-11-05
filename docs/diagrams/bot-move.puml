@@ -1,0 +1,36 @@
+@startuml bot-move
+!include _style.iuml
+title Máy chọn nước đi (src/engine/ai.ts, chạy trong Web Worker)
+
+start
+:Nhận thế cờ + mức độ
+(dễ / vừa / khó / rất khó);
+if (Có quân úp? (cờ úp, cờ vua úp)) then (có)
+  :Máy **không nhìn trộm** quân úp;
+  repeat
+    :Xếp ngẫu nhiên các quân chưa biết
+    (determinize: đúng số quân còn lại);
+    :Tìm kiếm trên thế cờ mẫu,
+    ghi điểm từng nước;
+  repeat while (Còn mẫu? (3 / 8 / 14 / 20 mẫu))
+  :Lấy trung bình điểm mỗi nước
+  (chặn điểm chiếu hết để một mẫu may mắn không lấn át);
+else (không)
+  :Tìm kiếm trực tiếp;
+  note right
+    Iterative deepening + aspiration windows
+    PVS, bảng chuyển vị (Zobrist)
+    null move, LMR, reverse futility
+    killer / history, quiescence
+  end note
+endif
+if (Mức dễ?) then (có)
+  :Chọn ngẫu nhiên trong các nước
+  không kém nước tốt nhất quá nhiều;
+else (không)
+  :Chọn nước điểm cao nhất;
+endif
+:Trả về nước đi, điểm, độ sâu,
+chuỗi nước dự tính (PV);
+stop
+@enduml

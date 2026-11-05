@@ -1,0 +1,36 @@
+' Shared look for every diagram (white background so they read well in GitHub dark mode too).
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam ArrowColor #6B4F3A
+skinparam ArrowFontColor #4A3728
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFF7E0
+skinparam NoteBorderColor #C9A227
+skinparam ComponentBackgroundColor #F6EEE3
+skinparam ComponentBorderColor #8B5E34
+skinparam DatabaseBackgroundColor #EDE3F5
+skinparam DatabaseBorderColor #6B4E8B
+skinparam NodeBackgroundColor #FBF8F3
+skinparam NodeBorderColor #8B5E34
+skinparam RectangleBorderColor #8B5E34
+skinparam ActorBorderColor #8B5E34
+skinparam ActorBackgroundColor #F6EEE3
+skinparam ParticipantBackgroundColor #F6EEE3
+skinparam ParticipantBorderColor #8B5E34
+skinparam SequenceLifeLineBorderColor #B79B82
+skinparam SequenceGroupBorderColor #B79B82
+skinparam SequenceGroupBackgroundColor #FBF8F3
+skinparam ActivityBackgroundColor #F6EEE3
+skinparam ActivityBorderColor #8B5E34
+skinparam ActivityDiamondBackgroundColor #FFF7E0
+skinparam ActivityDiamondBorderColor #C9A227
+skinparam StateBackgroundColor #F6EEE3
+skinparam StateBorderColor #8B5E34
+skinparam ClassBackgroundColor #FBF8F3
+skinparam ClassBorderColor #8B5E34
+skinparam ClassHeaderBackgroundColor #F0E2CF
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold

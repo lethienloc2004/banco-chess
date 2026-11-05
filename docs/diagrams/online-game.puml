@@ -1,0 +1,46 @@
+@startuml online-game
+!include _style.iuml
+title Chơi với bạn qua link (phòng bạn bè)
+
+actor "Chủ phòng" as A
+participant "App\n(trình duyệt A)" as UA
+participant "Worker\n/api" as W
+participant "GameRoom\n(Durable Object)" as R
+database "D1" as DB
+participant "App\n(trình duyệt B)" as UB
+actor "Bạn bè" as B
+
+A -> UA : Chọn "Phòng bạn bè"\n(loại cờ, bên, đồng hồ)
+UA -> W : POST /api/rooms
+W -> R : init (thế cờ thật, ghế, đồng hồ)
+W --> UA : { id }
+UA -> R : WebSocket /api/rooms/:id/ws
+R --> UA : state (waiting, thế cờ đã **giấu quân úp**)
+A -> B : Gửi link #/r/:id
+B -> UB : Mở link
+UB -> R : WebSocket (ngồi vào ghế trống)
+R -> DB : INSERT games (playing, thế cờ thật)
+R --> UA : state (playing)
+R --> UB : state (playing)
+
+loop Mỗi nước đi
+  UA -> R : { t: "move", ply, m }
+  R -> R : Kiểm tra lượt, nước hợp lệ (cùng bộ luật với app),\ntrừ giờ (Fischer / delay / giai đoạn)
+  alt Nước làm lật quân úp
+    R -> R : revealOf(m): chỉ lộ đúng quân vừa lật / bị ăn
+  end
+  R --> UA : move { mv, remaining, serverNow }
+  R --> UB : move { mv, remaining, serverNow }
+end
+
+alt Chiếu hết / hết giờ / đầu hàng / hòa / bỏ cuộc
+  R -> DB : UPDATE games (kết quả, nước đi)
+  R --> UA : state (over)
+  R --> UB : state (over)
+end
+
+note over R
+  Alarm của phòng: xử thua khi hết giờ (luật FIDE 6.9),
+  xử thua khi mất kết nối quá 5 phút, đóng phòng bỏ trống.
+end note
+@enduml

@@ -1,0 +1,23 @@
+@startuml post-game-analysis
+!include _style.iuml
+title Phân tích ván sau khi chơi (src/ui/analysis.ts)
+
+actor "Người chơi" as U
+participant "Màn hình\nPhân tích ván" as S
+participant "Nhóm Web Worker\n(1–3 worker)" as P
+participant "src/analysis.ts" as M
+
+U -> S : Bấm "Phân tích ván"\n(cuối ván, online, máy đấu máy)
+S -> S : Dựng lại từng thế cờ\n(kể cả quân đã lật)
+S -> S : Thế đã kết thúc (chiếu hết, hòa)\nchấm điểm ngay
+loop Mỗi thế cờ còn lại (thế đang xem được tính trước)
+  S -> P : { thế cờ, mức "khó", 0,35 s / 1,5 s }
+  P --> S : nước tốt nhất, điểm, PV
+  S -> M : toWhite(): quy về góc nhìn Trắng/Đỏ
+  S -> M : summarize(): mất bao nhiêu điểm mỗi nước
+  M --> S : ✓ / ?! / ? / ?? và độ chính xác (công thức Lichess)
+  S --> U : Cập nhật biểu đồ, nhận xét, mũi tên nước tốt nhất
+end
+U -> S : ← → / bấm biểu đồ / bấm nước đi
+S --> U : Thế cờ đó + "Nước tốt hơn: …"
+@enduml

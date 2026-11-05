@@ -1,0 +1,26 @@
+@startuml room-lifecycle
+!include _style.iuml
+title Vòng đời một phòng chơi (GameRoom)
+
+[*] --> waiting : POST /api/rooms\n(phòng bạn bè)
+[*] --> playing : Lobby ghép trận\n(đủ hai người)
+
+waiting --> playing : Người thứ hai vào
+waiting --> [*] : Không ai vào sau 1 ngày\n(alarm xóa phòng)
+
+state playing {
+  [*] --> TurnA
+  TurnA --> TurnB : nước hợp lệ
+  TurnB --> TurnA : nước hợp lệ
+  TurnA : đồng hồ bên đang đi chạy\n(sau nước đầu của mỗi bên)
+}
+
+playing --> over : chiếu hết · hết nước · lặp thế\nchiếu dai / đuổi dai\nhết giờ (FIDE 6.9) · đầu hàng\nhòa theo thỏa thuận · bỏ cuộc\nquản trị viên xử / hủy
+over --> playing : Cả hai đồng ý chơi lại\n(đổi bên, ván số + 1)
+over --> [*] : Không hoạt động 7 ngày
+
+note right of over
+  Ván xếp hạng: cập nhật Elo của
+  đúng loại cờ, lưu r0/r1, d0/d1.
+end note
+@enduml

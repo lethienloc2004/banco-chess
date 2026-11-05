@@ -1,0 +1,44 @@
+@startuml admin-correction
+!include _style.iuml
+title Quản trị viên sửa kết quả ván đã kết thúc
+
+start
+:Quản trị viên mở ván và chọn
+**Hủy ván** hoặc **Đổi kết quả**;
+if (Ván đang diễn ra?) then (có)
+  :GameRoom kết thúc ván ngay
+  (không tính điểm);
+  stop
+endif
+if (Ván xếp hạng, chưa bị hủy?) then (không)
+  :Chỉ sửa bản ghi ván;
+  stop
+endif
+if (Đã lưu r0, r1, d0, d1?) then (có)
+  :Dùng số liệu đã lưu;
+else (ván cũ)
+  :Ước tính d từ điểm hiện tại
+  (đánh dấu "ước tính");
+endif
+if (Hủy ván?) then (có)
+  :Trả lại điểm: rating -= d
+  games - 1, bỏ thắng/hòa cũ;
+  :Ván không còn là ván xếp hạng;
+else (đổi kết quả)
+  :Tính lại từ điểm trước ván:
+  d' = elo(r0, r1, kết quả mới) − r0
+  rating += d' − d
+  cập nhật số thắng/hòa;
+  :Lưu d' để lần sửa sau vẫn chính xác;
+endif
+:Ghi nhật ký quản trị
+(kèm số điểm đã đổi);
+stop
+
+legend right
+  Quyền khác: ẩn khỏi bảng xếp hạng (không khóa),
+  xóa thành tích một/tất cả loại cờ (về 1200, 0 ván),
+  đặt điểm từng loại cờ, cảnh cáo, khóa, đổi tên,
+  cấp quyền, xóa tài khoản, thông báo toàn hệ thống.
+endlegend
+@enduml

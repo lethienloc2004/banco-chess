@@ -13,6 +13,7 @@
     "build": "tsc --noEmit && tsc -p server --noEmit && vite build",
     "test": "vitest run",
     "test:server": "node tests/e2e/server.mjs",
+    "diagrams": "node scripts/diagrams.mjs",
     "db:migrate": "wrangler d1 migrations apply DB --remote",
     "deploy": "npm run build && wrangler deploy && wrangler d1 migrations apply DB --remote"
   },

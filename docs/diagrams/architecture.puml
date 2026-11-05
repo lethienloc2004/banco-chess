@@ -1,0 +1,45 @@
+@startuml architecture
+!include _style.iuml
+!pragma layout smetana
+title Kiến trúc tổng quan — Bàn Cờ
+
+actor "Người chơi" as player
+actor "Quản trị viên" as admin
+
+node "Trình duyệt (PWA)" as browser {
+  component "Giao diện\n(src/ui: trang chủ, ván cờ,\nmáy đấu máy, giải thế cờ,\nphân tích ván, bảng xếp hạng,\nquản trị)" as ui
+  component "Luật cờ & ván cờ\n(src/engine, src/game.ts)\ncờ vua · cờ tướng · cờ úp · cờ vua úp" as rules
+  component "Web Worker bot\n(ai.worker.ts: tìm kiếm\nalpha-beta, PIMC cho cờ úp)" as worker
+  component "Service worker\n(sw.js: chạy offline,\nbỏ qua /api)" as sw
+}
+
+node "Cloudflare" as cf {
+  component "Worker\n(server/index.ts)\nREST API · đăng nhập · tệp tĩnh" as api
+  component "Durable Object\nGameRoom (mỗi phòng một bản)\nluật · đồng hồ · giấu quân úp" as room
+  component "Durable Object\nLobby (một bản)\nonline · ghép trận · thông báo" as lobby
+  database "D1 (SQLite)\nusers · ratings · games\nreports · announcements · audit" as d1
+}
+
+cloud "Google Identity\n(tùy chọn)" as google
+
+player --> ui
+admin --> ui
+ui --> rules
+ui --> worker : "postMessage\n(thế cờ, mức độ)"
+worker --> rules
+ui ..> sw
+ui --> api : "HTTPS /api/*"
+ui --> room : "WebSocket\n/api/rooms/:id/ws"
+ui --> lobby : "WebSocket\n/api/lobby/ws"
+api --> room : "tạo phòng"
+lobby --> room : "tạo phòng xếp hạng"
+api --> d1
+room --> d1 : "kết quả, điểm Elo"
+lobby --> d1 : "điểm Elo hiện tại"
+api --> google : "kiểm tra ID token (JWKS)"
+
+legend bottom
+  Chơi với máy, 2 người cùng máy, máy đấu máy, giải thế cờ và phân tích ván
+  chạy hoàn toàn trên trình duyệt. Máy chủ Cloudflare chỉ cần cho phần online.
+endlegend
+@enduml

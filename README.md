@@ -127,18 +127,23 @@ Bot không nhìn trộm quân úp. Khi chơi online, máy chủ giấu danh tín
 
 ## 🏗️ Kiến trúc
 
-```
-Trình duyệt (Vite + TypeScript, không framework)
-  │  REST /api/*  +  WebSocket
-  ▼
-Cloudflare Worker (server/index.ts): API, đăng nhập, phục vụ app
-  ├─ Durable Object "GameRoom" (mỗi phòng một bản): giữ ván, kiểm tra nước đi bằng chính bộ luật của app,
-  │   đồng hồ, giấu quân úp, ghi kết quả
-  ├─ Durable Object "Lobby" (một bản): người online, hàng chờ ghép trận, thông báo trực tiếp
-  └─ D1 (SQLite): users · games · reports · announcements · audit
-```
+![Kiến trúc tổng quan](docs/diagrams/architecture.svg)
 
-Chế độ chơi với máy và 2 người chạy hoàn toàn trên trình duyệt, không cần máy chủ.
+- **Trình duyệt** (Vite + TypeScript, không framework): giao diện, luật cờ, bot chạy trong Web Worker. Chơi với máy, 2 người cùng máy, máy đấu máy, giải thế cờ và phân tích ván không cần máy chủ.
+- **Cloudflare Worker** (`server/index.ts`): REST API, đăng nhập, phục vụ app.
+- **Durable Object "GameRoom"** (mỗi phòng một bản): giữ ván, kiểm tra nước đi bằng chính bộ luật của app, đồng hồ, giấu quân úp, ghi kết quả và điểm Elo.
+- **Durable Object "Lobby"** (một bản): người online, hàng chờ ghép trận, thông báo trực tiếp.
+- **D1 (SQLite)**: users · ratings · games · reports · announcements · audit.
+
+📐 **Xem thêm sơ đồ** (PlantUML) trong [docs/diagrams](docs/diagrams/README.md):
+[cơ sở dữ liệu](docs/diagrams/README.md#2-cơ-sở-dữ-liệu--data-model) ·
+[phòng bạn bè](docs/diagrams/README.md#3-chơi-với-bạn-qua-link--friend-room) ·
+[vòng đời phòng](docs/diagrams/README.md#4-vòng-đời-phòng-chơi--room-lifecycle) ·
+[ghép trận & bảng xếp hạng](docs/diagrams/README.md#5-ghép-trận-elo-và-bảng-xếp-hạng--matchmaking-ratings-leaderboard) ·
+[quản trị sửa kết quả](docs/diagrams/README.md#6-quản-trị-viên-sửa-kết-quả--admin-corrections) ·
+[máy chọn nước](docs/diagrams/README.md#7-máy-chọn-nước-đi--how-the-bot-moves) ·
+[phân tích ván](docs/diagrams/README.md#8-phân-tích-ván--post-game-analysis).
+Sửa file `.puml` rồi chạy `npm run diagrams` để vẽ lại (cần Java).
 
 ## 🚀 Bắt đầu nhanh
 
@@ -302,6 +307,7 @@ Không cần cài thêm extension nào: VS Code đã hiểu sẵn TypeScript. N�
 npm run dev          # Vite tự tải lại khi sửa giao diện (http://localhost:5173), chạy cùng: npm run dev:server
 npm test             # luật cờ (perft), chiếu dai, đăng nhập, bot, script cài đặt
 npm run test:server  # kiểm tra máy chủ: phòng, ghép trận, xếp hạng, quản trị (khi npm start đang chạy)
+npm run diagrams     # vẽ lại sơ đồ PlantUML trong docs/diagrams (cần Java)
 ```
 
 ## 🧠 Cấu trúc mã nguồn
@@ -322,7 +328,8 @@ server/
   admin.ts        API quản trị
   auth.ts         Ký phiên (HMAC) và xác minh Google ID token
 migrations/       Lược đồ cơ sở dữ liệu D1 (0002: điểm Elo riêng cho từng loại cờ)
-scripts/          npm start, npm run setup, generate-puzzles.ts (tạo thế cờ mới)
+scripts/          npm start, npm run setup, npm run diagrams, generate-puzzles.ts (tạo thế cờ mới)
+docs/diagrams/    Sơ đồ PlantUML (.puml) và ảnh SVG hiển thị trên GitHub
 tests/            Perft chuẩn, luật, đăng nhập, bot, kiểm tra mọi thế cờ; tests/e2e: kiểm tra máy chủ
 ```
 
@@ -430,6 +437,9 @@ npm run setup      # put your own copy online on Cloudflare: answers 3 questions
 Ctrl+`, then run `npm ci` and `npm start`. Its built-in TypeScript is enough. **WebStorm** and other JetBrains IDEs with
 JavaScript support also work: open the folder, run `npm ci` in the terminal (ignore the "npm install" prompt), then use
 the ▶ next to `"start"` in `package.json`. If the IDE cannot use the project's TypeScript 7, pick its bundled version.
+
+**Diagrams:** architecture, data model, online room, matchmaking and ratings, admin corrections, the bot and the
+analysis are drawn in PlantUML in [docs/diagrams](docs/diagrams/README.md) (`npm run diagrams` redraws them).
 
 Or use the **Deploy to Cloudflare** button above. Details (Google sign-in, admins, custom domain, troubleshooting)
 are in the *Bắt đầu nhanh* section.

@@ -1,0 +1,37 @@
+@startuml matchmaking-rating
+!include _style.iuml
+title Ghép trận xếp hạng, điểm Elo riêng từng loại cờ và bảng xếp hạng
+
+actor "Người chơi 1" as P1
+actor "Người chơi 2" as P2
+participant "Lobby\n(Durable Object)" as L
+participant "GameRoom" as R
+database "D1" as DB
+participant "Worker /api" as W
+
+P1 -> L : { t: "queue", kind: "chess" }
+P2 -> L : { t: "queue", kind: "chess" }
+L -> L : Lấy người chờ lâu nhất,\nchọn đối thủ có Elo cờ vua gần nhất
+L -> DB : Đọc Elo cờ vua mới nhất của hai người
+L -> R : init (rated, 10 phút + 5 giây)
+L --> P1 : matched { room }
+L --> P2 : matched { room }
+
+== Ván cờ (như phòng bạn bè) ==
+
+R -> DB : ratingsIn("chess", [p1, p2])
+R -> R : elo(r1, r2, kết quả), K = 32
+R -> DB : UPSERT ratings (chỉ loại cờ của ván này):\nrating, games + 1, wins / draws, peak
+R -> DB : UPDATE games: r0, r1 (điểm trước ván), d0, d1 (thay đổi)
+R --> P1 : state (over, ratingChange)
+R --> P2 : state (over, ratingChange)
+
+== Bảng xếp hạng ==
+
+P1 -> W : GET /api/leaderboard?kind=chess
+W -> DB : Top 100: games ≥ 5, không bị khóa, không bị ẩn,\nsắp theo Elo (bằng điểm thì đồng hạng)
+W -> DB : Hạng của người gọi (kể cả ngoài top 100)
+W --> P1 : { entries, me, myGames, total }
+P1 -> W : GET /api/players/:id
+W --> P1 : Hồ sơ: Elo, hạng, thắng/hòa/thua, cao nhất\ncủa từng loại cờ + ván gần đây
+@enduml

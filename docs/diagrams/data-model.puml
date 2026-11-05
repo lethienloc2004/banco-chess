@@ -1,0 +1,87 @@
+@startuml data-model
+!include _style.iuml
+!pragma layout smetana
+title Cơ sở dữ liệu D1 (migrations/0001–0003)
+hide circle
+hide methods
+
+entity users {
+  * id : TEXT <<PK>>
+  --
+  name : TEXT
+  google_sub : TEXT <<unique>>
+  email : TEXT
+  role : 'user' | 'admin'
+  games, wins : INTEGER
+  warnings : INTEGER
+  notice : TEXT
+  banned_until : INTEGER
+  ban_reason : TEXT
+  board_hidden : 0 | 1
+  created, last_seen : INTEGER
+}
+
+entity ratings {
+  * user_id : TEXT <<PK, FK>>
+  * kind : chess | xiangqi | jieqi | hiddenchess <<PK>>
+  --
+  rating : INTEGER (1200)
+  games, wins, draws : INTEGER
+  peak : INTEGER
+  updated : INTEGER
+}
+
+entity games {
+  * id : "<phòng>-<số ván>" <<PK>>
+  --
+  room, kind : TEXT
+  rated : 0 | 1
+  p0_id, p0_name : bên Trắng/Đỏ
+  p1_id, p1_name : bên Đen
+  status : playing | over
+  winner : 0 | 1 | NULL
+  reason : TEXT
+  initial : TEXT (thế thật, kể cả quân úp)
+  moves : JSON
+  r0, r1 : điểm trước ván
+  d0, d1 : điểm thay đổi
+  created, ended : INTEGER
+}
+
+entity reports {
+  * id : INTEGER <<PK>>
+  --
+  game_id : TEXT
+  reporter_id, target_id : TEXT
+  reason, note : TEXT
+  status : open | resolved | dismissed
+  resolution, resolved_by : TEXT
+  created, resolved : INTEGER
+}
+
+entity announcements {
+  * id : INTEGER <<PK>>
+  --
+  text : TEXT
+  level : info | warn
+  active : 0 | 1
+  created, expires : INTEGER
+  created_by : TEXT
+}
+
+entity audit {
+  * id : INTEGER <<PK>>
+  --
+  admin_id, admin_name : TEXT
+  action : TEXT
+  target, detail : TEXT
+  created : INTEGER
+}
+
+users ||--o{ ratings : "1 dòng / loại cờ"
+users ||--o{ games : "p0_id / p1_id"
+users ||--o{ reports : "reporter / target"
+games ||--o{ reports : "game_id"
+users ||--o{ audit : "admin_id"
+users ||--o{ announcements : "created_by"
+@enduml
