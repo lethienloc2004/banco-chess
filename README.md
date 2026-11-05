@@ -18,6 +18,15 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
 
 - ♟️ **4 loại cờ trong một app**: Cờ vua, Cờ tướng, **Cờ tướng úp (Jieqi / 揭棋)** và **Cờ vua úp**, một biến thể cùng tinh thần cờ úp cho cờ vua. Rất hiếm có bản mã nguồn mở nào chơi được cờ úp.
 - ⚡ **Ghép ngẫu nhiên có xếp hạng (Elo)**: app tìm đối thủ có điểm gần nhất. Mỗi ván 10 phút, cộng 5 giây sau mỗi nước.
+- 🎯 **Nhiệm vụ & skin quân cờ**:
+  - **3 nhiệm vụ mỗi ngày** và **2 nhiệm vụ mỗi tuần** (giống nhau cho mọi người, làm mới theo giờ Việt Nam): thắng máy, giải thế cờ, chơi online, phân tích ván… Hoàn thành được **xu**, giữ **chuỗi ngày liên tiếp**.
+  - **9 thành tích**, mỗi thành tích mở một skin: Gỗ, Cẩm thạch, Đồng, Vàng, Pha lê, Ngọc bích, Neon, Rồng lửa, Thiên hà.
+  - **Cửa hàng**: Mực tàu, Kẹo ngọt, Hoa anh đào. **Skin dịp lễ** chỉ có trong sự kiện: 🎃 Halloween, 🎄 Giáng sinh, 🧧 Tết, 🏮 Trung thu (mua bằng xu hoặc làm nhiệm vụ sự kiện).
+  - Skin vẽ hoàn toàn bằng SVG (màu chuyển, phát sáng, trang trí, hiệu ứng khi ăn quân), dùng cho cả cờ vua lẫn cờ tướng. **Chơi online thì đối thủ cũng thấy skin của bạn** (có thể tắt trong Cài đặt).
+  - Tiến độ lưu theo tài khoản trên máy chủ. Ván online do máy chủ tự chấm; mỗi ván, mỗi thế cờ chỉ được tính một lần.
+
+  ![16 skin quân cờ](docs/skins.png)
+
 - 🏆 **Bảng xếp hạng và hồ sơ người chơi**:
   - **Mỗi loại cờ có điểm Elo và bảng xếp hạng riêng**: cờ vua, cờ tướng, cờ úp, cờ vua úp. Giỏi cờ tướng không kéo điểm cờ vua lên.
   - Top 100 người chơi, có huy chương 🥇🥈🥉. Hạng của bạn luôn hiện, kể cả khi ngoài top 100.
@@ -355,6 +364,7 @@ src/
 server/
   index.ts        API: đăng nhập khách/Google/email (OTP), phòng, báo cáo, bảng xếp hạng
   otp.ts          Mã đăng nhập 6 số: tạo, băm, giới hạn số lần, gửi qua Brevo
+  quests.ts       Chấm nhiệm vụ, xu, nhận thưởng, mua / dùng skin
   room.ts         Durable Object phòng chơi
   lobby.ts        Durable Object sảnh chờ / ghép trận
   admin.ts        API quản trị
@@ -425,6 +435,9 @@ friend on the same device, or online. The whole interface is available in Vietna
 
 **▶ Play now: https://banco-chess.lethienloc.workers.dev** (everything included: bots, online play, matchmaking, leaderboards; installable as an app).
 
+- **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
+  coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
+  Skins are pure SVG (gradients, glow, decorations, capture effects) for chess and xiangqi; online opponents see yours.
 - **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,
   a 5-game minimum, and profiles with per-game record, peak rating and recent games.
 - **Online on Cloudflare** (Workers + Durable Objects + D1): rated quick matchmaking (Elo), friend rooms via link,

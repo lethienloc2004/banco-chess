@@ -29,6 +29,8 @@ export interface Settings {
   watchSpeed: 'slow' | 'normal' | 'fast';
   /** 'piece': every piece has its own sound; 'simple': one knock for all. */
   soundStyle: 'piece' | 'simple';
+  /** Show other players' piece skins in online games. */
+  showSkins: boolean;
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -78,6 +80,7 @@ const defaults: Settings = {
   watchLevels: ['hard', 'hard'],
   watchSpeed: 'normal',
   soundStyle: 'piece',
+  showSkins: true,
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

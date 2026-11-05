@@ -108,7 +108,7 @@ export class Lobby extends DurableObject<Env> {
       const black = white === first ? second : first;
       // Ratings change after every game while the lobby socket stays open: read them fresh.
       const fresh = await ratingsIn(this.env.DB, kind, [white.a.id, black.a.id]);
-      const seat = (a: Attachment): Seat => ({ id: a.id, name: a.name, rating: fresh.get(a.id) ?? r(a) });
+      const seat = (a: Attachment): Seat => ({ id: a.id, name: a.name, rating: fresh.get(a.id) ?? r(a), skin: a.skin ?? null });
       const body: InitBody = { id, kind, rated: true, seats: [seat(white.a), seat(black.a)], clock: RANKED_CLOCK };
       const res = await this.env.ROOMS.get(this.env.ROOMS.idFromName(id)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(body) });
       if (!res.ok) return;

@@ -278,6 +278,9 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
         await lobby(env).fetch('https://lobby/kick', { method: 'POST', body: JSON.stringify({ uid: u.id }) });
         await db.batch([
           db.prepare('DELETE FROM ratings WHERE user_id = ?').bind(u.id),
+          db.prepare('DELETE FROM quest_progress WHERE user_id = ?').bind(u.id),
+          db.prepare('DELETE FROM quest_events WHERE user_id = ?').bind(u.id),
+          db.prepare('DELETE FROM user_skins WHERE user_id = ?').bind(u.id),
           db.prepare('DELETE FROM users WHERE id = ?').bind(u.id),
         ]);
         break;

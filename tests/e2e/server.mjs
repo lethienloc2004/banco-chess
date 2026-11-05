@@ -61,12 +61,43 @@ const st3 = (await api('/auth/email/start', { method: 'POST', body: { email: mai
 const v3 = (await api('/auth/email/verify', { method: 'POST', body: { email: mail3, code: st3.devCode } })).data;
 ok(v3.user.member && v3.user.id !== fresh.user.id && v3.user.name.startsWith('Kỳ thủ'), 'new email without a guest session: new member account');
 
+// --- Quests, coins and skins
+const Q = (path, body, tok = g1.token) => api(path, { token: tok, method: body ? 'POST' : 'GET', body });
+let qs = (await Q('/quests')).data;
+ok(qs.coins === 0 && qs.quests.filter(q => q.scope === 'daily').length === 3 && qs.quests.filter(q => q.scope === 'weekly').length === 2 && qs.quests.filter(q => q.scope === 'achievement').length === 9,
+  'quests: 3 daily, 2 weekly, 9 achievements' + (qs.season ? ` + ${qs.season.id} event` : ''));
+const gameKey = 'test-' + tag;
+const ev1 = (await Q('/quests/event', { type: 'bot-game', kind: 'chess', level: 'medium', result: 'win', key: gameKey })).data;
+ok(ev1.completed.includes('a.first-win'), 'bot win completes "first win" ' + JSON.stringify(ev1.completed));
+ok((await Q('/quests/event', { type: 'bot-game', kind: 'chess', level: 'medium', result: 'win', key: gameKey })).data.completed.length === 0, 'the same game counts once');
+ok((await Q('/quests/event', { type: 'bot-game', kind: 'go', level: 'medium', result: 'win', key: 'x' })).status === 400, 'bad events rejected');
+ok((await Q('/quests/event', { type: 'puzzle', id: 'nope' })).status === 400, 'unknown puzzle rejected');
+await Q('/quests/event', { type: 'puzzle', id: 'c1-01' });
+ok((await Q('/quests/event', { type: 'puzzle', id: 'c1-01' })).data.completed.length === 0, 'a puzzle counts once a day');
+qs = (await Q('/quests')).data;
+const firstWin = qs.quests.find(q => q.id === 'a.first-win');
+ok(firstWin.done && !firstWin.claimed && qs.quests.find(q => q.id === 'a.puzzles-20').progress === 1, 'progress stored');
+const cl = await Q('/quests/claim', { quest: 'a.first-win', period: 'a' });
+ok(cl.status === 200 && cl.data.state.coins === 50 && cl.data.state.owned.includes('wood'), 'reward claimed: 50 coins + Wood skin');
+ok((await Q('/quests/claim', { quest: 'a.first-win', period: 'a' })).status === 409, 'a reward is claimed once');
+ok((await Q('/skins/equip', { skin: 'gold' })).data.error === 'not-owned', 'cannot wear a skin you do not own');
+ok((await Q('/skins/buy', { skin: 'candy' })).data.error === 'not-enough-coins', 'shop checks coins');
+ok((await Q('/skins/buy', { skin: 'wood' })).data.error === 'not-for-sale', 'achievement skins are not sold');
+ok((await Q('/skins/equip', { skin: 'wood' })).data.state.equipped === 'wood' && (await api('/me', { token: g1.token })).data.user.skin === 'wood', 'skin equipped');
+// A daily quest claimed starts the streak
+const daily = qs.quests.find(q => q.scope === 'daily' && q.done && !q.claimed);
+if (daily) {
+  const d = (await Q('/quests/claim', { quest: daily.id, period: daily.period })).data;
+  ok(d.state.streak === 1, 'daily reward starts a 1-day streak');
+} else ok(true, '(no daily quest completed by these events today)');
+
 // --- Friend room (jieqi): hidden identities must not leak
 const room = (await api('/rooms', { token: g1.token, method: 'POST', body: { kind: 'jieqi', side: 0, clock: '5+3' } })).data;
 ok(/^[a-z2-9]{7}$/.test(room.id), 'room created ' + room.id);
 const a = await sock(`/rooms/${room.id}/ws`, g1.token);
 let st = (await a.wait(m => m.t === 'state')).state;
 ok(st.status === 'waiting' && st.you === 0, 'host waiting as red');
+ok(st.seats[0].skin === 'wood', 'the room shows the host\'s skin to everyone');
 const watcher = await sock(`/rooms/${room.id}/ws`, fresh.token);
 const ws0 = (await watcher.wait(m => m.t === 'state')).state;
 ok(ws0.you === null && ws0.status === 'waiting', 'guest who opens the link only watches (seat stays free)');
@@ -177,6 +208,8 @@ ok(lb.me && lb.me.id === blackId && lb.me.rank === rb.rank && lb.total >= 2, 'ca
 ok((await api('/leaderboard?kind=xiangqi')).data.entries.every(e => e.id !== blackId), 'xiangqi board unaffected');
 const anon = (await api('/leaderboard?kind=chess')).data;
 ok(anon.me === null && anon.entries.length >= 2, 'leaderboard readable without signing in');
+const onlineQ = (await api('/quests', { token: blackTok })).data.quests.find(q => q.id === 'a.online-10');
+ok(onlineQ.progress >= 5, 'online games scored by the server for quests: ' + onlineQ.progress + '/10');
 const prof = (await api('/players/' + blackId)).data.profile;
 ok(prof.stats.chess.games === 5 && prof.stats.chess.rank === rb.rank && prof.stats.xiangqi.rank === null && prof.recent.length >= 5, 'profile: stats, rank and recent games');
 ok(prof.recent[0].opponent.id === whiteId && prof.recent[0].winner === prof.recent[0].side && !('email' in prof), 'profile: results from the player\'s side, no email');

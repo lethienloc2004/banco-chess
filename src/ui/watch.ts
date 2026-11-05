@@ -10,6 +10,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { openAnalysis } from './analysis';
+import { gameKey, reportQuest } from './quests';
 import { esc } from './util';
 
 export type WatchSpeed = 'slow' | 'normal' | 'fast';
@@ -249,6 +250,7 @@ export class WatchScreen implements Screen {
     void side;
     this.render(true);
     if (!this.match.outcome()) this.schedule(60);
+    else reportQuest({ type: 'watch', key: 'watch:' + gameKey(this.match.initial, this.match.moves) });
   }
 
   private pvNotation(pv: number[]): string[] {

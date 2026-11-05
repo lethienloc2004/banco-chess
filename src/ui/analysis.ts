@@ -13,6 +13,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { esc } from './util';
+import { gameKey, reportQuest } from './quests';
 
 export interface AnalysisPlayer {
   /** Online account name and rating. */
@@ -80,6 +81,7 @@ export class AnalysisScreen implements Screen {
   private done = 0;
   private toDo = 0;
   private seq = 0;
+  private reported = false;
   private readonly onKey = (e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     const n = this.input?.moves.length ?? 0;
@@ -208,6 +210,10 @@ export class AnalysisScreen implements Screen {
         if (this.disposed) return;
         if (gen === this.gen) {
           this.done++;
+          if (this.done === this.toDo && !this.reported) {
+            this.reported = true;
+            reportQuest({ type: 'analysis', key: 'an:' + gameKey(this.input!.initial, this.input!.moves.map(m => m.m)) });
+          }
           if (!e.data.error) {
             const r = e.data;
             this.evals[job.ply] = { white: toWhite(r.score, job.side), best: r.move || null, pv: r.pv, depth: r.depth };

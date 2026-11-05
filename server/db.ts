@@ -22,6 +22,10 @@ export interface UserRow {
   board_hidden: number;
   /** 1 = the email was confirmed with a sign-in code or by Google. */
   email_verified: number;
+  coins: number;
+  skin: string | null;
+  streak: number;
+  streak_day: string | null;
   created: number;
   last_seen: number;
 }
@@ -92,12 +96,12 @@ export function isMember(u: Pick<UserRow, 'google_sub' | 'email_verified' | 'rol
 }
 
 export async function playerOf(db: D1Database, u: UserRow): Promise<Player> {
-  return { id: u.id, name: u.name, ratings: await ratingsOf(db, u.id), member: isMember(u) };
+  return { id: u.id, name: u.name, ratings: await ratingsOf(db, u.id), member: isMember(u), skin: u.skin ?? null };
 }
 
 export function publicUser(u: UserRow, ratings: Ratings, self = false): PublicUser {
   return {
-    id: u.id, name: u.name, ratings, member: isMember(u), games: u.games, wins: u.wins, role: u.role,
+    id: u.id, name: u.name, ratings, member: isMember(u), skin: u.skin ?? null, coins: u.coins ?? 0, games: u.games, wins: u.wins, role: u.role,
     google: !!u.google_sub, email: self ? u.email : undefined, notice: self ? u.notice : undefined,
   };
 }

@@ -12,6 +12,8 @@ import { BoardRenderer, chessGlyph } from './board';
 import { openDialog } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
+import { net } from '../net';
+import { reportQuest } from './quests';
 import { esc } from './util';
 
 const STAR = '★';
@@ -245,6 +247,7 @@ export class PuzzleScreen implements Screen {
     this.phase = 'solved';
     const got = this.hinted ? Math.max(1, 2 - this.mistakes) : this.mistakes === 0 ? 3 : this.mistakes === 1 ? 2 : 1;
     record(this.puzzle.id, got);
+    reportQuest({ type: 'puzzle', id: this.puzzle.id });
     if (settings.sound) playSound('solved');
     this.message = { text: P.solved, cls: 'over' };
     this.render(true);
@@ -337,9 +340,11 @@ export class PuzzleScreen implements Screen {
     if (this.selected !== null && this.phase === 'play') {
       for (const mv of m.legalMoves()) if (m.moveFrom(mv) === this.selected) targets.set(m.moveTo(mv), m.pieceAt(m.moveTo(mv)) !== null);
     }
+    const mine = net.me?.skin ?? null;
     this.board.render(m, {
       flipped, selected: this.selected, targets, labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
+      skins: this.attacker === 0 ? [mine, null] : [null, mine],
     }, animate, intro);
     this.board.svg.classList.toggle('locked', this.phase !== 'play');
     this.board.svg.classList.toggle('hinted', this.hint !== null);

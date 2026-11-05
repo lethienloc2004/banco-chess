@@ -1,5 +1,6 @@
 /** SVG rendering of chess and xiangqi boards. */
 import type { Match } from '../game';
+import { chessPiece, fxBurst, hasSkin, skinDefs, skinFx, xqPiece } from './skins';
 
 export interface BoardView {
   flipped: boolean;
@@ -12,6 +13,8 @@ export interface BoardView {
   peek?: boolean;
   /** Arrows drawn over the pieces (e.g. the best move in analysis). */
   arrows?: { from: number; to: number; kind: 'best' | 'played' }[];
+  /** Piece skin of each side (White/Red, Black); null = the colour theme. */
+  skins?: [string | null, string | null];
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -40,6 +43,7 @@ export class BoardRenderer {
   readonly svg: SVGSVGElement;
   private match!: Match;
   private view!: BoardView;
+  private prevCount: number | null = null;
 
   constructor(parent: HTMLElement, onCell: (sq: number) => void) {
     this.svg = document.createElementNS(NS, 'svg');
@@ -82,6 +86,8 @@ export class BoardRenderer {
     this.match = match;
     this.view = view;
     const parts: string[] = [];
+    const skins = view.skins ?? [null, null];
+    parts.push(skinDefs(skins));
     if (match.isChess) this.chessBoard(parts);
     else this.xiangqiBoard(parts);
 
@@ -123,7 +129,10 @@ export class BoardRenderer {
           `<circle class="cp-ring" r="30"/>`,
           `<text class="cp-q ${p.color ? 'b' : 'w'}" y="2">?</text>`);
       } else if (match.isChess) {
-        parts.push(`<text class="cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}" y="4">${chessGlyph(p.type)}</text>`);
+        const sk = skins[p.color];
+        parts.push(hasSkin(sk)
+          ? chessPiece(sk, p.color as 0 | 1, chessGlyph(p.type), `cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}`)
+          : `<text class="cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}" y="4">${chessGlyph(p.type)}</text>`);
       } else if (p.hidden && !view.peek) {
         parts.push(`<circle class="xq-disc hidden ${p.color ? 'b' : 'r'}" r="44"/>`,
           `<circle class="xq-ring hidden" r="36"/>`,
@@ -131,6 +140,12 @@ export class BoardRenderer {
       } else {
         const label = xiangqiLabel(p.type, p.color, view.labels);
         const viet = view.labels === 'viet';
+        const sk = skins[p.color];
+        if (hasSkin(sk)) {
+          parts.push(xqPiece(sk, p.color as 0 | 1, label, `xq-t ${p.color ? 'b' : 'r'}${viet ? ' viet' : ''}${viet && label.length > 3 ? ' long' : ''}`, viet ? 2 : 3, p.hidden));
+          parts.push('</g></g>');
+          continue;
+        }
         parts.push(`<circle class="xq-disc ${p.color ? 'b' : 'r'}${p.hidden ? ' peek' : ''}" r="44"/>`,
           `<circle class="xq-ring ${p.color ? 'b' : 'r'}" r="37"/>`,
           `<text class="xq-t ${p.color ? 'b' : 'r'}${viet ? ' viet' : ''}${viet && label.length > 3 ? ' long' : ''}" y="${viet ? 2 : 3}">${label}</text>`);
@@ -155,6 +170,18 @@ export class BoardRenderer {
         ? `<circle class="target cap" cx="${x}" cy="${y}" r="${match.isChess ? 44 : 47}"/>`
         : `<circle class="target" cx="${x}" cy="${y}" r="${match.isChess ? 15 : 13}"/>`);
     }
+
+    // A capture by a skinned piece gets its burst (fire, petals, snow…).
+    const count = match.pieces().length;
+    if (animate && last !== null && this.prevCount !== null && count < this.prevCount) {
+      const mover = match.pieceAt(match.moveTo(last));
+      const fx = mover ? skinFx(skins[mover.color]) : null;
+      if (fx) {
+        const [x, y] = this.center(match.moveTo(last));
+        parts.push(fxBurst(fx, x, y));
+      }
+    }
+    this.prevCount = count;
 
     this.svg.innerHTML = parts.join('');
     if (intro) {

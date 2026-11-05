@@ -15,6 +15,7 @@ import { moveSfx } from './sfx';
 import { confirmDialog, openDialog, toast, type DialogAction } from './dialog';
 import { openAnalysis, type AnalysisPlayer } from './analysis';
 import { ACCOUNT_EVENT, openLogin } from './login';
+import { gameKey, reportQuest } from './quests';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
 
@@ -525,9 +526,24 @@ export class PlayScreen implements Screen {
 
   // ---------- Game over ----------
 
+  /** Piece skins: yours on your pieces; online, each player's own (opponents' only if enabled). */
+  private skins(): [string | null, string | null] {
+    const mine = net.me?.skin ?? null;
+    if (this.opts.mode === 'bot') return this.humanSide === 0 ? [mine, null] : [null, mine];
+    if (this.opts.mode === 'pvp') return [mine, mine];
+    const seats = this.room?.seats;
+    const pick = (side: 0 | 1) => (side === this.you || settings.showSkins ? seats?.[side]?.skin ?? null : null);
+    return [pick(0), pick(1)];
+  }
+
   private checkOver() {
     const o = this.outcome();
     if (!o) return;
+    if (this.opts.mode === 'bot' && !this.overShown) {
+      // Quests: a finished game against the bot (each game counts once).
+      const result = o.winner === null ? 'draw' : o.winner === this.humanSide ? 'win' : 'loss';
+      reportQuest({ type: 'bot-game', kind: this.match.kind, level: this.level, result, key: 'bot:' + gameKey(this.match.initial, this.match.moves, this.humanSide) });
+    }
     if (this.online) {
       if (this.shownOverFor === this.room!.gameNo) return;
       this.shownOverFor = this.room!.gameNo;
@@ -804,6 +820,7 @@ export class PlayScreen implements Screen {
     this.board.render(m, {
       flipped: this.flipped, selected: this.selected, targets, labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
+      skins: this.skins(),
     }, animate, intro);
     this.board.svg.setAttribute('aria-label', `${s[m.kind]} — ${status}`);
     this.board.svg.classList.toggle('locked', !this.canMove());

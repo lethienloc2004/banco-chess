@@ -10,6 +10,7 @@ import { requireMember } from './login';
 import { esc } from './util';
 import { puzzleThumb } from './puzzles';
 import { trophyThumb } from './leaderboard';
+import { claimable, loadQuests, onQuestsChange, questsThumb, seasonNow } from './quests';
 import { PUZZLES } from '../puzzles';
 
 export interface Nav {
@@ -90,16 +91,31 @@ export function homeScreen(nav: Nav): Screen {
     </button>`;
   pli.querySelector('button')!.onclick = () => nav.go('#/puzzles');
   ul.appendChild(pli);
+  // Quests & skins
+  const qli = document.createElement('li');
+  const season = seasonNow();
+  const drawQuests = () => {
+    qli.innerHTML = `<button class="item" style="--i:${KINDS.length + 1}">
+      <span class="thumb">${questsThumb()}</span>
+      <span class="txt"><b>${s.quests.title}${season ? ` <em class="badge season">${season.emoji}</em>` : ''}${claimable ? ` <em class="badge">${claimable} 🎁</em>` : ''}</b><small>${s.quests.homeDesc}</small></span>
+      ${chevron}
+    </button>`;
+    qli.querySelector('button')!.onclick = () => nav.go('#/quests');
+  };
+  drawQuests();
+  ul.appendChild(qli);
+  const offQuests = onQuestsChange(drawQuests);
+  void loadQuests();
   // Leaderboard
   const lli = document.createElement('li');
-  lli.innerHTML = `<button class="item" style="--i:${KINDS.length + 1}">
+  lli.innerHTML = `<button class="item" style="--i:${KINDS.length + 2}">
       <span class="thumb">${trophyThumb()}</span>
       <span class="txt"><b>${s.board.title}</b><small>${s.board.homeDesc}</small></span>
       ${chevron}
     </button>`;
   lli.querySelector('button')!.onclick = () => nav.go('#/leaderboard');
   ul.appendChild(lli);
-  return { el, dispose() { off(); } };
+  return { el, dispose() { off(); offQuests(); } };
 }
 
 function seg<T extends string | number>(options: [T, string][], value: T, onPick: (v: T) => void): HTMLElement {

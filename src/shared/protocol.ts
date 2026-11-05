@@ -17,6 +17,9 @@ export interface PublicUser {
   ratings: Ratings;
   /** Signed in with a verified email (code or Google): may play online. */
   member: boolean;
+  /** Equipped piece skin (null = default pieces). */
+  skin: string | null;
+  coins: number;
   games: number;
   wins: number;
   role: Role;
@@ -30,6 +33,8 @@ export interface Seat {
   id: string;
   name: string;
   rating: number;
+  /** Piece skin the player chose; the opponent sees it too. */
+  skin?: string | null;
 }
 
 /** Who connects to a room or the lobby: the rating used depends on the game. */
@@ -39,6 +44,7 @@ export interface Player {
   ratings: Ratings;
   /** Only members take a seat or join matchmaking; guests watch. */
   member: boolean;
+  skin: string | null;
 }
 
 export interface BoardEntry {

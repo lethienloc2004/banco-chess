@@ -13,6 +13,7 @@ import {
   DEFAULT_RATING, type ClientMsg, type Clock, type MoveRec, type Player, type RoomState, type Seat, type ServerMsg, type RoomStatus,
 } from '../src/shared/protocol';
 import { ratingsIn, recordRated } from './db';
+import { recordOnline } from './quests';
 import type { Env } from './env';
 
 interface Stored {
@@ -107,7 +108,7 @@ export class GameRoom extends DurableObject<Env> {
       if (side === null && s.status === 'waiting' && user.member) {
         const empty = s.seats[0] ? (s.seats[1] ? null : 1) : 0;
         if (empty !== null) {
-          s.seats[empty] = { id: user.id, name: user.name, rating: user.ratings?.[s.kind] ?? DEFAULT_RATING };
+          s.seats[empty] = { id: user.id, name: user.name, rating: user.ratings?.[s.kind] ?? DEFAULT_RATING, skin: user.skin ?? null };
           side = empty;
           await this.startGame();
         }
@@ -315,6 +316,15 @@ export class GameRoom extends DurableObject<Env> {
     await this.save();
     await this.scheduleAlarm();
     this.broadcastState();
+    // Quests: the server itself scores online games (players cannot fake them).
+    if (counted) {
+      const outcome = (side: 0 | 1) => (result.winner === null ? 'draw' : result.winner === side ? 'win' : 'loss') as 'win' | 'loss' | 'draw';
+      const isRated = !!(rated && counted);
+      await Promise.all([
+        recordOnline(this.env.DB, a!.id, s.kind, outcome(0), isRated, isRated ? a!.rating : null),
+        recordOnline(this.env.DB, b!.id, s.kind, outcome(1), isRated, isRated ? b!.rating : null),
+      ]).catch(err => console.error('quests', err));
+    }
   }
 
   private async newGame() {

@@ -13,6 +13,7 @@ import { WatchScreen } from './ui/watch';
 import { AnalysisScreen, pendingAnalysis } from './ui/analysis';
 import { leaderboardScreen, profileScreen } from './ui/leaderboard';
 import { ACCOUNT_EVENT, accountChanged, openLogin } from './ui/login';
+import { questsScreen } from './ui/quests';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -35,7 +36,8 @@ type Route =
   | { name: 'watch'; kind: GameKind }
   | { name: 'analysis' }
   | { name: 'leaderboard'; kind?: string }
-  | { name: 'player'; id: string };
+  | { name: 'player'; id: string }
+  | { name: 'quests'; tab?: string };
 
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -44,6 +46,7 @@ function parseRoute(hash: string): Route {
   if (parts[0] === 'match' && KINDS.includes(parts[1] as GameKind)) return { name: 'match', kind: parts[1] as GameKind };
   if (parts[0] === 'analysis') return { name: 'analysis' };
   if (parts[0] === 'leaderboard') return { name: 'leaderboard', kind: parts[1] };
+  if (parts[0] === 'quests') return { name: 'quests', tab: parts[1] };
   if (parts[0] === 'player' && parts[1]) return { name: 'player', id: parts[1] };
   if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview', user: parts[2] };
   if (parts[0] === 'puzzles') return { name: 'puzzles', kind: parts[1] };
@@ -174,6 +177,7 @@ function build(r: Route): Screen {
     case 'analysis': return new AnalysisScreen(nav);
     case 'leaderboard': return leaderboardScreen(r.kind, nav);
     case 'player': return profileScreen(r.id, nav);
+    case 'quests': return questsScreen(r.tab, nav);
   }
 }
 
@@ -186,6 +190,7 @@ function titleFor(r: Route): string {
   if (r.name === 'puzzles' || r.name === 'puzzle') return `${s.puzzles.title} — ${base}`;
   if (r.name === 'analysis') return `${s.analysis.title} — ${base}`;
   if (r.name === 'leaderboard' || r.name === 'player') return `${s.board.title} — ${base}`;
+  if (r.name === 'quests') return `${s.quests.title} — ${base}`;
   return `${s[r.kind]} — ${base}`;
 }
 
@@ -194,6 +199,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function show(dir: 'forward' | 'back' | 'none' = 'none') {
   const r = parseRoute(location.hash);
   const swap = () => {
+    // Dialogs belong to the screen that opened them: close them when leaving it.
+    document.querySelectorAll('dialog.dlg').forEach(d => d.dispatchEvent(new Event('cancel')));
     current?.dispose();
     route = r;
     current = build(r);
@@ -407,6 +414,7 @@ function openSettings() {
         settings.sound = v; if (v) { unlockAudio(); playSound('move'); } settingsChanged();
       })),
       row(s.soundStyle, soundStyleControl()),
+      row(s.quests.showSkins, seg([[true, s.on], [false, s.off]], settings.showSkins, v => { settings.showSkins = v; settingsChanged(); })),
     ),
     group(`${s.chess} · ${s.hiddenchess}`,
       row(s.boardColor, palette(CHESS_BOARDS, 'chessBoard', settings.chessBoard, [C.light, C.dark], id => { settings.chessBoard = id; settingsChanged(); })),

@@ -20,6 +20,7 @@ Muốn xem nhanh không cần cài gì: dán nội dung file `.puml` vào [plant
 | [Vòng đời phòng](#4-vòng-đời-phòng-chơi--room-lifecycle) | waiting → playing → over, chơi lại, dọn phòng | [room-lifecycle.puml](room-lifecycle.puml) |
 | [Ghép trận và bảng xếp hạng](#5-ghép-trận-elo-và-bảng-xếp-hạng--matchmaking-ratings-leaderboard) | Hàng chờ, Elo riêng từng loại cờ, top 100, hồ sơ | [matchmaking-rating.puml](matchmaking-rating.puml) |
 | [Đăng nhập bằng email](#9-đăng-nhập-bằng-email-otp--email-sign-in) | Mã 6 số, giới hạn gửi, gắn vào tài khoản khách | [login-otp.puml](login-otp.puml) |
+| [Nhiệm vụ & skin](#10-nhiệm-vụ-và-skin--quests-and-skins) | Sự kiện → chấm nhiệm vụ → nhận xu / skin → đối thủ thấy skin | [quests.puml](quests.puml) |
 | [Quản trị sửa kết quả](#6-quản-trị-viên-sửa-kết-quả--admin-corrections) | Hủy ván / đổi kết quả và trả lại điểm Elo | [admin-correction.puml](admin-correction.puml) |
 | [Máy chọn nước](#7-máy-chọn-nước-đi--how-the-bot-moves) | Tìm kiếm, PIMC cho cờ úp, mức dễ | [bot-move.puml](bot-move.puml) |
 | [Phân tích ván](#8-phân-tích-ván--post-game-analysis) | Nhóm worker, chấm nước, độ chính xác | [post-game-analysis.puml](post-game-analysis.puml) |
@@ -74,3 +75,10 @@ Chỉ thành viên (email đã xác minh bằng mã hoặc Google) mới chơi o
 *Only members (email verified by code or Google) play online; guests play the bot and watch.*
 
 ![Đăng nhập bằng email](login-otp.svg)
+
+## 10. Nhiệm vụ và skin / Quests and skins
+
+Ván online do máy chủ tự chấm; ván với máy, thế cờ, phân tích và máy đấu máy do app báo lên, mỗi việc chỉ tính một lần.
+*Online games are scored by the server; bot games, puzzles, analysis and watching are reported by the app and count once.*
+
+![Nhiệm vụ và skin](quests.svg)

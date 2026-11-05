@@ -4,6 +4,7 @@ import { CLOCKS, LEADERBOARD_MIN_GAMES, LEADERBOARD_SIZE, REPORT_REASONS, cleanN
 import { adminRoute } from './admin';
 import { randomId, roomId, signToken, verifyGoogleIdToken, verifyToken } from './auth';
 import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, isMember, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow } from './db';
+import { buySkin, claim, clientEvent, equipSkin, questState, type ClientEvent } from './quests';
 import { LIMITS, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, emailLoginEnabled, hashCode, newCode, normalizeEmail, rateHit, sameHash, sendCode } from './otp';
 import type { Env } from './env';
 import type { InitBody } from './room';
@@ -274,7 +275,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     const clock = CLOCKS[body.clock] ?? null;
     const id = roomId();
     const seats: InitBody['seats'] = [null, null];
-    seats[side] = { id: me.id, name: me.name, rating: (await ratingsOf(env.DB, me.id))[body.kind] };
+    seats[side] = { id: me.id, name: me.name, rating: (await ratingsOf(env.DB, me.id))[body.kind], skin: me.skin ?? null };
     const init: InitBody = { id, kind: body.kind, rated: false, seats, clock };
     const res = await env.ROOMS.get(env.ROOMS.idFromName(id)).fetch('https://room/init', { method: 'POST', body: JSON.stringify(init) });
     if (!res.ok) return fail(500, 'room-failed');
@@ -290,6 +291,28 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   if (path === '/lobby/ws' && req.headers.get('Upgrade') === 'websocket') {
     const stub = env.LOBBY.get(env.LOBBY.idFromName('main'));
     return stub.fetch('https://lobby/ws', { headers: { Upgrade: 'websocket', 'X-User': await playerHeader(env, me) } });
+  }
+
+  // ----- Quests, coins and skins -----
+  if (path === '/quests' && method === 'GET') return json(await questState(env.DB, me.id));
+  if (path === '/quests/event' && method === 'POST') {
+    const r = await clientEvent(env.DB, me.id, await readJson<ClientEvent>(req));
+    return 'error' in r ? fail(r.error === 'too-many' ? 429 : 400, r.error) : json(r);
+  }
+  if (path === '/quests/claim' && method === 'POST') {
+    const body = await readJson<{ quest?: string; period?: string }>(req);
+    const r = await claim(env.DB, me.id, String(body?.quest ?? ''), String(body?.period ?? ''));
+    return 'error' in r ? fail(409, r.error) : json({ ...r, state: await questState(env.DB, me.id) });
+  }
+  if (path === '/skins/buy' && method === 'POST') {
+    const body = await readJson<{ skin?: string }>(req);
+    const r = await buySkin(env.DB, me.id, String(body?.skin ?? ''));
+    return 'error' in r ? fail(409, r.error) : json({ ...r, state: await questState(env.DB, me.id) });
+  }
+  if (path === '/skins/equip' && method === 'POST') {
+    const body = await readJson<{ skin?: string | null }>(req);
+    const r = await equipSkin(env.DB, me.id, body?.skin ? String(body.skin) : null);
+    return 'error' in r ? fail(409, r.error) : json({ ...r, state: await questState(env.DB, me.id) });
   }
 
   // ----- Reports -----

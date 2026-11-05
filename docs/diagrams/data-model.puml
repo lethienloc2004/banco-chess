@@ -1,7 +1,7 @@
 @startuml data-model
 !include _style.iuml
 !pragma layout smetana
-title Cơ sở dữ liệu D1 (migrations/0001–0004)
+title Cơ sở dữ liệu D1 (migrations/0001–0005)
 hide circle
 hide methods
 
@@ -12,6 +12,8 @@ entity users {
   google_sub : TEXT <<unique>>
   email : TEXT
   email_verified : 0 | 1 (thành viên)
+  coins, skin : xu, skin đang dùng
+  streak, streak_day : chuỗi ngày
   role : 'user' | 'admin'
   games, wins : INTEGER
   warnings : INTEGER
@@ -88,6 +90,25 @@ entity otp_codes {
   sent : INTEGER
 }
 
+entity quest_progress {
+  * user_id, quest_id, period <<PK>>
+  --
+  progress : INTEGER
+  done, claimed : 0 | 1
+}
+
+entity user_skins {
+  * user_id, skin_id <<PK>>
+  --
+  acquired : INTEGER
+}
+
+entity quest_events {
+  * user_id, key <<PK>>
+  --
+  created : INTEGER (chống tính trùng)
+}
+
 entity rate_limits {
   * key : "email:…" | "ip:…" <<PK>>
   --
@@ -102,4 +123,7 @@ games ||--o{ reports : "game_id"
 users ||--o{ audit : "admin_id"
 users ||--o{ announcements : "created_by"
 users .. otp_codes : "email"
+users ||--o{ quest_progress
+users ||--o{ user_skins
+users ||--o{ quest_events
 @enduml

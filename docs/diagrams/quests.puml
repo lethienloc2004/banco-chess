@@ -1,0 +1,42 @@
+@startuml quests
+!include _style.iuml
+title Nhiệm vụ, xu và skin quân cờ
+
+actor "Người chơi" as U
+participant "App" as A
+participant "Worker /api" as W
+participant "GameRoom" as R
+database "D1" as DB
+
+== Làm nhiệm vụ ==
+U -> A : Thắng máy / giải thế cờ /\nphân tích ván / xem máy đấu máy
+A -> W : POST /quests/event { loại, mã ván }
+W -> DB : Đã tính chưa? (quest_events)\nGiới hạn 120 báo cáo/giờ
+W -> W : Nhiệm vụ đang chạy:\n3 hằng ngày · 2 hằng tuần · thành tích · sự kiện lễ
+W -> DB : quest_progress += 1 (hoàn thành khi đủ mục tiêu)
+W --> A : { completed: [...] }
+A --> U : 🎯 Hoàn thành nhiệm vụ!
+
+U -> R : Chơi xong ván online
+R -> DB : Máy chủ tự chấm (không tin app),\ncập nhật cả thành tích Elo
+
+== Nhận thưởng ==
+U -> A : Bấm "Nhận"
+A -> W : POST /quests/claim { quest, period }
+W -> DB : claimed = 1 (chỉ một lần)\ncoins += xu, user_skins += skin
+alt Nhiệm vụ ngày
+  W -> DB : Chuỗi ngày liên tiếp + 1
+end
+
+== Skin ==
+U -> A : Mua (xu) hoặc "Dùng"
+A -> W : POST /skins/buy · /skins/equip
+W -> DB : Trừ xu nếu đủ; users.skin = skin
+U -> R : Vào phòng online
+R --> U : seats[].skin: đối thủ thấy skin của bạn
+note over A
+  Skin vẽ bằng SVG: màu chuyển, phát sáng,
+  trang trí (mũ Noel, hoa mai, dơi…),
+  hiệu ứng khi ăn quân (lửa, tuyết, cánh hoa…)
+end note
+@enduml
