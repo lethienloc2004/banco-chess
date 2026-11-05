@@ -6,6 +6,8 @@
 
 **Chơi Cờ vua · Cờ tướng · Cờ tướng úp · Cờ vua úp ngay trên trình duyệt: với máy, với bạn, hoặc ghép ngẫu nhiên online.**
 
+Xếp hạng Elo · 150 thế cờ chiếu hết · nhiệm vụ & skin quân cờ · sự kiện ngày lễ (Halloween, Giáng sinh, Tết, Trung thu)
+
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
 [**▶ Chơi ngay**](https://banco-chess.lethienloc.workers.dev) · [🚀 Tự chạy / Deploy](#-bắt-đầu-nhanh) · [✨ Tính năng](#-tính-năng) · [English](#english) · [Báo lỗi / góp ý](../../issues)
@@ -461,7 +463,8 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
 
 **Bàn Cờ** ("chess board" in Vietnamese) is a web app to play **Chess**, **Xiangqi** (Chinese chess), **Jieqi**
 (揭棋, xiangqi with face-down pieces) and **Hidden chess** (the same idea for chess): against a built-in bot, with a
-friend on the same device, or online. The whole interface is available in Vietnamese and English.
+friend on the same device, or online. It also has Elo leaderboards, 150 checkmate puzzles, quests with piece skins and
+holiday events (Halloween, Christmas, Lunar New Year, Mid-Autumn). The whole interface is available in Vietnamese and English.
 
 **▶ Play now: https://banco-chess.lethienloc.workers.dev** (everything included: bots, online play, matchmaking, leaderboards; installable as an app).
 
