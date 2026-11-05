@@ -736,9 +736,10 @@ export class PlayScreen implements Screen {
 
     // Rules
     const rules = this.q<HTMLDetailsElement>('.rules');
-    rules.hidden = m.kind !== 'jieqi';
-    rules.querySelector('summary')!.textContent = s.rulesTitle;
-    rules.querySelector('ul')!.innerHTML = s.rules.map(x => `<li>${esc(x)}</li>`).join('');
+    rules.hidden = m.kind !== 'jieqi' && m.kind !== 'hiddenchess';
+    const hc = m.kind === 'hiddenchess';
+    rules.querySelector('summary')!.textContent = hc ? s.rulesTitleHc : s.rulesTitle;
+    rules.querySelector('ul')!.innerHTML = (hc ? s.rulesHc : s.rules).map(x => `<li>${esc(x)}</li>`).join('');
 
     // Players
     const bottom: 0 | 1 = this.flipped ? 1 : 0;

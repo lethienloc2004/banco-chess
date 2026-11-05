@@ -42,3 +42,17 @@ describe('bot', () => {
     }
   });
 });
+
+describe('hidden chess bot', () => {
+  it('returns a legal move at every level without seeing hidden pieces', async () => {
+    const { Chess } = await import('../src/engine/chess');
+    const fen = Chess.hiddenStart(rngFloat(8));
+    const c = new Chess(fen);
+    for (const level of ['easy', 'medium', 'hard'] as const) {
+      const t = Date.now();
+      const m = chooseMove({ kind: 'hiddenchess', state: fen, level });
+      expect(c.legalMoves()).toContain(m);
+      expect(Date.now() - t).toBeLessThan(5000);
+    }
+  });
+});

@@ -77,6 +77,19 @@ st = (await a.wait(m => m.t === 'state' && m.state.gameNo === 2)).state;
 ok(st.you === 1 && st.moves.length === 0 && st.status === 'playing', 'rematch: colours swapped');
 a.ws.close(); b2.ws.close();
 
+// --- Hidden chess room: identities are masked for players
+const hroom = (await api('/rooms', { token: g1.token, method: 'POST', body: { kind: 'hiddenchess', side: 0, clock: 'none' } })).data;
+const ha = await sock(`/rooms/${hroom.id}/ws`, g1.token);
+const hs = (await ha.wait(m => m.t === 'state')).state;
+const CHESS_START = { 0: 'R', 1: 'N', 2: 'B', 3: 'Q', 5: 'B', 6: 'N', 7: 'R' };
+const rows = hs.initial.split(' ')[0].split('/');
+const back = rows[7].match(/~?[A-Za-z]|\d/g); // rank 1
+ok(hs.kind === 'hiddenchess' && back.filter(x => x.startsWith('~')).every((x, i) => true), 'hidden chess room created');
+let file = 0, maskedOk = true;
+for (const tok of back) { if (/\d/.test(tok)) { file += Number(tok); continue; } if (tok.startsWith('~') && CHESS_START[file] && tok[1] !== CHESS_START[file]) maskedOk = false; file++; }
+ok(maskedOk && rows[6].replace(/~/g, '') === 'PPPPPPPP', 'hidden chess start is masked for clients');
+ha.ws.close();
+
 // --- Matchmaking (chess, rated)
 const l1 = await sock('/lobby/ws', g1.token);
 const l2 = await sock('/lobby/ws', g2.token);

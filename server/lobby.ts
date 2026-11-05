@@ -12,7 +12,7 @@ import type { InitBody } from './room';
 
 interface Attachment extends Seat { queue: GameKind | null; since: number }
 
-const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
+const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 
 export class Lobby extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
@@ -118,13 +118,13 @@ export class Lobby extends DurableObject<Env> {
 
   private stats(): LobbyStats {
     const users = new Set<string>();
-    const queued: Record<GameKind, Set<string>> = { chess: new Set(), xiangqi: new Set(), jieqi: new Set() };
+    const queued: Record<GameKind, Set<string>> = { chess: new Set(), xiangqi: new Set(), jieqi: new Set(), hiddenchess: new Set() };
     for (const ws of this.open()) {
       const a = ws.deserializeAttachment() as Attachment;
       users.add(a.id);
       if (a.queue) queued[a.queue].add(a.id);
     }
-    return { online: users.size, queued: { chess: queued.chess.size, xiangqi: queued.xiangqi.size, jieqi: queued.jieqi.size } };
+    return { online: users.size, queued: { chess: queued.chess.size, xiangqi: queued.xiangqi.size, jieqi: queued.jieqi.size, hiddenchess: queued.hiddenchess.size } };
   }
 
   private send(ws: WebSocket, msg: LobbyServerMsg) {

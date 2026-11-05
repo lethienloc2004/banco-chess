@@ -115,8 +115,13 @@ export class BoardRenderer {
       const [x, y] = this.center(p.sq);
       // Inner group carries the entrance animation so it doesn't fight the position transform.
       parts.push(`<g class="piece" data-sq="${p.sq}" transform="translate(${x} ${y})"><g class="pi" style="--i:${index++}">`);
-      if (match.isChess) {
-        parts.push(`<text class="cp ${p.color ? 'b' : 'w'}" y="4">${chessGlyph(p.type)}</text>`);
+      if (match.isChess && p.hidden && !view.peek) {
+        // Hidden chess: a face-down disc with the owner's colour on the rim.
+        parts.push(`<circle class="cp-disc ${p.color ? 'b' : 'w'}" r="38"/>`,
+          `<circle class="cp-ring" r="30"/>`,
+          `<text class="cp-q ${p.color ? 'b' : 'w'}" y="2">?</text>`);
+      } else if (match.isChess) {
+        parts.push(`<text class="cp ${p.color ? 'b' : 'w'}${p.hidden ? ' peek' : ''}" y="4">${chessGlyph(p.type)}</text>`);
       } else if (p.hidden && !view.peek) {
         parts.push(`<circle class="xq-disc hidden ${p.color ? 'b' : 'r'}" r="44"/>`,
           `<circle class="xq-ring hidden" r="36"/>`,

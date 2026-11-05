@@ -7,6 +7,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { Match } from '../src/game';
 import type { GameKind, Outcome } from '../src/engine/types';
 import { Xiangqi, type XiangqiJSON } from '../src/engine/xiangqi';
+import { Chess } from '../src/engine/chess';
 import {
   AUTO_ABANDON_MS, CLAIM_AFTER_MS, EMOTES, afterMove, elo, timeLeft,
   type ClientMsg, type Clock, type MoveRec, type RoomState, type Seat, type ServerMsg, type RoomStatus,
@@ -390,7 +391,9 @@ export class GameRoom extends DurableObject<Env> {
 
   private view(you: 0 | 1 | null): RoomState {
     const s = this.s!;
-    const initial = s.kind === 'jieqi' ? Xiangqi.fromJSON(s.initial as XiangqiJSON).masked() : s.initial;
+    // Players never receive face-down identities: only their start-square types.
+    const initial = s.kind === 'jieqi' ? Xiangqi.fromJSON(s.initial as XiangqiJSON).masked()
+      : s.kind === 'hiddenchess' ? new Chess(s.initial as string).masked() : s.initial;
     return {
       id: s.id, kind: s.kind, rated: s.rated, status: s.status, seats: this.seatsView(), you, initial,
       moves: s.moves, result: s.result, ratingChange: s.ratingChange, clock: s.clock, remaining: s.remaining,

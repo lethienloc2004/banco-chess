@@ -1,6 +1,10 @@
 /** Shared types for all game engines. Moves are encoded as plain numbers. */
 
-export type GameKind = 'chess' | 'xiangqi' | 'jieqi';
+/** jieqi = face-down xiangqi; hiddenchess = face-down chess (cờ vua úp). */
+export type GameKind = 'chess' | 'xiangqi' | 'jieqi' | 'hiddenchess';
+
+export const isChessKind = (k: GameKind) => k === 'chess' || k === 'hiddenchess';
+export const isHiddenKind = (k: GameKind) => k === 'jieqi' || k === 'hiddenchess';
 
 export type WinReason =
   | 'checkmate' | 'stalemate' | 'nomoves' | 'perpetual-check' | 'perpetual-chase'

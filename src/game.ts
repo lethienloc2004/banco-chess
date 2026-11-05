@@ -1,7 +1,7 @@
 /** A match: engine position + move history, independent of the UI. */
 import * as C from './engine/chess';
 import * as X from './engine/xiangqi';
-import type { GameKind, Outcome } from './engine/types';
+import { isChessKind, type GameKind, type Outcome } from './engine/types';
 
 export interface Cell { file: number; rank: number }
 
@@ -38,8 +38,8 @@ export class Match {
 
   constructor(kind: GameKind, initial?: string | X.XiangqiJSON) {
     this.kind = kind;
-    if (kind === 'chess') {
-      this.initial = (initial as string) ?? C.START_FEN;
+    if (isChessKind(kind)) {
+      this.initial = (initial as string) ?? (kind === 'hiddenchess' ? C.Chess.hiddenStart(secureRandom) : C.START_FEN);
       this.pos = new C.Chess(this.initial);
     } else {
       const x = initial ? X.Xiangqi.fromJSON(initial as X.XiangqiJSON) : new X.Xiangqi(kind === 'jieqi', secureRandom);
@@ -77,7 +77,7 @@ export class Match {
     return { kind: this.kind, initial: this.initial, moves: [...this.moves] };
   }
 
-  get isChess() { return this.kind === 'chess'; }
+  get isChess() { return isChessKind(this.kind); }
   get side(): number { return this.pos.side; }
   get width() { return this.isChess ? 8 : 9; }
   get height() { return this.isChess ? 8 : 10; }
@@ -100,7 +100,7 @@ export class Match {
     for (let sq = 0; sq < b.length; sq++) {
       const p = b[sq];
       if (!p || (this.isChess && sq & 0x88)) continue;
-      out.push({ sq, type: p & 7, color: (p >> 3) & 1, hidden: !this.isChess && X.isHidden(p) });
+      out.push({ sq, type: p & 7, color: (p >> 3) & 1, hidden: (p & 16) !== 0 });
     }
     return out;
   }
@@ -108,7 +108,7 @@ export class Match {
   pieceAt(sq: number): PieceView | null {
     const p = this.pos.board[sq];
     if (!p) return null;
-    return { sq, type: p & 7, color: (p >> 3) & 1, hidden: !this.isChess && X.isHidden(p) };
+    return { sq, type: p & 7, color: (p >> 3) & 1, hidden: (p & 16) !== 0 };
   }
 
   legalMoves(): number[] {
@@ -122,20 +122,17 @@ export class Match {
 
   /** What a move reveals in jieqi (real identities of hidden mover / victim). */
   revealOf(m: number): Reveal {
-    if (!(this.pos instanceof X.Xiangqi)) return {};
-    const b = this.pos.board, from = X.moveFrom(m), to = X.moveTo(m);
+    const b = this.pos.board, from = this.moveFrom(m), to = this.moveTo(m);
     const out: Reveal = {};
-    if (X.isHidden(b[from])) out.r = X.pieceType(b[from]);
-    if (b[to] && X.isHidden(b[to])) out.c = X.pieceType(b[to]);
+    if (b[from] & 16) out.r = b[from] & 7;
+    if (b[to] && b[to] & 16) out.c = b[to] & 7;
     return out;
   }
 
   /** Apply a move after filling in identities revealed by the server. */
   playRevealed(m: number, reveal: Reveal) {
-    if (this.pos instanceof X.Xiangqi) {
-      if (reveal.r) this.pos.setHiddenType(X.moveFrom(m), reveal.r);
-      if (reveal.c) this.pos.setHiddenType(X.moveTo(m), reveal.c);
-    }
+    if (reveal.r) this.pos.setHiddenType(this.moveFrom(m), reveal.r);
+    if (reveal.c) this.pos.setHiddenType(this.moveTo(m), reveal.c);
     this.play(m);
   }
 
@@ -147,7 +144,7 @@ export class Match {
       this.notes.push({ vi: san, en: san });
       const to = C.moveTo(m);
       const victim = pos.board[to] || (pos.isCapture(m) ? (C.PAWN | ((pos.side ^ 1) << 3)) : 0);
-      if (victim) this.captured.push(victim);
+      if (victim) this.captured.push(victim & ~C.HIDDEN);
     } else {
       this.notes.push({ vi: pos.notation(m, 'vi'), en: pos.notation(m, 'en') });
       const victim = pos.board[X.moveTo(m)];

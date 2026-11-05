@@ -193,7 +193,7 @@ export function adminScreen(tab: Tab | string, nav: Nav): Screen {
       </div>
       <div class="admin-cards">
         <div class="card"><h2>${esc(A.last7)}</h2><div class="bars">${st.perDay.map((n, i) => `<div class="bar" style="--h:${(n / max) * 100}%" title="${n}"><span>${n}</span><em>${esc(A.dayLabel(6 - i))}</em></div>`).join('')}</div></div>
-        <div class="card"><h2>${esc(A.byKind)}</h2>${(['chess', 'xiangqi', 'jieqi'] as GameKind[]).map(k => `<div class="row"><span>${esc(s[k])}</span><b>${st.byKind[k] ?? 0}</b><span class="muted small">${esc(A.queued)}: ${st.queued[k]}</span></div>`).join('')}</div>
+        <div class="card"><h2>${esc(A.byKind)}</h2>${(['chess', 'xiangqi', 'jieqi', 'hiddenchess'] as GameKind[]).map(k => `<div class="row"><span>${esc(s[k])}</span><b>${st.byKind[k] ?? 0}</b><span class="muted small">${esc(A.queued)}: ${st.queued[k]}</span></div>`).join('')}</div>
       </div>`;
     } else if (current === 'games') {
       body.innerHTML = `<div class="admin-filter"><input class="inp" placeholder="${esc(A.searchGames)}" />

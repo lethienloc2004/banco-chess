@@ -20,13 +20,15 @@ export interface Screen {
 }
 
 export function gameThumb(kind: GameKind): string {
-  if (kind === 'chess') {
+  if (kind === 'chess' || kind === 'hiddenchess') {
     let sq = '';
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
       if ((x + y) % 2) sq += `<rect x="${x * 16}" y="${y * 16}" width="16" height="16" fill="var(--sq-dark)"/>`;
     }
     return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="var(--sq-light)"/>${sq}
-      <text x="32" y="35" class="thumb-glyph">♞︎</text></svg>`;
+      ${kind === 'hiddenchess'
+        ? '<circle cx="32" cy="32" r="15" class="thumb-disc hidden chess"/><text x="32" y="33.5" class="thumb-q">?</text>'
+        : '<text x="32" y="35" class="thumb-glyph">♞︎</text>'}</svg>`;
   }
   const lines = 'M8 12H56M8 32H56M8 52H56M8 12V52M24 12V52M40 12V52M56 12V52';
   const piece = kind === 'xiangqi'
@@ -119,7 +121,7 @@ function optRow(label: string, control: HTMLElement): HTMLElement {
 
 export function modesScreen(kind: GameKind, nav: Nav): Screen {
   const s = t();
-  const red = kind === 'chess' ? s.white : s.red;
+  const red = kind === 'chess' || kind === 'hiddenchess' ? s.white : s.red;
   const el = document.createElement('section');
   el.className = 'screen modes';
   el.innerHTML = `
@@ -129,7 +131,8 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     </div>
     <h2 class="list-title">${s.chooseMode}</h2>
     <ul class="list"></ul>
-    ${kind === 'jieqi' ? `<details class="rules"><summary>${s.rulesTitle}</summary><ul>${s.rules.map(r => `<li>${r}</li>`).join('')}</ul></details>` : ''}`;
+    ${kind === 'jieqi' ? `<details class="rules"><summary>${s.rulesTitle}</summary><ul>${s.rules.map(r => `<li>${r}</li>`).join('')}</ul></details>` : ''}
+    ${kind === 'hiddenchess' ? `<details class="rules" open><summary>${s.rulesTitleHc}</summary><ul>${s.rulesHc.map(r => `<li>${r}</li>`).join('')}</ul></details>` : ''}`;
   const ul = el.querySelector('ul.list')!;
   let i = 0;
 

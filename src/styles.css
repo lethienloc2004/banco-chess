@@ -706,3 +706,12 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 
 .sound-style { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
 .sound-style .btn { padding: 6px 10px; font-size: 13px; }
+
+/* Hidden chess: face-down pieces */
+.cp-disc { stroke-width: 6; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .3)); }
+.cp-disc.w { fill: #6d5a45; stroke: var(--cp-w-fill, #fff); }
+.cp-disc.b { fill: #4a3a2c; stroke: var(--cp-b-fill, #1d1d1d); }
+.cp-ring { fill: none; stroke: #d8c3a5; stroke-width: 2; stroke-dasharray: 5 5; opacity: .55; }
+.cp-q { fill: #e9d8bd; font: 700 40px system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; opacity: .85; }
+.cp.peek { opacity: .75; }
+.thumb-disc.hidden.chess { fill: #6d5a45; stroke: #fff; stroke-width: 2.5; }

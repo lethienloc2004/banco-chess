@@ -11,7 +11,7 @@ import { CORS, fail, json } from './http';
 export { GameRoom } from './room';
 export { Lobby } from './lobby';
 
-const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
+const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 
 async function readJson<T>(req: Request): Promise<T | null> {
   try { return (await req.json()) as T; } catch { return null; }

@@ -1,7 +1,7 @@
 /** Bot move selection and analysis for every game kind and difficulty. */
 import { Chess } from './chess';
 import { Searcher } from './search';
-import { MATE, type GameKind } from './types';
+import { MATE, isHiddenKind, type GameKind } from './types';
 import { Xiangqi, type XiangqiJSON } from './xiangqi';
 
 export type Level = 'easy' | 'medium' | 'hard' | 'expert';
@@ -43,7 +43,7 @@ function pickWithNoise(scores: Map<number, number>, margin: number, random: () =
 
 export function analyze(req: AIRequest, random: () => number = Math.random): AIResult {
   const limits = req.timeMs ? { maxDepth: 64, timeMs: req.timeMs } : LIMITS[req.level];
-  if (req.kind !== 'jieqi') {
+  if (!isHiddenKind(req.kind)) {
     const pos = req.kind === 'chess' ? new Chess(req.state as string) : Xiangqi.fromJSON(req.state as XiangqiJSON);
     if (req.level === 'easy') {
       const res = new Searcher(pos).search(limits, { allScores: true });
@@ -53,9 +53,9 @@ export function analyze(req: AIRequest, random: () => number = Math.random): AIR
     const res = new Searcher(pos).search(limits);
     return { move: res.move, score: res.score, depth: res.depth, nodes: res.nodes, pv: res.pv };
   }
-  // Jieqi: the bot does not know the face-down pieces. It searches several
-  // random arrangements of the unknown pieces and averages the root scores.
-  const base = Xiangqi.fromJSON(req.state as XiangqiJSON);
+  // Jieqi / hidden chess: the bot does not know the face-down pieces. It searches
+  // several random arrangements of the unknown pieces and averages the root scores.
+  const base: Chess | Xiangqi = req.kind === 'hiddenchess' ? new Chess(req.state as string) : Xiangqi.fromJSON(req.state as XiangqiJSON);
   const samples = { easy: 3, medium: 8, hard: 14, expert: 20 }[req.level];
   const totals = new Map<number, number>();
   const counts = new Map<number, number>();

@@ -43,7 +43,7 @@ export interface SavedGame {
   flagged?: Outcome | null;
 }
 
-export const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi'];
+export const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
 
 export const store = {
   get<T>(key: string, session = false): T | null {

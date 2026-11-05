@@ -4,7 +4,7 @@
 
 # Bàn Cờ
 
-**Chơi Cờ vua · Cờ tướng · Cờ tướng úp ngay trên trình duyệt: với máy, với bạn, hoặc ghép ngẫu nhiên online.**
+**Chơi Cờ vua · Cờ tướng · Cờ tướng úp · Cờ vua úp ngay trên trình duyệt: với máy, với bạn, hoặc ghép ngẫu nhiên online.**
 
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
@@ -16,7 +16,7 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
 
 ## ✨ Tính năng
 
-- ♟️ **3 loại cờ trong một app**: Cờ vua, Cờ tướng, và **Cờ tướng úp (Jieqi / 揭棋)**. Rất hiếm có bản mã nguồn mở nào chơi được cờ úp.
+- ♟️ **4 loại cờ trong một app**: Cờ vua, Cờ tướng, **Cờ tướng úp (Jieqi / 揭棋)** và **Cờ vua úp**, một biến thể cùng tinh thần cờ úp cho cờ vua. Rất hiếm có bản mã nguồn mở nào chơi được cờ úp.
 - ⚡ **Ghép ngẫu nhiên có xếp hạng (Elo)**: app tìm đối thủ có điểm gần nhất. Mỗi ván 10 phút, cộng 5 giây sau mỗi nước.
 - 🔗 **Chơi với bạn qua link**: tạo phòng, chọn màu quân và thời gian (không giới hạn, 3+2, 5+3, 10+5, 15+10), rồi gửi link qua Zalo hay Messenger. Ai vào khi phòng đã đủ người sẽ được xem ván.
 - 🛡️ **Máy chủ giữ ván cờ**:
@@ -83,6 +83,17 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     <td><img src="docs/colors.png" alt="Đổi màu bàn và quân" /></td>
   </tr>
 </table>
+
+## ♟️ Luật cờ vua úp
+
+1. Xếp như cờ vua, nhưng mọi quân trừ Vua đều **úp mặt và bị xáo ngẫu nhiên** giữa 15 ô xuất phát của bên mình. Hậu có thể đứng ở ô Tốt, Tốt có thể ở hàng cuối.
+2. Quân úp đi theo quân **vốn đứng ở ô đó**. Úp ở ô Tốt thì đi như Tốt (lên 1 hoặc 2 ô, ăn chéo); úp ở ô Mã thì đi như Mã.
+3. Đi xong nước đầu, quân được **lật lên** và từ đó đi đúng loại thật của nó.
+4. Vẫn **nhập thành** được với quân úp ở góc bàn (nó đi như Xe). Quân đó lật lên sau khi nhập thành.
+5. Tốt lật lên ở hàng cuối của bên mình chỉ đi lên 1 ô. **Bắt tốt qua đường** chỉ áp dụng khi quân vừa đi 2 ô đúng là Tốt.
+6. Phong cấp, chiếu hết, hết nước (pat) và các luật hòa khác như cờ vua thường. Còn quân úp thì không bao giờ xử hòa vì thiếu quân.
+
+Bot không nhìn trộm quân úp. Khi chơi online, máy chủ giấu danh tính quân úp, chỉ cho biết khi quân được lật. Trong FEN, quân úp được viết với dấu `~` phía trước (ví dụ `~N` là quân úp mà thật ra là Mã).
 
 ## 🀄 Luật cờ tướng úp
 
