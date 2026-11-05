@@ -13,7 +13,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { esc } from './util';
-import { gameKey, reportQuest } from './quests';
+import { gameKey, myBoardTheme, reportQuest } from './quests';
 
 export interface AnalysisPlayer {
   /** Online account name and rating. */
@@ -471,6 +471,7 @@ export class AnalysisScreen implements Screen {
       flipped: this.flipped, selected: null, targets: new Map(), labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
       arrows,
+      theme: myBoardTheme(),
     }, animate, intro);
     this.board!.svg.classList.add('locked');
     void this.nav;

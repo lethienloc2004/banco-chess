@@ -28,6 +28,11 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
     - 🎄 **Giáng sinh**: Tốt là quả châu, Xe là ống khói phủ tuyết, Tượng là cây thông, Mã là tuần lộc, Vua đội mũ ông già Noel.
     - 🧧 **Tết**: Tốt là đồng xu, Xe là ngôi chùa, Tượng là tràng pháo, Mã thắt nơ đỏ, Hậu cài hoa mai, Vua đội mũ cánh chuồn.
     - 🏮 **Trung thu**: Tốt là đèn lồng, Mã là thỏ ngọc, Tượng là đèn ông sao, Hậu là Hằng Nga, Vua dưới trăng rằm.
+  - **Skin ngày lễ đi kèm bàn cờ cùng chủ đề** (cờ vua và cờ tướng, chỉ hiện trên máy của bạn, tắt được trong Cài đặt):
+    - 🎃 Halloween: nền tím, mạng nhện, dơi, bí ngô, trăng mờ.
+    - 🎄 Giáng sinh: ô tuyết và ô xanh thông, dây đèn màu, bông tuyết, cây thông, tuyết đọng.
+    - 🧧 Tết: cành mai vàng và đào hồng, bao lì xì, đèn lồng, đường kẻ đỏ.
+    - 🏮 Trung thu: trời đêm có sao lấp lánh, trăng rằm với thỏ ngọc, đèn lồng.
   - **Skin ngày lễ có hiệu ứng và âm thanh riêng** (tắt theo nút âm thanh và chế độ "giảm chuyển động" của máy):
     - 🎃 Halloween: đi quân để lại vệt khói tím; ăn quân thì **đàn dơi bay tán loạn**, khói ma và con ma bay lên, kèm tiếng "hú".
     - 🎄 Giáng sinh: tuyết rắc theo đường đi; ăn quân thì **tuyết bung ra kèm ngôi sao vàng**, tiếng chuông leng keng.
@@ -448,6 +453,8 @@ friend on the same device, or online. The whole interface is available in Vietna
 
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.
+  Holiday skins also dress the board (cobwebs and bats, snow and garlands, apricot blossoms and red envelopes, a full
+  moon with the jade rabbit) and bring their own move trails, capture shows and sounds.
   Each theme has its own original piece shapes (classic carved, geometric, and Halloween, Christmas, Tết and Mid-Autumn
   sets where pawns are pumpkins, baubles, coins or lanterns…) and themed xiangqi disc outlines; online opponents see yours.
 - **Leaderboards and player profiles**: a separate Elo rating and top-100 board for each game, with your own rank,

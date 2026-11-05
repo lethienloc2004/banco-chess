@@ -31,6 +31,8 @@ export interface Settings {
   soundStyle: 'piece' | 'simple';
   /** Show other players' piece skins in online games. */
   showSkins: boolean;
+  /** A holiday skin also dresses the board. */
+  themedBoard: boolean;
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -81,6 +83,7 @@ const defaults: Settings = {
   watchSpeed: 'normal',
   soundStyle: 'piece',
   showSkins: true,
+  themedBoard: true,
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

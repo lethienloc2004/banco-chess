@@ -1,6 +1,7 @@
 /** SVG rendering of chess and xiangqi boards. */
 import type { Match } from '../game';
-import { playThemed } from '../sound';
+import { playThemed, type Theme } from '../sound';
+import { boardDeco } from './boards';
 import { settings } from '../state';
 import { chessPiece, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
 
@@ -17,6 +18,8 @@ export interface BoardView {
   arrows?: { from: number; to: number; kind: 'best' | 'played' }[];
   /** Piece skin of each side (White/Red, Black); null = the colour theme. */
   skins?: [string | null, string | null];
+  /** Holiday board (colours + decorations), from the viewer's own skin. */
+  theme?: Theme | null;
 }
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -92,6 +95,8 @@ export class BoardRenderer {
     parts.push(skinDefs(skins));
     if (match.isChess) this.chessBoard(parts);
     else this.xiangqiBoard(parts);
+    if (view.theme) { this.svg.dataset.theme = view.theme; parts.push(boardDeco(view.theme, match.isChess)); }
+    else delete this.svg.dataset.theme;
 
     const last = match.lastMove();
     const check = match.checkedKing();

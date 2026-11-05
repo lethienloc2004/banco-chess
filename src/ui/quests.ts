@@ -8,7 +8,7 @@ import { ACHIEVEMENTS, SEASONS, SKINS, activeSeason, dayKey, questById, skinById
 import { settings, t } from '../state';
 import { confirmDialog, toast } from './dialog';
 import type { Nav, Screen } from './home';
-import { skinPreview } from './skins';
+import { skinPreview, skinTheme } from './skins';
 import { esc } from './util';
 
 export interface QuestRow {
@@ -133,6 +133,7 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
     return `<div class="skin-card${owned ? ' owned' : ''}${equipped ? ' on' : ''}">
       ${skinPreview(id, previewGame)}
       <b>${esc(def.name[settings.lang])}</b>
+      ${def.how === 'season' ? `<p class="small board-too">🖼 ${esc(Qs.boardToo)}</p>` : ''}
       ${how ? `<p class="muted small">${esc(how)}</p>` : ''}
       ${action}
     </div>`;
@@ -204,6 +205,9 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
   })();
   return { el, dispose() { disposed = true; } };
 }
+
+/** Holiday board for the viewer: the theme of the skin they wear (unless turned off). */
+export const myBoardTheme = () => (settings.themedBoard ? skinTheme(net.me?.skin) : null);
 
 /** Is a holiday running today (for a badge)? */
 export const seasonNow = () => activeSeason(dayKey());

@@ -15,7 +15,7 @@ import { moveSfx } from './sfx';
 import { confirmDialog, openDialog, toast, type DialogAction } from './dialog';
 import { openAnalysis, type AnalysisPlayer } from './analysis';
 import { ACCOUNT_EVENT, openLogin } from './login';
-import { gameKey, reportQuest } from './quests';
+import { gameKey, myBoardTheme, reportQuest } from './quests';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
 
@@ -821,6 +821,7 @@ export class PlayScreen implements Screen {
       flipped: this.flipped, selected: this.selected, targets, labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
       skins: this.skins(),
+      theme: myBoardTheme(),
     }, animate, intro);
     this.board.svg.setAttribute('aria-label', `${s[m.kind]} — ${status}`);
     this.board.svg.classList.toggle('locked', !this.canMove());

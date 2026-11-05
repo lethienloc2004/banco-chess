@@ -415,6 +415,7 @@ function openSettings() {
       })),
       row(s.soundStyle, soundStyleControl()),
       row(s.quests.showSkins, seg([[true, s.on], [false, s.off]], settings.showSkins, v => { settings.showSkins = v; settingsChanged(); })),
+      row(s.quests.themedBoard, seg([[true, s.on], [false, s.off]], settings.themedBoard, v => { settings.themedBoard = v; settingsChanged(); })),
     ),
     group(`${s.chess} · ${s.hiddenchess}`,
       row(s.boardColor, palette(CHESS_BOARDS, 'chessBoard', settings.chessBoard, [C.light, C.dark], id => { settings.chessBoard = id; settingsChanged(); })),

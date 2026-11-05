@@ -13,7 +13,7 @@ import { openDialog } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { net } from '../net';
-import { reportQuest } from './quests';
+import { myBoardTheme, reportQuest } from './quests';
 import { esc } from './util';
 
 const STAR = '★';
@@ -345,6 +345,7 @@ export class PuzzleScreen implements Screen {
       flipped, selected: this.selected, targets, labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
       skins: this.attacker === 0 ? [mine, null] : [null, mine],
+      theme: myBoardTheme(),
     }, animate, intro);
     this.board.svg.classList.toggle('locked', this.phase !== 'play');
     this.board.svg.classList.toggle('hinted', this.hint !== null);

@@ -361,6 +361,8 @@ const vi = {
     needServer: 'Nhiệm vụ và skin được lưu trên máy chủ, cần kết nối mạng.',
     guestNote: 'Đăng nhập để giữ xu và skin khi đổi máy.',
     showSkins: 'Hiện skin của đối thủ',
+    themedBoard: 'Bàn cờ theo skin ngày lễ',
+    boardToo: 'Kèm bàn cờ cùng chủ đề',
   },
   noClockDesc: 'Không tính giờ.',
   clockDesc: (tc: { base: number; inc: number; delay?: number; delayType?: 'simple' | 'bronstein'; stage?: { moves: number; add: number } }) => {
@@ -740,6 +742,8 @@ const en: Strings = {
     needServer: 'Quests and skins are stored on the server; you need to be online.',
     guestNote: 'Sign in to keep your coins and skins on any device.',
     showSkins: "Show opponents' skins",
+    themedBoard: 'Holiday board with holiday skins',
+    boardToo: 'Comes with a matching board',
   },
   noClockDesc: 'No clock.',
   clockDesc: (tc: { base: number; inc: number; delay?: number; delayType?: 'simple' | 'bronstein'; stage?: { moves: number; add: number } }) => {

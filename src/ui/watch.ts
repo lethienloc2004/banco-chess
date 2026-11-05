@@ -10,7 +10,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { gameThumb, type Nav, type Screen } from './home';
 import { moveSfx } from './sfx';
 import { openAnalysis } from './analysis';
-import { gameKey, reportQuest } from './quests';
+import { gameKey, myBoardTheme, reportQuest } from './quests';
 import { esc } from './util';
 
 export type WatchSpeed = 'slow' | 'normal' | 'fast';
@@ -415,6 +415,7 @@ export class WatchScreen implements Screen {
     this.board.render(m, {
       flipped: this.flipped, selected: null, targets: new Map(), labels: settings.labels,
       river: settings.labels === 'hanzi' ? ['楚 河', '漢 界'] : ['Sở Hà', 'Hán Giới'],
+      theme: myBoardTheme(),
     }, animate, intro);
     this.board.svg.classList.add('locked');
   }
