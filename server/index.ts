@@ -3,7 +3,7 @@ import type { GameKind } from '../src/engine/types';
 import { CLOCKS, LEADERBOARD_MIN_GAMES, LEADERBOARD_SIZE, REPORT_REASONS, cleanName, type BoardEntry, type KindStats, type Leaderboard, type PlayerProfile, type ProfileGame } from '../src/shared/protocol';
 import { adminRoute } from './admin';
 import { randomId, roomId, signToken, verifyGoogleIdToken, verifyToken } from './auth';
-import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, isMember, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow } from './db';
+import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, isMember, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow, seasonConfig } from './db';
 import { buySkin, claim, clientEvent, equipSkin, questState, type ClientEvent } from './quests';
 import { LIMITS, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, emailLoginEnabled, hashCode, newCode, normalizeEmail, rateHit, sameHash, sendCode } from './otp';
 import type { Env } from './env';
@@ -120,7 +120,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   const method = req.method;
 
   if (path === '/config' && method === 'GET') {
-    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, emailLogin: emailLoginEnabled(env), announcement: await currentAnnouncement(env.DB), dev: env.DEV === '1' });
+    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, emailLogin: emailLoginEnabled(env), announcement: await currentAnnouncement(env.DB), seasons: await seasonConfig(env.DB), dev: env.DEV === '1' });
   }
 
   // ----- Auth -----

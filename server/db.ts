@@ -1,5 +1,6 @@
 /** D1 queries. */
 import type { GameKind } from '../src/engine/types';
+import type { SeasonConfig, SeasonMode } from '../src/shared/quests';
 import { DEFAULT_RATING, LEADERBOARD_MIN_GAMES, type Announcement, type Player, type PublicUser, type Ratings, type Role } from '../src/shared/protocol';
 
 export const KINDS: GameKind[] = ['chess', 'xiangqi', 'jieqi', 'hiddenchess'];
@@ -124,6 +125,16 @@ export async function createUser(db: D1Database, id: string, name: string, extra
 
 export async function touchUser(db: D1Database, id: string) {
   await db.prepare('UPDATE users SET last_seen = ? WHERE id = ?').bind(Date.now(), id).run();
+}
+
+/** How the admin set up the holiday events (empty = all follow the calendar). */
+export async function seasonConfig(db: D1Database): Promise<SeasonConfig> {
+  try {
+    const rows = await db.prepare('SELECT id, mode, since, shop FROM season_settings').all<{ id: string; mode: SeasonMode; since: string | null; shop: number }>();
+    return Object.fromEntries(rows.results.map(r => [r.id, { mode: r.mode, since: r.since, shop: !!r.shop }]));
+  } catch {
+    return {}; // table not migrated yet
+  }
 }
 
 export async function currentAnnouncement(db: D1Database): Promise<Announcement | null> {

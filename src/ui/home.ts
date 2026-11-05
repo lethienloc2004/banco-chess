@@ -93,8 +93,8 @@ export function homeScreen(nav: Nav): Screen {
   ul.appendChild(pli);
   // Quests & skins
   const qli = document.createElement('li');
-  const season = seasonNow();
   const drawQuests = () => {
+    const season = seasonNow();
     qli.innerHTML = `<button class="item" style="--i:${KINDS.length + 1}">
       <span class="thumb">${questsThumb()}</span>
       <span class="txt"><b>${s.quests.title}${season ? ` <em class="badge season">${season.emoji}</em>` : ''}${claimable ? ` <em class="badge">${claimable} 🎁</em>` : ''}</b><small>${s.quests.homeDesc}</small></span>

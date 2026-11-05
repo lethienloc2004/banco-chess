@@ -79,6 +79,7 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Xử lý báo cáo.
   - Cảnh cáo, khóa có thời hạn hoặc vĩnh viễn, đổi tên, chỉnh điểm, cấp quyền quản trị, xóa tài khoản.
   - Đăng thông báo toàn hệ thống, hiện ngay trên máy người chơi.
+  - **Bật/tắt sự kiện ngày lễ** (tab *Sự kiện*): mỗi dịp lễ chọn *Tự động theo lịch*, *Bật ngay* (chạy đến khi tắt, kèm nhiệm vụ và skin của dịp đó) hoặc *Tắt* (không chạy kể cả đúng ngày); tick *Bán skin trong cửa hàng quanh năm* để skin lễ luôn có trong cửa hàng.
   - Nhật ký mọi thao tác của quản trị viên.
 - 🧩 **126 màn giải thế cờ** (63 cờ vua, 63 cờ tướng): chiếu hết sau 1, 2, 3 nước, từ dễ đến khó.
   - Mở khóa lần lượt từng màn, có sao đánh giá, gợi ý, làm lại và xem đáp án.
@@ -167,7 +168,7 @@ Bot không nhìn trộm quân úp. Khi chơi online, máy chủ giấu danh tín
 - **Cloudflare Worker** (`server/index.ts`): REST API, đăng nhập, phục vụ app.
 - **Durable Object "GameRoom"** (mỗi phòng một bản): giữ ván, kiểm tra nước đi bằng chính bộ luật của app, đồng hồ, giấu quân úp, ghi kết quả và điểm Elo.
 - **Durable Object "Lobby"** (một bản): người online, hàng chờ ghép trận, thông báo trực tiếp.
-- **D1 (SQLite)**: users · ratings · games · reports · announcements · audit.
+- **D1 (SQLite)**: users · ratings · games · reports · announcements · audit · quests & skins · season_settings.
 
 📐 **Xem thêm sơ đồ** (PlantUML) trong [docs/diagrams](docs/diagrams/README.md):
 [cơ sở dữ liệu](docs/diagrams/README.md#2-cơ-sở-dữ-liệu--data-model) ·
@@ -481,6 +482,8 @@ friend on the same device, or online. The whole interface is available in Vietna
   - Handle reports.
   - Manage players: warn, ban, rename, set the rating of one game or all, change roles, delete.
   - Post live announcements.
+  - **Run the holiday events** (*Events* tab): each holiday follows the calendar, is turned on now (until turned off,
+    with its quest and skin) or is off (never runs, even on its dates); it can also sell its skin in the shop all year.
   - Audit log of every admin action.
 - **Rules**: castling, en passant, promotion, FIDE draws; flying general, blocked horse/elephant, cannon screens,
   Asian-rules perpetual check / chase (simplified). Verified with standard perft counts.

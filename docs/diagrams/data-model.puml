@@ -109,6 +109,16 @@ entity quest_events {
   created : INTEGER (chống tính trùng)
 }
 
+entity season_settings {
+  * id : halloween | christmas | tet | midautumn <<PK>>
+  --
+  mode : auto | on | off
+  since : TEXT (ngày bật tay)
+  shop : 0/1 (bán skin quanh năm)
+  updated : INTEGER
+  updated_by
+}
+
 entity rate_limits {
   * key : "email:…" | "ip:…" <<PK>>
   --
@@ -126,4 +136,5 @@ users .. otp_codes : "email"
 users ||--o{ quest_progress
 users ||--o{ user_skins
 users ||--o{ quest_events
+users ||--o{ season_settings : "updated_by"
 @enduml

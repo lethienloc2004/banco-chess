@@ -1,7 +1,8 @@
 /** Admin API: statistics, games, reports, users, announcements, audit log. */
 import type { GameKind } from '../src/engine/types';
+import { SEASONS, activeSeason, dayKey, seasonWindow, type SeasonMode } from '../src/shared/quests';
 import { cleanName, elo, type LobbyStats, type Ratings } from '../src/shared/protocol';
-import { KINDS, audit, currentAnnouncement, defaultRatings, getUser, publicUser, ratingsIn, ratingsOf, setRating, type UserRow } from './db';
+import { KINDS, audit, currentAnnouncement, seasonConfig, defaultRatings, getUser, publicUser, ratingsIn, ratingsOf, setRating, type UserRow } from './db';
 import type { Env } from './env';
 import { fail, json } from './http';
 
@@ -318,6 +319,25 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
     return json({ ok: true });
   }
 
+  // ----- Holiday events -----
+  if (path === '/seasons' && method === 'GET') return json(await seasonsView(db, now));
+  const seasonMatch = path.match(/^\/seasons\/([\w-]+)$/);
+  if (seasonMatch && method === 'POST') {
+    const id = seasonMatch[1];
+    if (!SEASONS.some(x => x.id === id)) return fail(404, 'not-found');
+    const body = await readJson<{ mode?: string; shop?: boolean }>(req);
+    const prev = (await seasonConfig(db))[id];
+    const mode: SeasonMode = body?.mode === 'on' || body?.mode === 'off' || body?.mode === 'auto' ? body.mode : prev?.mode ?? 'auto';
+    const shop = typeof body?.shop === 'boolean' ? body.shop : !!prev?.shop;
+    // Turning an event on starts a new run today (unless it was already on).
+    const since = mode === 'on' ? (prev?.mode === 'on' && prev.since ? prev.since : dayKey(now)) : null;
+    await db.prepare(`INSERT INTO season_settings (id, mode, since, shop, updated, updated_by) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT (id) DO UPDATE SET mode = excluded.mode, since = excluded.since, shop = excluded.shop, updated = excluded.updated, updated_by = excluded.updated_by`)
+      .bind(id, mode, since, shop ? 1 : 0, now, admin.id).run();
+    await audit(db, admin, 'season.set', id, { mode, shop });
+    return json(await seasonsView(db, now));
+  }
+
   // ----- Audit log -----
   if (path === '/audit' && method === 'GET') {
     const rows = await db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 200').all();
@@ -325,4 +345,19 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
   }
 
   return fail(404, 'not-found');
+}
+
+/** Every holiday with its admin setting, calendar window and whether it runs today. */
+async function seasonsView(db: D1Database, now: number) {
+  const cfg = await seasonConfig(db);
+  const day = dayKey(now);
+  const active = activeSeason(day, cfg);
+  return {
+    active: active ? { id: active.id, start: active.start, end: active.end, forced: active.forced } : null,
+    seasons: SEASONS.map(x => ({
+      id: x.id, skin: x.skin,
+      mode: cfg[x.id]?.mode ?? 'auto', since: cfg[x.id]?.since ?? null, shop: !!cfg[x.id]?.shop,
+      window: seasonWindow(x.id, day),
+    })),
+  };
 }

@@ -5,7 +5,7 @@ import {
   activeSeason, addDays, currentQuests, dayKey, questById, questValue, resetsIn, shopSkins, skinById, weekKey,
   type BotLevel, type QuestEvent,
 } from '../src/shared/quests';
-import { KINDS } from './db';
+import { KINDS, seasonConfig } from './db';
 import { rateHit } from './otp';
 
 const PUZZLE_IDS = new Set<string>([...puzzleData.chess, ...puzzleData.xiangqi].map(p => p.id));
@@ -15,7 +15,7 @@ interface Row { quest_id: string; period: string; progress: number; done: number
 
 /** Count an event towards every running quest; returns the quests it just completed. */
 export async function applyEvent(db: D1Database, uid: string, ev: QuestEvent, now = Date.now()): Promise<string[]> {
-  const running = currentQuests(now);
+  const running = currentQuests(now, await seasonConfig(db));
   const periods = [...new Set(running.map(r => r.period))];
   const rows = await db.prepare(`SELECT quest_id, period, progress, done, claimed FROM quest_progress WHERE user_id = ? AND period IN (${periods.map(() => '?').join(', ')})`)
     .bind(uid, ...periods).all<Row>();
@@ -98,7 +98,8 @@ export async function clientEvent(db: D1Database, uid: string, e: ClientEvent | 
 
 /** Everything the quests screen needs. */
 export async function questState(db: D1Database, uid: string, now = Date.now()) {
-  const running = currentQuests(now);
+  const cfg = await seasonConfig(db);
+  const running = currentQuests(now, cfg);
   const periods = [...new Set(running.map(r => r.period))];
   const [rows, user, skins] = await Promise.all([
     db.prepare(`SELECT quest_id, period, progress, done, claimed FROM quest_progress WHERE user_id = ? AND period IN (${periods.map(() => '?').join(', ')})`).bind(uid, ...periods).all<Row>(),
@@ -109,7 +110,7 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
   const day = dayKey(now);
   // A streak that skipped yesterday is over.
   const streakAlive = user?.streak_day === day || user?.streak_day === addDays(day, -1);
-  const season = activeSeason(day);
+  const season = activeSeason(day, cfg);
   return {
     day, week: weekKey(now), resetsIn: resetsIn(now),
     season: season ? { id: season.id, end: season.end } : null,
@@ -119,14 +120,14 @@ export async function questState(db: D1Database, uid: string, now = Date.now()) 
       const r = byKey.get(`${quest.id}|${period}`);
       return { id: quest.id, scope: quest.scope, period, progress: questValue(quest, r?.progress ?? 0), target: quest.target, done: !!r?.done, claimed: !!r?.claimed, reward: quest.reward };
     }),
-    shop: shopSkins(now).map(s => ({ id: s.id, price: s.price! })),
+    shop: shopSkins(now, cfg).map(s => ({ id: s.id, price: s.price! })),
   };
 }
 
 /** Take the reward of a finished quest. */
 export async function claim(db: D1Database, uid: string, questId: string, period: string, now = Date.now()): Promise<{ ok: true; completed: string[] } | { error: string }> {
   const quest = questById(questId);
-  if (!quest || !currentQuests(now).some(r => r.quest.id === questId && r.period === period)) return { error: 'not-found' };
+  if (!quest || !currentQuests(now, await seasonConfig(db)).some(r => r.quest.id === questId && r.period === period)) return { error: 'not-found' };
   const r = await db.prepare('UPDATE quest_progress SET claimed = 1 WHERE user_id = ? AND quest_id = ? AND period = ? AND done = 1 AND claimed = 0')
     .bind(uid, questId, period).run();
   if (!r.meta.changes) return { error: 'not-claimable' };
@@ -150,7 +151,7 @@ export async function claim(db: D1Database, uid: string, questId: string, period
 }
 
 export async function buySkin(db: D1Database, uid: string, skinId: string, now = Date.now()): Promise<{ ok: true } | { error: string }> {
-  const item = shopSkins(now).find(s => s.id === skinId);
+  const item = shopSkins(now, await seasonConfig(db)).find(s => s.id === skinId);
   if (!item?.price) return { error: 'not-for-sale' };
   const owned = await db.prepare('SELECT 1 AS x FROM user_skins WHERE user_id = ? AND skin_id = ?').bind(uid, skinId).first();
   if (owned) return { error: 'owned' };

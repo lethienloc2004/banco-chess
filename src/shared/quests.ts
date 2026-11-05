@@ -131,11 +131,44 @@ function windows(year: number): { season: string; start: string; end: string }[]
   return out;
 }
 
-/** The holiday running on `day` (YYYY-MM-DD), with its window. */
-export function activeSeason(day: string): (Season & { start: string; end: string; period: string }) | null {
-  const w = windows(Number(day.slice(0, 4))).find(x => day >= x.start && day <= x.end);
+// ---------- Admin control of the seasons ----------
+
+/** auto = follow the calendar; on = running now whatever the date; off = never runs. */
+export type SeasonMode = 'auto' | 'on' | 'off';
+export interface SeasonSetting {
+  mode: SeasonMode;
+  /** Day the admin turned the event on (mode 'on'); its quest progress belongs to that run. */
+  since?: string | null;
+  /** Sell the holiday skin in the shop all year round. */
+  shop?: boolean;
+}
+export type SeasonConfig = Partial<Record<string, SeasonSetting>>;
+
+export type ActiveSeason = Season & { start: string; end: string | null; period: string; forced: boolean };
+
+/**
+ * The holiday running on `day` (YYYY-MM-DD), with its window. An event the admin turned
+ * on wins (the latest one if several); events turned off never run. A forced event has no
+ * end date, except while its calendar window is running anyway (then progress is shared).
+ */
+export function activeSeason(day: string, cfg: SeasonConfig = {}): ActiveSeason | null {
+  const all = windows(Number(day.slice(0, 4)));
+  const forced = SEASONS.filter(x => cfg[x.id]?.mode === 'on')
+    .sort((a, b) => (cfg[b.id]!.since ?? '').localeCompare(cfg[a.id]!.since ?? ''))[0];
+  if (forced) {
+    const w = all.find(x => x.season === forced.id && day >= x.start && day <= x.end);
+    const start = w?.start ?? cfg[forced.id]!.since ?? day;
+    return { ...forced, start, end: w?.end ?? null, period: `s:${forced.id}:${start}`, forced: true };
+  }
+  const w = all.find(x => day >= x.start && day <= x.end && cfg[x.season]?.mode !== 'off');
   if (!w) return null;
-  return { ...SEASONS.find(s => s.id === w.season)!, start: w.start, end: w.end, period: `s:${w.season}:${w.start}` };
+  return { ...SEASONS.find(x => x.id === w.season)!, start: w.start, end: w.end, period: `s:${w.season}:${w.start}`, forced: false };
+}
+
+/** The calendar window of a season that is running on `day` or comes next. */
+export function seasonWindow(id: string, day: string): { start: string; end: string } | null {
+  const y = Number(day.slice(0, 4));
+  return [...windows(y), ...windows(y + 1)].filter(x => x.season === id && x.end >= day).sort((a, b) => a.start.localeCompare(b.start)).map(x => ({ start: x.start, end: x.end }))[0] ?? null;
 }
 
 export const SEASON_QUESTS: QuestDef[] = SEASONS.map(s => quest(`s.${s.id}`, 'season', 3, { coins: 60, skin: s.skin },
@@ -220,20 +253,20 @@ export const dailyQuests = (day: string) => pick(DAILY, 3, 'day:' + day);
 export const weeklyQuests = (week: string) => pick(WEEKLY, 2, 'week:' + week);
 
 /** The quests running now, each with the period its progress belongs to. */
-export function currentQuests(now = Date.now()): { quest: QuestDef; period: string }[] {
+export function currentQuests(now = Date.now(), cfg: SeasonConfig = {}): { quest: QuestDef; period: string }[] {
   const day = dayKey(now), week = weekKey(now);
   const out = [
     ...dailyQuests(day).map(quest => ({ quest, period: 'd:' + day })),
     ...weeklyQuests(week).map(quest => ({ quest, period: 'w:' + week })),
     ...ACHIEVEMENTS.map(quest => ({ quest, period: 'a' })),
   ];
-  const season = activeSeason(day);
+  const season = activeSeason(day, cfg);
   if (season) out.push({ quest: SEASON_QUESTS.find(q => q.season === season.id)!, period: season.period });
   return out;
 }
 
-/** Skins that can be bought right now. */
-export function shopSkins(now = Date.now()): SkinDef[] {
-  const season = activeSeason(dayKey(now));
-  return SKINS.filter(s => s.how === 'shop' || (s.how === 'season' && s.season === season?.id));
+/** Skins that can be bought right now: shop skins, the running holiday's, and holidays the admin sells all year. */
+export function shopSkins(now = Date.now(), cfg: SeasonConfig = {}): SkinDef[] {
+  const season = activeSeason(dayKey(now), cfg);
+  return SKINS.filter(s => s.how === 'shop' || (s.how === 'season' && (s.season === season?.id || !!cfg[s.season!]?.shop)));
 }

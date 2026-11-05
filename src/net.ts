@@ -3,12 +3,13 @@
  * REST calls and auto-reconnecting WebSockets.
  */
 import type { Announcement, LobbyClientMsg, LobbyServerMsg, LobbyStats, PublicUser } from './shared/protocol';
+import type { SeasonConfig } from './shared/quests';
 import { settings, store } from './state';
 
 /** Same origin by default; set VITE_API_URL to use a server elsewhere. */
 const API = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 
-export interface ServerConfig { googleClientId: string | null; emailLogin?: boolean; announcement: Announcement | null; dev: boolean }
+export interface ServerConfig { googleClientId: string | null; emailLogin?: boolean; announcement: Announcement | null; seasons?: SeasonConfig; dev: boolean }
 
 export class ApiError extends Error {
   constructor(readonly status: number, readonly code: string, readonly data: Record<string, unknown> = {}) { super(code); }

@@ -287,5 +287,27 @@ ok((await api('/rooms', { token: loserTok, method: 'POST', body: { kind: 'chess'
 ok((await api('/me', { token: loserTok })).data.banned?.reason === 'test', '/me reports ban');
 ok(!(await api('/leaderboard?kind=chess')).data.entries.some(e => e.id === loserId), 'banned player hidden from the leaderboard');
 await api(`/admin/users/${loserId}/action`, { token: adm.token, method: 'POST', body: { action: 'unban' } });
+// holiday events: the admin can stop, force and sell them all year
+const SE = (id, body) => api('/admin/seasons/' + id, { token: adm.token, method: 'POST', body });
+ok((await api('/admin/seasons', { token: g1.token })).status === 403, 'non-admin cannot change events');
+let sv = (await api('/admin/seasons', { token: adm.token })).data;
+ok(sv.seasons.length === 4 && sv.seasons.every(x => x.mode === 'auto'), 'events follow the calendar by default');
+const forcedId = sv.active?.id === 'tet' ? 'midautumn' : 'tet';
+sv = (await SE(forcedId, { mode: 'on' })).data;
+ok(sv.active?.id === forcedId && sv.active.forced && sv.active.end === null, 'admin turned an event on: ' + forcedId);
+let uq = (await api('/quests', { token: blackTok })).data;
+ok(uq.season?.id === forcedId && uq.quests.some(q => q.id === 's.' + forcedId), 'players get the forced event and its quest');
+ok((await api('/config')).data.seasons?.[forcedId]?.mode === 'on', 'config tells clients about the event');
+sv = (await SE(forcedId, { mode: 'off' })).data;
+ok(sv.active?.id !== forcedId, 'admin turned the event off');
+uq = (await api('/quests', { token: blackTok })).data;
+ok(!uq.quests.some(q => q.id === 's.' + forcedId), 'the event quest is gone when off');
+const sellSkin = sv.seasons.find(x => x.id === forcedId).skin;
+ok(!uq.shop.some(x => x.id === sellSkin), 'its skin is not sold while off');
+await SE(forcedId, { shop: true });
+uq = (await api('/quests', { token: blackTok })).data;
+ok(uq.shop.some(x => x.id === sellSkin) && !uq.quests.some(q => q.id === 's.' + forcedId), 'skin sold all year while the event is off');
+await SE(forcedId, { mode: 'auto', shop: false });
+ok((await SE('nope', { mode: 'on' })).status === 404, 'unknown event rejected');
 ok((await api('/admin/audit', { token: adm.token })).data.audit.length >= 5, 'audit log recorded');
 process.exit();

@@ -1,5 +1,7 @@
 /** Admin dashboard: overview, games, reports, users, announcements, audit log. */
 import { Match } from '../game';
+import { SEASONS, type SeasonMode } from '../shared/quests';
+import { skinPreview } from './skins';
 import type { GameKind } from '../engine/types';
 import { net } from '../net';
 import { DEFAULT_RATING, type MoveRec, type Ratings } from '../shared/protocol';
@@ -9,8 +11,8 @@ import { confirmDialog, openDialog, toast } from './dialog';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, timeAgo } from './util';
 
-type Tab = 'overview' | 'games' | 'reports' | 'users' | 'announcements' | 'audit';
-const TABS: Tab[] = ['overview', 'games', 'reports', 'users', 'announcements', 'audit'];
+type Tab = 'overview' | 'games' | 'reports' | 'users' | 'announcements' | 'events' | 'audit';
+const TABS: Tab[] = ['overview', 'games', 'reports', 'users', 'announcements', 'events', 'audit'];
 
 interface GameRow {
   id: string; kind: GameKind; rated: number; p0_id: string | null; p0_name: string | null; p1_id: string | null; p1_name: string | null;
@@ -302,6 +304,36 @@ export function adminScreen(tab: Tab | string, nav: Nav, openUserId?: string): S
         if (await call('/announcements', 'POST', { text, level, hours })) { body.querySelector('textarea')!.value = ''; toast(A.done); void fetchAnn(); }
       };
       await fetchAnn();
+    } else if (current === 'events') {
+      type SeasonRow = { id: string; skin: string; mode: SeasonMode; since: string | null; shop: boolean; window: { start: string; end: string } | null };
+      type View = { active: { id: string } | null; seasons: SeasonRow[] };
+      const dmy = (d: string) => d.split('-').reverse().join('/');
+      const draw = (v: View) => {
+        body.innerHTML = `<p class="muted small ev-note">${esc(A.evNote)}</p><div class="ev-grid">${v.seasons.map(x => {
+          const def = SEASONS.find(y => y.id === x.id)!;
+          const on = v.active?.id === x.id;
+          const when = x.mode === 'on' && x.since ? A.evSince(dmy(x.since)) : x.window ? A.evCalendar(dmy(x.window.start), dmy(x.window.end)) : '';
+          return `<div class="card ev-card${on ? ' on' : ''}" data-season="${x.id}">
+            <div class="ev-head"><div class="ev-prev">${skinPreview(x.skin, 'chess')}</div>
+              <div><b>${def.emoji} ${esc(def.name[settings.lang])}</b>
+              <div><span class="tag${on ? ' live' : ''}">${esc(on ? A.evRunning : A.evIdle)}</span></div>
+              <div class="muted small">${esc(when)}</div></div></div>
+            <div class="seg ev-mode">${(['auto', 'on', 'off'] as const).map(m => `<button data-mode="${m}" class="${x.mode === m ? 'on' : ''}">${esc(m === 'auto' ? A.evAuto : m === 'on' ? A.evOn : A.evOff)}</button>`).join('')}</div>
+            <label class="ev-shop"><input type="checkbox" ${x.shop ? 'checked' : ''}/> ${esc(A.evShop)}</label>
+          </div>`;
+        }).join('')}</div>`;
+        body.querySelectorAll<HTMLElement>('[data-season]').forEach(card => {
+          const id = card.dataset.season!;
+          const save = async (data: { mode?: SeasonMode; shop?: boolean }) => {
+            const r = await call<View>(`/seasons/${id}`, 'POST', data);
+            if (r && !disposed) { toast(A.done); draw(r); if (net.config) net.config.seasons = Object.fromEntries(r.seasons.map(y => [y.id, { mode: y.mode, since: y.since, shop: y.shop }])); }
+          };
+          card.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach(b => (b.onclick = () => void save({ mode: b.dataset.mode as SeasonMode })));
+          card.querySelector<HTMLInputElement>('.ev-shop input')!.onchange = e => void save({ shop: (e.target as HTMLInputElement).checked });
+        });
+      };
+      const r = await call<View>('/seasons');
+      if (r && !disposed) draw(r);
     } else if (current === 'audit') {
       const r = await call<{ audit: { admin_name: string; action: string; target: string; detail: string | null; created: number }[] }>('/audit');
       if (!r || disposed) return;

@@ -145,7 +145,7 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
     const daily = st.quests.filter(q => q.scope === 'daily'), weekly = st.quests.filter(q => q.scope === 'weekly');
     const event = st.quests.filter(q => q.scope === 'season'), ach = st.quests.filter(q => q.scope === 'achievement');
     const body = current === 'quests'
-      ? (season ? `<div class="season-banner">${season.emoji} <b>${esc(Qs.eventNow(season.name[settings.lang]))}</b> <span>${esc(Qs.eventEnds(st.season!.end.split('-').reverse().join('/')))}</span></div>` : '')
+      ? (season ? `<div class="season-banner">${season.emoji} <b>${esc(Qs.eventNow(season.name[settings.lang]))}</b> <span>${esc(st.season!.end ? Qs.eventEnds(st.season!.end.split('-').reverse().join('/')) : Qs.eventOpen)}</span></div>` : '')
         + section(Qs.today, Qs.resets(fmtLeft(st.resetsIn.day)), daily)
         + section(Qs.week, Qs.resets(fmtLeft(st.resetsIn.week)), weekly)
         + (season ? section(`${season.emoji} ${Qs.event}`, '', event) : '')
@@ -210,4 +210,4 @@ export function questsScreen(tab: string | undefined, nav: Nav): Screen {
 export const myBoardTheme = () => (settings.themedBoard ? skinTheme(net.me?.skin) : null);
 
 /** Is a holiday running today (for a badge)? */
-export const seasonNow = () => activeSeason(dayKey());
+export const seasonNow = () => activeSeason(dayKey(), net.config?.seasons ?? {});

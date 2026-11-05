@@ -1019,3 +1019,14 @@ svg.board[data-theme] .xq-river { opacity: .9; }
   .bd-eyes { opacity: .8; }
 }
 .board-too { color: var(--accent); font-weight: 600; flex: none !important; }
+
+/* Admin: holiday events */
+.ev-note { margin: 0 0 12px; }
+.ev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+.ev-card { display: flex; flex-direction: column; gap: 10px; }
+.ev-card.on { box-shadow: 0 0 0 2px #16a34a inset; }
+.ev-head { display: flex; gap: 12px; align-items: center; }
+.ev-head > div:last-child { display: flex; flex-direction: column; gap: 4px; }
+.ev-prev { width: 96px; flex: none; background: var(--surface-2); border-radius: 10px; padding: 4px; }
+.ev-prev svg { width: 100%; height: auto; display: block; }
+.ev-shop { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }

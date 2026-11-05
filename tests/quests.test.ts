@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACHIEVEMENTS, SKINS, activeSeason, currentQuests, dailyQuests, dayKey, questById, questValue, resetsIn, shopSkins, weekKey, weeklyQuests } from '../src/shared/quests';
+import { ACHIEVEMENTS, SKINS, activeSeason, seasonWindow, currentQuests, dailyQuests, dayKey, questById, questValue, resetsIn, shopSkins, weekKey, weeklyQuests } from '../src/shared/quests';
 
 const vn = (s: string) => Date.parse(s + '+07:00');
 
@@ -60,5 +60,26 @@ describe('quest scoring', () => {
     expect(questValue(all, p)).toBe(4);
     expect(questById('a.rated-1400')!.step({ t: 'rating', kind: 'chess', rating: 1416 }, 1300)).toBe(1416);
     expect(questById('a.puzzles-20')!.step({ t: 'puzzle', id: 'c1-01', distinct: 7 }, 5)).toBe(7);
+  });
+
+  it('lets the admin force, stop and sell holiday events', () => {
+    // Turned off: Halloween does not run even on its dates.
+    expect(activeSeason('2026-11-05', { halloween: { mode: 'off' } })).toBeNull();
+    // Turned on out of season: runs from the day it was turned on, with no end date.
+    const tet = activeSeason('2026-11-20', { tet: { mode: 'on', since: '2026-11-19' } });
+    expect(tet?.id).toBe('tet');
+    expect(tet?.end).toBeNull();
+    expect(tet?.period).toBe('s:tet:2026-11-19');
+    // Forced on during its own window: same run (and progress) as the calendar one.
+    expect(activeSeason('2026-11-05', { halloween: { mode: 'on', since: '2026-11-01' } })?.period).toBe('s:halloween:2026-10-15');
+    // A forced event wins over the calendar one; the latest forced wins over older ones.
+    expect(activeSeason('2026-11-05', { christmas: { mode: 'on', since: '2026-11-02' } })?.id).toBe('christmas');
+    expect(activeSeason('2026-11-20', { tet: { mode: 'on', since: '2026-11-01' }, midautumn: { mode: 'on', since: '2026-11-10' } })?.id).toBe('midautumn');
+    expect(currentQuests(vn('2026-11-20T12:00:00'), { tet: { mode: 'on', since: '2026-11-19' } }).some(q => q.quest.id === 's.tet')).toBe(true);
+    // Sold all year: the skin is in the shop while its event is not running.
+    const shop = shopSkins(vn('2026-11-20T12:00:00'), { christmas: { mode: 'auto', shop: true } }).map(x => x.id);
+    expect(shop).toContain('christmas');
+    expect(shop).not.toContain('pumpkin');
+    expect(seasonWindow('halloween', '2026-11-20')).toEqual({ start: '2027-10-15', end: '2027-11-07' });
   });
 });
