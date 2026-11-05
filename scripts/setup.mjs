@@ -7,7 +7,7 @@
  * Non-interactive: npm run setup -- --yes   (reads APP_NAME, ADMIN_EMAILS, GOOGLE_CLIENT_ID from the environment)
  * Preview only:    npm run setup -- --dry-run
  */
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
@@ -21,10 +21,10 @@ const c = { b: s => `\x1b[1m${s}\x1b[0m`, g: s => `\x1b[32m${s}\x1b[0m`, y: s =>
 const step = (n, s) => console.log(`\n${c.b(`[${n}/7]`)} ${s}`);
 
 /** Run wrangler; returns stdout. `show` streams output to the terminal. */
-function wrangler(argv, { show = false, input, allowFail = false } = {}) {
+function wrangler(argv, { show = false, input, allowFail = false, env } = {}) {
   if (DRY) { console.log(c.d(`  (dry-run) npx wrangler ${argv.join(' ')}`)); return ''; }
   const r = spawnSync('npx', ['wrangler', ...argv], {
-    encoding: 'utf8', shell, input,
+    encoding: 'utf8', shell, input, env: env ? { ...process.env, ...env } : process.env,
     stdio: show ? ['inherit', 'inherit', 'inherit'] : input !== undefined ? ['pipe', 'pipe', 'pipe'] : ['inherit', 'pipe', 'pipe'],
   });
   if (r.status !== 0 && !allowFail) {
@@ -33,6 +33,25 @@ function wrangler(argv, { show = false, input, allowFail = false } = {}) {
     process.exit(1);
   }
   return (r.stdout ?? '') + (r.stderr ?? '');
+}
+
+/**
+ * Run wrangler showing its output live (so any question it asks, such as
+ * registering a workers.dev subdomain on a new account, is visible and can be
+ * answered) while also capturing it.
+ */
+function wranglerLive(argv) {
+  if (DRY) { console.log(c.d(`  (dry-run) npx wrangler ${argv.join(' ')}`)); return Promise.resolve(''); }
+  return new Promise(resolve => {
+    const child = spawn('npx', ['wrangler', ...argv], { shell, stdio: ['inherit', 'pipe', 'pipe'] });
+    let out = '';
+    child.stdout.on('data', d => { out += d; process.stdout.write(d); });
+    child.stderr.on('data', d => { out += d; process.stderr.write(d); });
+    child.on('close', code => {
+      if (code !== 0) { console.error(c.r(`\n✗ Lệnh thất bại: npx wrangler ${argv.join(' ')}`)); process.exit(code ?? 1); }
+      resolve(out);
+    });
+  });
 }
 
 export function setTomlString(toml, key, value) {
@@ -92,7 +111,8 @@ async function main() {
   }
   if (dbId) console.log(c.g(`  ✓ Dùng lại cơ sở dữ liệu "${dbName}"`));
   else {
-    const out = wrangler(['d1', 'create', dbName]);
+    // Asia-Pacific location (players in Vietnam). CI=1: no "update your config?" question, this script writes it.
+    const out = wrangler(['d1', 'create', dbName, '--location', 'apac'], { env: { CI: '1' } });
     dbId = findUuid(out) ?? (DRY ? '00000000-0000-0000-0000-000000000000' : null);
     if (!dbId) { console.error(c.r('✗ Không đọc được database_id. Hãy chạy lại.')); console.error(out); process.exit(1); }
     console.log(c.g(`  ✓ Đã tạo cơ sở dữ liệu "${dbName}"`));
@@ -119,8 +139,7 @@ async function main() {
   // ---- 6. Migrate + deploy
   step(6, 'Tạo bảng dữ liệu và đưa app lên mạng');
   wrangler(['d1', 'migrations', 'apply', 'DB', '--remote'], { show: true });
-  const deployOut = wrangler(['deploy']);
-  if (deployOut) console.log(c.d(deployOut.trim().split('\n').slice(-6).join('\n')));
+  const deployOut = await wranglerLive(['deploy']);
   const url = deployOut.match(/https:\/\/[^\s]+\.workers\.dev/)?.[0] ?? `https://${app}.<tài-khoản>.workers.dev`;
 
   // ---- 7. Secret
