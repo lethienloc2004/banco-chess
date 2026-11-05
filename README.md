@@ -36,11 +36,19 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
   - Cảnh cáo, khóa có thời hạn hoặc vĩnh viễn, đổi tên, chỉnh điểm, cấp quyền quản trị, xóa tài khoản.
   - Đăng thông báo toàn hệ thống, hiện ngay trên máy người chơi.
   - Nhật ký mọi thao tác của quản trị viên.
-- 🧩 **Giải thế cờ theo màn** cho cờ vua và cờ tướng: chiếu hết sau 1, 2, 3 nước, từ dễ đến khó.
+- 🧩 **126 màn giải thế cờ** (63 cờ vua, 63 cờ tướng): chiếu hết sau 1, 2, 3 nước, từ dễ đến khó.
   - Mở khóa lần lượt từng màn, có sao đánh giá, gợi ý, làm lại và xem đáp án.
   - Đối thủ luôn chống cự theo cách khó nhất.
   - Mọi thế cờ do chính engine của app tìm ra qua các ván tự đấu, rồi được kiểm tra vét cạn: chiếu hết được đúng số nước đã ghi, không có cách nhanh hơn, và nước đầu là duy nhất.
-- 🤖 **Máy chơi cùng** với 3 mức Dễ / Vừa / Khó (alpha-beta, quiescence, bảng chuyển vị), chạy trong Web Worker nên không giật.
+- 🤖 **Máy chơi cùng** với 4 mức Dễ / Vừa / Khó / Rất khó, chạy trong Web Worker nên không giật.
+  - Thuật toán: PVS, aspiration window, bảng chuyển vị, null-move pruning, late move reductions, check extension, quiescence search.
+  - Hàm đánh giá: cấu trúc tốt, tốt thông, cặp Tượng, Xe cột mở, độ linh hoạt của quân, an toàn Vua/Tướng.
+  - **Đo thực tế:** đấu 20 ván với bot đời trước, cùng 150 ms mỗi nước. Cờ vua thắng 17, hòa 2, thua 1; cờ tướng thắng 16, hòa 4, không thua. Mạnh hơn khoảng **+380 Elo** ở cả hai.
+- 🎬 **Máy đấu máy để xem và học**:
+  - Chọn mức độ cho từng bên và tốc độ (chậm / vừa / nhanh), có tạm dừng và đi từng nước.
+  - **Thanh đánh giá** cho biết bên nào hơn và hơn bao nhiêu, hoặc "chiếu hết sau N nước".
+  - Xem **chuỗi nước máy dự tính**.
+  - **Nhận xét từng nước**: ✓ tốt nhất, ?! không chính xác, ? sai lầm, ?? sai lầm nghiêm trọng. Nhận xét do một máy trọng tài cố định chấm, nên nhất quán dù hai bên chơi ở mức nào.
 - 🎭 **Bot cờ úp không ăn gian**: máy không biết quân úp là gì. Nó thử nhiều cách xếp ngẫu nhiên rồi chọn nước tốt nhất tính trung bình.
 - ✅ **Đúng luật**:
   - Cờ vua: nhập thành, bắt tốt qua đường, phong cấp, hòa theo FIDE.
@@ -229,6 +237,9 @@ Toàn bộ mã nguồn được viết mới, **không dùng thư viện cờ n�
   - [quiescence search](https://www.chessprogramming.org/Quiescence_Search)
   - [Zobrist hashing](https://www.chessprogramming.org/Zobrist_Hashing)
   - [killer heuristic](https://www.chessprogramming.org/Killer_Heuristic) và [history heuristic](https://www.chessprogramming.org/History_Heuristic)
+  - [PVS](https://www.chessprogramming.org/Principal_Variation_Search) và [aspiration windows](https://www.chessprogramming.org/Aspiration_Windows)
+  - [null-move pruning](https://www.chessprogramming.org/Null_Move_Pruning) và [late move reductions](https://www.chessprogramming.org/Late_Move_Reductions)
+  - [reverse futility pruning](https://www.chessprogramming.org/Reverse_Futility_Pruning) và [mate distance pruning](https://www.chessprogramming.org/Mate_Distance_Pruning)
   - MVV-LVA
 - **Bảng điểm vị trí quân cờ vua** (piece-square tables) dựa trên [Simplified Evaluation Function](https://www.chessprogramming.org/Simplified_Evaluation_Function) của Tomasz Michniewski.
 - **Số liệu perft để kiểm tra luật**:
@@ -278,7 +289,10 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
   - Audit log of every admin action.
 - **Rules**: castling, en passant, promotion, FIDE draws; flying general, blocked horse/elephant, cannon screens,
   Asian-rules perpetual check / chase (simplified). Verified with standard perft counts.
-- **Puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions. Every position was
+- **Stronger engine** (PVS, null move, LMR, aspiration windows, richer evaluation): +17 =2 −1 in chess and +16 =4 −0 in xiangqi
+  against the previous version at 150 ms/move (about +380 Elo). Four levels including Expert.
+- **Bot vs bot** watch mode with an evaluation bar, expected line and per-move quality marks from a fixed referee engine.
+- **126 puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions. Every position was
   found by the app's own engine in self-play and proven with an exhaustive solver (unique first move, no faster mate).
 - Many board/piece colour themes plus a custom colour picker, sound, dark mode, Vietnamese / English, PWA.
 
