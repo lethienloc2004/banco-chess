@@ -8,7 +8,7 @@
 
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
-[**▶ Chơi ngay**](https://lethienloc2004.github.io/banco-chess/) · [🚀 Tự chạy / Deploy](#-bắt-đầu-nhanh) · [English](#english) · [Báo lỗi / góp ý](../../issues)
+[**🚀 Tự chạy / Deploy**](#-bắt-đầu-nhanh) · [✨ Tính năng](#-tính-năng) · [English](#english) · [Báo lỗi / góp ý](../../issues)
 
 ![Demo](docs/demo.gif)
 
@@ -138,10 +138,6 @@ Chế độ chơi với máy và 2 người chạy hoàn toàn trên trình duy�
 
 Cần cài [Node.js](https://nodejs.org) bản 20 trở lên. Tải code về bằng nút **Code → Download ZIP** hoặc `git clone`, rồi mở terminal trong thư mục đó.
 
-### 0. Chơi thử không cần cài gì
-
-Mở **https://lethienloc2004.github.io/banco-chess/**. Bản này chạy trên GitHub Pages: chơi với máy và 2 người cùng máy hoạt động đầy đủ. Các tính năng online (ghép trận, phòng bạn bè, quản trị) cần máy chủ Cloudflare ở bước 2.
-
 ### 1. Chơi thử trên máy: 2 lệnh, không cần cấu hình
 
 ```bash
@@ -199,8 +195,6 @@ Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại
 | Nút GitHub trong app trỏ về repo của bạn | Sửa `"repository"` trong `package.json` |
 | Dùng tên miền riêng | Cloudflare Dashboard → **Workers & Pages** → app của bạn → **Settings → Domains & Routes** |
 | Cập nhật code mới lên mạng | `npm run deploy` |
-| Bản demo trên GitHub Pages (không cần Cloudflare) | Bật một lần: **Settings → Pages → Source: GitHub Actions**. Từ đó mỗi lần push lên `main`, app tự cập nhật tại `https://<tên>.github.io/<repo>/` |
-| Bật chơi online cho bản GitHub Pages | Sau khi có app trên Cloudflare: thêm biến `API_URL` (link Cloudflare của bạn) ở **Settings → Secrets and variables → Actions → Variables**, rồi chạy lại workflow |
 | Tự deploy mỗi khi push lên GitHub | Thêm 2 secret `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID` vào **Settings → Secrets and variables → Actions** của repo. Token tạo tại [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) bằng mẫu *Edit Cloudflare Workers*, thêm quyền *D1 Edit* |
 
 #### Đăng nhập Google (tùy chọn)
