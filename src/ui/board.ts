@@ -1,7 +1,7 @@
 /** SVG rendering of chess and xiangqi boards. */
 import type { Match } from '../game';
 import { playThemed, type Theme } from '../sound';
-import { boardDeco } from './boards';
+import { FRAME, boardDeco, boardFrame, boardTiles, riverBand } from './boards';
 import { settings } from '../state';
 import { chessPiece, fxBurst, hasSkin, holidayBurst, landing, moveTrail, skinDefs, skinFx, skinTheme, xqPiece } from './skins';
 
@@ -95,14 +95,21 @@ export class BoardRenderer {
     parts.push(skinDefs(skins));
     if (match.isChess) this.chessBoard(parts);
     else this.xiangqiBoard(parts);
-    if (view.theme) { this.svg.dataset.theme = view.theme; parts.push(boardDeco(view.theme, match.isChess)); }
+    if (view.theme) {
+      this.svg.dataset.theme = view.theme;
+      if (match.isChess) parts.push(boardTiles(view.theme));
+      parts.push(boardDeco(view.theme, match.isChess));
+    }
     else delete this.svg.dataset.theme;
 
     const last = match.lastMove();
     const check = match.checkedKing();
     const svgW = match.isChess ? 8 * S : 8 * S + 2 * M;
     const svgH = match.isChess ? 8 * S : 9 * S + 2 * M;
-    this.svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+    // A holiday board grows a frame outside the playing area (cells keep their coordinates).
+    const F = view.theme ? (match.isChess ? FRAME.chess : FRAME.xq) : 0;
+    this.svg.setAttribute('viewBox', `${-F} ${-F} ${svgW + 2 * F} ${svgH + 2 * F}`);
+    if (view.theme) parts.unshift(boardFrame(view.theme, match.isChess, svgW, svgH));
     this.svg.dataset.kind = match.kind;
 
     // Highlights under pieces.
@@ -269,6 +276,7 @@ export class BoardRenderer {
       }
     }
     parts.push(`<path class="xq-lines" d="${lines.join('')}"/>`);
+    if (this.view.theme) parts.push(riverBand(this.view.theme));
     const ry = y0 + 4.5 * S;
     parts.push(`<text class="xq-river" x="${x0 + 2 * S}" y="${ry}">${this.view.river[0]}</text>`);
     parts.push(`<text class="xq-river" x="${x0 + 6 * S}" y="${ry}">${this.view.river[1]}</text>`);
