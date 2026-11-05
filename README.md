@@ -137,20 +137,59 @@ Chế độ chơi với máy và 2 người chạy hoàn toàn trên trình duy�
 
 ## 🚀 Bắt đầu nhanh
 
-Cần cài [Node.js](https://nodejs.org) bản 20 trở lên. Tải code về bằng nút **Code → Download ZIP** hoặc `git clone`, rồi mở terminal trong thư mục đó.
+### 1. Chơi trên máy của bạn: làm một lần, khoảng 5 phút
 
-### 1. Chơi thử trên máy: 2 lệnh, không cần cấu hình
+**Bước 1: Cài Node.js.** Vào [nodejs.org](https://nodejs.org), tải bản **LTS** (bản 20 trở lên) và cài như phần mềm bình thường: bấm *Next* đến hết. Cài xong thì **tắt hết cửa sổ terminal đang mở**, để máy nhận Node.js.
+
+**Bước 2: Tải code về.** Chọn một trong ba cách:
+- **Không cần tài khoản:** bấm nút xanh **Code → Download ZIP** ở đầu trang này. Sau đó **giải nén**: chuột phải vào file ZIP → *Extract All*. Bạn sẽ có thư mục `banco-chess-main`.
+- **GitHub Desktop:** *File → Clone repository → URL*, dán `https://github.com/lethienloc2004/banco-chess`, rồi bấm *Clone*.
+- **Dòng lệnh:** `git clone https://github.com/lethienloc2004/banco-chess.git`
+
+**Bước 3: Mở terminal ngay trong thư mục code.**
+- **Windows:** mở thư mục code. Bấm vào thanh địa chỉ ở trên cùng, xóa hết chữ, gõ `cmd` rồi Enter. Cửa sổ đen hiện ra là đúng chỗ.
+- **GitHub Desktop:** *Repository → Open in Command Prompt* (hoặc *Open in Terminal*).
+- **macOS:** chuột phải vào thư mục → *Services → New Terminal at Folder*.
+
+> Trên Windows nên dùng **Command Prompt (cmd)**. PowerShell có thể báo lỗi "running scripts is disabled".
+
+**Bước 4: Cài và chạy.** Gõ lần lượt từng lệnh, mỗi lệnh bấm Enter rồi chờ nó chạy xong:
 
 ```bash
-npm install
+npm ci
 ```
 
 ```bash
 npm start
 ```
 
-Mở **http://localhost:8787**. Có đủ tất cả: chơi với máy, chơi online, ghép trận và trang quản trị.
-Muốn thử trang quản trị, vào **Cài đặt → Đăng nhập quản trị (chỉ khi phát triển)**. Muốn thử chơi online, mở thêm một cửa sổ ẩn danh làm người chơi thứ hai.
+Lệnh đầu tải các thư viện cần thiết, mất 1–2 phút. Khi lệnh thứ hai hiện dòng **🎉 Mở http://localhost:8787 để chơi**, bạn mở trình duyệt và vào **http://localhost:8787**.
+
+Thế là chơi được tất cả các tính năng: chơi với máy, máy đấu máy, giải thế cờ, phân tích ván, chơi online và trang quản trị.
+- **Thử chơi online:** mở thêm một cửa sổ ẩn danh (Ctrl+Shift+N) để làm người chơi thứ hai.
+- **Thử trang quản trị:** vào **Cài đặt → Đăng nhập quản trị (chỉ khi phát triển)**.
+- **Chơi trên điện thoại hoặc rủ bạn bè:** bản chạy trên máy chỉ mở được trên chính máy đó. Muốn có link cho người khác vào thì đưa lên mạng ở bước 2.
+
+#### Những lần sau
+
+| Muốn… | Làm thế nào |
+|---|---|
+| **Dừng app** | Bấm vào cửa sổ terminal rồi nhấn **Ctrl + C**. Nếu được hỏi thì gõ `Y` rồi Enter |
+| **Chơi lại** | Mở terminal trong thư mục code như bước 3, gõ `npm start` (không cần `npm ci` nữa) |
+| **Cập nhật bản mới** | GitHub Desktop: bấm **Pull origin**. Tải ZIP: tải lại và giải nén. Dòng lệnh: `git pull`. Sau đó dừng app, chạy `npm ci` rồi `npm start` |
+
+#### Gặp lỗi khi chạy trên máy?
+
+| Báo lỗi | Cách xử lý |
+|---|---|
+| `'npm' is not recognized…` / `npm: command not found` | Chưa cài Node.js, hoặc chưa mở lại terminal sau khi cài. Làm lại bước 1 |
+| `running scripts is disabled on this system` | Bạn đang dùng PowerShell. Mở **Command Prompt (cmd)** như bước 3 rồi chạy lại |
+| `EPERM: operation not permitted … esbuild.exe` | App vẫn đang chạy ở một cửa sổ khác. Nhấn Ctrl+C ở cửa sổ đó, hoặc chạy `taskkill /F /IM node.exe`, rồi chạy lại lệnh. Vẫn lỗi thì xóa thư mục `node_modules` và chạy lại `npm ci` |
+| `Address already in use` / cổng `8787` đã được dùng | App đã chạy sẵn ở cửa sổ khác: cứ mở http://localhost:8787, hoặc dừng cửa sổ đó trước |
+| GitHub Desktop không cho **Pull** vì `package-lock.json` | Chuột phải file đó → **Discard changes**, rồi Pull lại. Lần sau dùng `npm ci` thay cho `npm install` để file này không bị sửa |
+| Terminal hiện `Unable to fetch the Request.cf object` hoặc `Request was cancelled` | Chỉ là cảnh báo khi mạng chậm hoặc bị chặn. Bỏ qua được, app vẫn chạy bình thường |
+| Cập nhật rồi mà trang vẫn hiện bản cũ | Nhấn **Ctrl + F5** để tải lại hẳn |
+| `npm ci` báo lỗi mạng / `ETIMEDOUT` | Kiểm tra kết nối mạng rồi chạy lại. Mạng công ty/trường có thể chặn, hãy thử mạng khác |
 
 ### 2. Đưa lên mạng thành bản của riêng bạn (miễn phí)
 
@@ -337,9 +376,12 @@ friend on the same device, or online. The whole interface is available in Vietna
   a horse whinny for knights and an elephant trumpet for elephants and bishops (both are "Tượng" in Vietnamese).
 - Many board/piece colour themes plus a custom colour picker, dark mode, installable PWA.
 
+Install [Node.js](https://nodejs.org) 20+ (LTS), download the code (**Code → Download ZIP** and unzip, or `git clone`),
+open a terminal in that folder (on Windows use Command Prompt, not PowerShell), then:
+
 ```bash
-npm install
-npm start          # play locally at http://localhost:8787
+npm ci             # install dependencies (first time and after each update)
+npm start          # play locally at http://localhost:8787 (Ctrl+C to stop)
 npm run setup      # put your own copy online on Cloudflare: answers 3 questions, does the rest
 ```
 
