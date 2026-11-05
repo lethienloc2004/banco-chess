@@ -14,6 +14,7 @@ export const pieceColor = (p: number) => p >> 3;
 const mk = (type: number, color: number) => type | (color << 3);
 
 const F_CAPTURE = 1, F_EP = 2, F_CASTLE = 4, F_DOUBLE = 8;
+const NULL_MOVE = -1;
 
 export const moveFrom = (m: number) => m & 127;
 export const moveTo = (m: number) => (m >> 7) & 127;
@@ -215,6 +216,40 @@ export class Chess implements SearchPosition {
     return this.attacked(this.kings[this.side], this.side ^ 1);
   }
 
+  /** Pseudo-legal moves (may leave the own king in check); for the search. */
+  pseudoMoves(): number[] {
+    return this.pseudo(false);
+  }
+
+  pseudoCaptures(): number[] {
+    return this.pseudo(true);
+  }
+
+  /** After make(): did that move leave the mover's own king attacked (illegal)? */
+  leftInCheck(): boolean {
+    return this.attacked(this.kings[this.side ^ 1], this.side);
+  }
+
+  /** Pass the turn (null-move pruning). Undo with unmake(). */
+  makeNull() {
+    this.stack.push({ move: NULL_MOVE, captured: 0, castling: this.castling, ep: this.ep, halfmove: this.halfmove, key: this.key });
+    let key = this.key ^ Z_SIDE;
+    if (this.ep >= 0) key ^= Z_EP[this.ep & 7];
+    this.ep = -1;
+    this.side ^= 1;
+    this.key = key;
+  }
+
+  /** Knights, bishops, rooks or queens left (null move is unsafe without them: zugzwang). */
+  hasNonPawnMaterial(side: number): boolean {
+    for (let sq = 0; sq < 128; sq++) {
+      if (sq & 0x88) { sq += 7; continue; }
+      const p = this.board[sq];
+      if (p && pieceColor(p) === side && pieceType(p) >= KNIGHT && pieceType(p) <= QUEEN) return true;
+    }
+    return false;
+  }
+
   private pseudo(capturesOnly: boolean): number[] {
     const out: number[] = [];
     const b = this.board, us = this.side, them = us ^ 1;
@@ -351,6 +386,13 @@ export class Chess implements SearchPosition {
   unmake() {
     const u = this.stack.pop();
     if (!u) return;
+    if (u.move === NULL_MOVE) {
+      this.side ^= 1;
+      this.ep = u.ep;
+      this.halfmove = u.halfmove;
+      this.key = u.key;
+      return;
+    }
     const b = this.board;
     this.side ^= 1;
     const us = this.side;
@@ -462,28 +504,102 @@ export class Chess implements SearchPosition {
   }
 
   evaluate(): number {
+    const b = this.board;
     let mg = 0, eg = 0, phase = 0;
+    // Pawn files per side, for pawn structure and open files.
+    const pawnFiles = [new Int8Array(8), new Int8Array(8)];
+    const bishops = [0, 0];
     for (let sq = 0; sq < 128; sq++) {
       if (sq & 0x88) { sq += 7; continue; }
-      const p = this.board[sq];
-      if (!p) continue;
-      const type = pieceType(p), color = pieceColor(p);
-      const idx = color === WHITE ? (7 - sqRank(sq)) * 8 + sqFile(sq) : sqRank(sq) * 8 + sqFile(sq);
-      const sign = color === WHITE ? 1 : -1;
-      if (type === KING) {
-        mg += sign * PST[KING][idx];
-        eg += sign * KING_END[idx];
-      } else {
-        const v = VALUE[type] + PST[type][idx];
-        mg += sign * v;
-        eg += sign * v;
-        if (type !== PAWN) phase += VALUE[type];
-      }
+      const p = b[sq];
+      if (pieceType(p) === PAWN) pawnFiles[pieceColor(p)][sqFile(sq)]++;
     }
+    for (let sq = 0; sq < 128; sq++) {
+      if (sq & 0x88) { sq += 7; continue; }
+      const p = b[sq];
+      if (!p) continue;
+      const type = pieceType(p), color = pieceColor(p), them = color ^ 1;
+      const file = sqFile(sq), rank = sqRank(sq);
+      const idx = color === WHITE ? (7 - rank) * 8 + file : rank * 8 + file;
+      const sign = color === WHITE ? 1 : -1;
+      let m = 0, e = 0;
+      switch (type) {
+        case KING: {
+          m += PST[KING][idx];
+          e += KING_END[idx];
+          // Pawn shield in front of a castled king (middlegame only).
+          const fwd = color === WHITE ? 16 : -16;
+          if ((color === WHITE ? rank <= 1 : rank >= 6) && (file <= 2 || file >= 5)) {
+            for (const d of [-1, 0, 1]) {
+              const t1 = sq + fwd + d, t2 = sq + 2 * fwd + d;
+              if (!(t1 & 0x88) && b[t1] === mk(PAWN, color)) m += 12;
+              else if (!(t2 & 0x88) && b[t2] === mk(PAWN, color)) m += 6;
+              else m -= 10;
+            }
+          }
+          break;
+        }
+        case PAWN: {
+          m += VALUE[PAWN] + PST[PAWN][idx];
+          e += VALUE[PAWN] + 10 + PST[PAWN][idx];
+          const own = pawnFiles[color];
+          if (own[file] > 1) { m -= 10; e -= 20; } // doubled
+          if ((file === 0 || !own[file - 1]) && (file === 7 || !own[file + 1])) { m -= 12; e -= 15; } // isolated
+          // Passed pawn: no enemy pawn ahead on this or adjacent files.
+          let passed = true;
+          const dir = color === WHITE ? 16 : -16;
+          for (let t = sq + dir; !(t & 0x88) && passed; t += dir) {
+            for (const d of [-1, 0, 1]) {
+              const x = t + d;
+              if (!(x & 0x88) && b[x] === mk(PAWN, them)) { passed = false; break; }
+            }
+          }
+          if (passed) {
+            const adv = color === WHITE ? rank : 7 - rank;
+            m += [0, 5, 8, 15, 25, 45, 70, 0][adv];
+            e += [0, 10, 18, 30, 50, 80, 120, 0][adv];
+          }
+          break;
+        }
+        case KNIGHT: case BISHOP: case ROOK: case QUEEN: {
+          m += VALUE[type] + PST[type][idx];
+          e += VALUE[type] + PST[type][idx];
+          phase += VALUE[type];
+          // Mobility: squares the piece attacks that are not occupied by own pieces.
+          let mob = 0;
+          if (type === KNIGHT) {
+            for (const d of KNIGHT_D) { const t = sq + d; if (!(t & 0x88) && (!b[t] || pieceColor(b[t]) === them)) mob++; }
+            m += (mob - 4) * 4; e += (mob - 4) * 4;
+          } else {
+            const dirs = type === BISHOP ? DIAG_D : type === ROOK ? ORTH_D : KING_D;
+            for (const d of dirs) {
+              for (let t = sq + d; !(t & 0x88); t += d) {
+                if (!b[t]) { mob++; continue; }
+                if (pieceColor(b[t]) === them) mob++;
+                break;
+              }
+            }
+            const w = type === BISHOP ? [4, 5] : type === ROOK ? [2, 4] : [1, 2];
+            const base = type === BISHOP ? 6 : type === ROOK ? 7 : 13;
+            m += (mob - base) * w[0]; e += (mob - base) * w[1];
+          }
+          if (type === BISHOP) bishops[color]++;
+          if (type === ROOK) {
+            if (!pawnFiles[color][file]) { const open = !pawnFiles[them][file]; m += open ? 22 : 10; e += open ? 12 : 6; }
+            if ((color === WHITE ? rank === 6 : rank === 1)) { m += 15; e += 25; } // rook on the 7th
+          }
+          break;
+        }
+      }
+      mg += sign * m;
+      eg += sign * e;
+    }
+    for (const c of [WHITE, BLACK]) if (bishops[c] >= 2) { const sign = c === WHITE ? 1 : -1; mg += sign * 30; eg += sign * 50; }
     // phase: 1 = full middlegame material, 0 = bare endgame.
     const t = Math.min(1, phase / 6200);
     const score = Math.round(mg * t + eg * (1 - t));
-    return this.side === WHITE ? score : -score;
+    // Small bonus for having the move.
+    return (this.side === WHITE ? score : -score) + 10;
   }
 
   isCapture(m: number): boolean {

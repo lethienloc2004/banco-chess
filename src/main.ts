@@ -9,6 +9,7 @@ import { homeScreen, modesScreen, type Nav, type Screen } from './ui/home';
 import { matchScreen } from './ui/match';
 import { PlayScreen } from './ui/play';
 import { PuzzleScreen, puzzleListScreen } from './ui/puzzles';
+import { WatchScreen } from './ui/watch';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -27,7 +28,8 @@ type Route =
   | { name: 'match'; kind: GameKind }
   | { name: 'admin'; tab: string }
   | { name: 'puzzles'; kind?: string }
-  | { name: 'puzzle'; id: string };
+  | { name: 'puzzle'; id: string }
+  | { name: 'watch'; kind: GameKind };
 
 function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -39,6 +41,7 @@ function parseRoute(hash: string): Route {
   if (parts[0] === 'puzzle' && parts[1] && findPuzzle(parts[1])) return { name: 'puzzle', id: parts[1] };
   if (!KINDS.includes(kind)) return { name: 'home' };
   if (parts[1] === 'bot' || parts[1] === 'pvp') return { name: 'play', kind, mode: parts[1] };
+  if (parts[1] === 'watch') return { name: 'watch', kind };
   return { name: 'modes', kind };
 }
 
@@ -144,6 +147,7 @@ function build(r: Route): Screen {
     case 'admin': return adminScreen(r.tab, nav);
     case 'puzzles': return puzzleListScreen(r.kind, nav);
     case 'puzzle': return new PuzzleScreen(r.id, nav);
+    case 'watch': return new WatchScreen(r.kind, nav);
   }
 }
 
@@ -186,14 +190,14 @@ function show(dir: 'forward' | 'back' | 'none' = 'none') {
 
 function backTarget(): string {
   switch (route.name) {
-    case 'play': case 'match': return '#/' + route.kind;
+    case 'play': case 'match': case 'watch': return '#/' + route.kind;
     case 'puzzle': return '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
     default: return '#/';
   }
 }
 
 function rebuildCurrent() {
-  if (current instanceof PlayScreen || current instanceof PuzzleScreen) { current.refresh(); return; }
+  if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen) { current.refresh(); return; }
   current?.dispose();
   current = build(route);
   host.replaceChildren(current.el);
@@ -269,7 +273,7 @@ function settingsChanged(rebuild = false) {
   saveSettings();
   applyGlobal();
   if (rebuild) rebuildCurrent();
-  else if (current instanceof PlayScreen || current instanceof PuzzleScreen) current.refresh();
+  else if (current instanceof PlayScreen || current instanceof PuzzleScreen || current instanceof WatchScreen) current.refresh();
 }
 
 function accountGroup(close: () => void): HTMLElement {

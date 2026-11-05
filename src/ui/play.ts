@@ -1,7 +1,7 @@
 /** The game screen: board, side panel, bot, and online rooms on the server. */
 import { GameClock } from '../clock';
 import { Match } from '../game';
-import type { Level } from '../engine/ai';
+import { LEVELS, type Level } from '../engine/ai';
 import type { GameKind, Outcome } from '../engine/types';
 import { net, ReSocket, type SocketStatus } from '../net';
 import {
@@ -683,7 +683,7 @@ export class PlayScreen implements Screen {
     const lc = this.q('.level-card');
     lc.hidden = mode !== 'bot';
     if (mode === 'bot') {
-      lc.innerHTML = `<div class="row"><span>${esc(s.level)}</span><div class="seg">${(['easy', 'medium', 'hard'] as Level[])
+      lc.innerHTML = `<div class="row"><span>${esc(s.level)}</span><div class="seg">${LEVELS
         .map(l => `<button data-l="${l}" class="${l === this.level ? 'on' : ''}" aria-pressed="${l === this.level}">${esc(s[l])}</button>`).join('')}</div></div>`;
       lc.querySelectorAll<HTMLButtonElement>('button').forEach(b => (b.onclick = () => {
         this.level = b.dataset.l as Level;

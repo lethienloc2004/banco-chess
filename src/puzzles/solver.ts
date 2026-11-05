@@ -69,18 +69,24 @@ function hasMateInOne(pos: SearchPosition): boolean {
 }
 
 /**
- * Best defence after the attacker's move: the reply after which the attacker
- * has the fewest ways to keep forcing mate (ties: prefer captures).
+ * Best defence after the attacker's move: first avoid any faster mate (resist
+ * as long as possible), then leave the attacker the fewest ways to keep
+ * forcing mate within `n` (ties: prefer captures).
  */
 export function hardestDefence(pos: SearchPosition, n: number): number | null {
-  let best: number | null = null, bestCount = Infinity, bestCapture = -1;
+  let best: number | null = null;
+  let bestKey: [number, number, number] = [-1, -Infinity, -Infinity];
   for (const r of pos.legalMoves()) {
     const capture = pos.captureOrder(r);
     pos.make(r);
-    const count = mateMoves(pos, n).length;
+    // How long can the defender hold out? Larger is better for the defender.
+    let holds = n;
+    for (let k = 1; k < n; k++) if (forcesMate(pos, k)) { holds = k; break; }
+    const ways = mateMoves(pos, n).length;
     pos.unmake();
-    if (count < bestCount || (count === bestCount && capture > bestCapture)) {
-      best = r; bestCount = count; bestCapture = capture;
+    const key: [number, number, number] = [holds, -ways, capture];
+    if (key[0] > bestKey[0] || (key[0] === bestKey[0] && (key[1] > bestKey[1] || (key[1] === bestKey[1] && key[2] > bestKey[2])))) {
+      best = r; bestKey = key;
     }
   }
   return best;

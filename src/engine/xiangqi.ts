@@ -16,6 +16,7 @@ export const RED = 0;
 export const BLACK = 1;
 export const KING = 1, ADVISOR = 2, ELEPHANT = 3, HORSE = 4, ROOK = 5, CANNON = 6, PAWN = 7;
 export const HIDDEN = 16;
+const NULL_MOVE = -1;
 
 export const pieceType = (p: number) => p & 7;
 export const pieceColor = (p: number) => (p >> 3) & 1;
@@ -184,6 +185,35 @@ export class Xiangqi implements SearchPosition {
   /** Face-down pieces and all pieces in plain xiangqi keep palace/river limits. */
   private restricted(p: number): boolean {
     return !this.jieqi || isHidden(p);
+  }
+
+  pseudoMoves(): number[] {
+    return this.pseudo(false);
+  }
+
+  pseudoCaptures(): number[] {
+    return this.pseudo(true);
+  }
+
+  /** After make(): did that move leave the mover's own general attacked (illegal)? */
+  leftInCheck(): boolean {
+    return this.attacked(this.kings[this.side ^ 1], this.side);
+  }
+
+  /** Pass the turn (null-move pruning). Undo with unmake(). */
+  makeNull() {
+    this.stack.push({ move: NULL_MOVE, moved: 0, captured: 0, halfmove: this.halfmove, key: this.key });
+    this.side ^= 1;
+    this.key ^= Z_SIDE;
+  }
+
+  /** Chariots, horses, cannons or face-down pieces left. */
+  hasNonPawnMaterial(side: number): boolean {
+    for (let sq = 0; sq < 90; sq++) {
+      const p = this.board[sq];
+      if (p && pieceColor(p) === side && (isHidden(p) || (pieceType(p) >= HORSE && pieceType(p) <= CANNON))) return true;
+    }
+    return false;
   }
 
   private pseudo(capturesOnly: boolean): number[] {
@@ -373,6 +403,11 @@ export class Xiangqi implements SearchPosition {
   unmake() {
     const u = this.stack.pop();
     if (!u) return;
+    if (u.move === NULL_MOVE) {
+      this.side ^= 1;
+      this.key = u.key;
+      return;
+    }
     const from = moveFrom(u.move), to = moveTo(u.move);
     this.board[from] = u.moved;
     this.board[to] = u.captured;
@@ -451,13 +486,13 @@ export class Xiangqi implements SearchPosition {
             else if (rr === 4) v += 5;
             break;
           case HORSE:
-            v += centre * 4 + Math.min(rr, 7) * 3 - (rr === 0 ? 10 : 0);
+            v += centre * 4 + Math.min(rr, 7) * 3 - (rr === 0 ? 10 : 0) + (this.horseMobility(sq) - 4) * 5;
             break;
           case CANNON:
-            v += (f === 4 ? 12 : 0) + centre * 2;
+            v += (f === 4 ? 12 : 0) + centre * 2 + this.lineMobility(sq, color, true);
             break;
           case ROOK:
-            v += (rr >= 5 ? 10 : 0) + (f === 3 || f === 5 ? 5 : 0);
+            v += (rr >= 5 ? 10 : 0) + (f === 3 || f === 5 ? 5 : 0) + (this.lineMobility(sq, color, false) - 8) * 3;
             break;
           case KING:
             v -= rr * 10;
@@ -466,7 +501,57 @@ export class Xiangqi implements SearchPosition {
       }
       score += color === RED ? v : -v;
     }
-    return this.side === RED ? score : -score;
+    // General safety: missing advisors / elephants hurt when the enemy can attack.
+    if (!this.jieqi) {
+      for (const color of [RED, BLACK]) {
+        if (!this.hasAttackers(color ^ 1)) continue;
+        let advisors = 0, elephants = 0;
+        for (let sq = 0; sq < 90; sq++) {
+          const p = b[sq];
+          if (!p || pieceColor(p) !== color) continue;
+          if (pieceType(p) === ADVISOR) advisors++;
+          else if (pieceType(p) === ELEPHANT) elephants++;
+        }
+        const penalty = (2 - advisors) * 25 + (2 - elephants) * 18;
+        score += color === RED ? -penalty : penalty;
+      }
+    }
+    return (this.side === RED ? score : -score) + 10;
+  }
+
+  /** Squares a horse on `sq` can jump to (legs free, not onto own pieces). */
+  private horseMobility(sq: number): number {
+    const b = this.board, f0 = fileOf(sq), r0 = rankOf(sq), us = pieceColor(b[sq]);
+    let n = 0;
+    for (const [df, dr] of HORSE_D) {
+      const f = f0 + df, r = r0 + dr;
+      if (!onBoard(f, r)) continue;
+      const leg = Math.abs(df) === 2 ? at(f0 + df / 2, r0) : at(f0, r0 + dr / 2);
+      if (b[leg]) continue;
+      const t = b[at(f, r)];
+      if (!t || pieceColor(t) !== us) n++;
+    }
+    return n;
+  }
+
+  /** Chariot: squares reachable along lines. Cannon: quiet squares + 4 per capture threat. */
+  private lineMobility(sq: number, us: number, cannon: boolean): number {
+    const b = this.board, f0 = fileOf(sq), r0 = rankOf(sq);
+    let n = 0;
+    for (const [df, dr] of ORTH) {
+      let screen = false;
+      for (let f = f0 + df, r = r0 + dr; onBoard(f, r); f += df, r += dr) {
+        const t = b[at(f, r)];
+        if (!cannon) {
+          if (!t) { n++; continue; }
+          if (pieceColor(t) !== us) n++;
+          break;
+        }
+        if (!screen) { if (!t) n++; else screen = true; }
+        else if (t) { if (pieceColor(t) !== us) n += 4; break; }
+      }
+    }
+    return n;
   }
 
   /** Coordinate notation (ICCS), e.g. h2e2. */

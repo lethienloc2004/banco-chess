@@ -42,7 +42,7 @@ function pieceCount(pos: Pos): number {
 function pickMove(pos: Pos): number {
   const moves = pos.legalMoves();
   if (random() < 0.08) return moves[Math.floor(random() * moves.length)];
-  const res = new Searcher(pos).search({ maxDepth: 2, timeMs: 40 });
+  const res = new Searcher(pos).search({ maxDepth: 2, timeMs: 40 }, { allScores: true });
   const best = Math.max(...res.rootScores.values());
   const ok = [...res.rootScores].filter(([, s]) => s >= best - 60).map(([m]) => m);
   return ok[Math.floor(random() * ok.length)];
@@ -62,7 +62,9 @@ function buildLine(pos: Pos, first: number, mate: number): number[] {
     const d = hardestDefence(pos, left);
     if (d === null) break;
     line.push(d); pos.make(d); made++;
-    const next = mateMoves(pos, left, true)[0];
+    // The quickest mating move for the attacker.
+    let next = 0;
+    for (let k = 1; k <= left && !next; k++) next = mateMoves(pos, k, true)[0] ?? 0;
     line.push(next); pos.make(next); made++;
   }
   for (let i = 0; i < made; i++) pos.unmake();

@@ -24,6 +24,9 @@ export interface Settings {
   onlineClock: string;
   /** Time control for bot / two-player games ('none' = unlimited). */
   localClock: string;
+  /** Bot vs bot: level per side and pace. */
+  watchLevels: [Level, Level];
+  watchSpeed: 'slow' | 'normal' | 'fast';
 }
 
 /** A local (bot or two-player) game saved per kind so it can be resumed. */
@@ -70,6 +73,8 @@ const defaults: Settings = {
   custom: DEFAULT_CUSTOM,
   onlineClock: '10+5',
   localClock: 'none',
+  watchLevels: ['hard', 'hard'],
+  watchSpeed: 'normal',
 };
 
 export const settings: Settings = { ...defaults, ...store.get<Partial<Settings>>('settings') };

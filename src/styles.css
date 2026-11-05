@@ -683,3 +683,23 @@ ul.plain { margin: 0; padding-left: 18px; color: var(--text); }
 .screen.puzzle .controls .btn span { font-size: 13px; }
 .board.shake { animation: shake .45s; }
 @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+/* ================= Bot vs bot ================= */
+.eval-card h2 { margin-bottom: 10px; }
+.eval-bar { position: relative; height: 14px; border-radius: 99px; overflow: hidden; background: #262626; border: 1px solid #a8a29e; }
+.eval-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #a8a29e; opacity: .8; }
+.eval-bar.xq { background: var(--xq-black); }
+.eval-bar span { display: block; height: 100%; background: #f5f5f4; transition: width .5s cubic-bezier(.2, .8, .2, 1); }
+.eval-bar.xq span { background: var(--xq-red); }
+.eval-text { margin: 8px 0 2px; font-weight: 700; }
+.pv { margin: 8px 0 0; line-height: 1.9; }
+.pv code { font: 600 13px ui-monospace, Menlo, Consolas, monospace; background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+.watch-settings { display: flex; flex-direction: column; gap: 8px; }
+.watch-settings .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+.watch-settings .btn { padding: 6px 12px; }
+.moves .q { font-style: normal; font-weight: 800; margin-left: 4px; font-family: system-ui, sans-serif; }
+.q.best { color: #16a34a; }
+.q.inaccuracy { color: #ca8a04; }
+.q.mistake { color: #ea580c; }
+.q.blunder { color: var(--danger); }
+.q-legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 0; }

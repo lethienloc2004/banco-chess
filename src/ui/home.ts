@@ -1,7 +1,7 @@
 /** Home (game list) and mode selection screens. */
 import { Match } from '../game';
 import type { GameKind } from '../engine/types';
-import type { Level } from '../engine/ai';
+import { LEVELS, type Level } from '../engine/ai';
 import { KINDS, saveSettings, settings, store, t, type SavedGame } from '../state';
 import { lobby, net } from '../net';
 import { CLOCKS, RANKED_CLOCK } from '../shared/protocol';
@@ -180,7 +180,7 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
   expandable('🤖', s.bot, s.botDesc, panel => {
     panel.append(
       optRow(s.youPlay, seg<0 | 1>([[0, red], [1, s.black]], settings.humanSide, v => { settings.humanSide = v; saveSettings(); })),
-      optRow(s.level, seg<Level>([['easy', s.easy], ['medium', s.medium], ['hard', s.hard]], settings.level, v => { settings.level = v; saveSettings(); })),
+      optRow(s.level, seg<Level>([['easy', s.easy], ['medium', s.medium], ['hard', s.hard], ['expert', s.expert]], settings.level, v => { settings.level = v; saveSettings(); })),
       clockRow(),
       startBtn(s.start, () => {
         store.set('game:' + kind, { match: new Match(kind).save(), mode: 'bot', humanSide: settings.humanSide, level: settings.level, clock: freshClock() } satisfies SavedGame);
@@ -194,6 +194,20 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
       store.set('game:' + kind, { match: new Match(kind).save(), mode: 'pvp', humanSide: 0, level: settings.level, clock: freshClock() } satisfies SavedGame);
       nav.go(`#/${kind}/pvp`);
     }));
+  });
+
+  expandable('🎬', s.watch.title, s.watch.desc, panel => {
+    const lv = (side: 0 | 1) => seg<Level>(LEVELS.map(l => [l, s[l]] as [Level, string]), settings.watchLevels[side], v => {
+      settings.watchLevels = [...settings.watchLevels] as [Level, Level];
+      settings.watchLevels[side] = v;
+      saveSettings();
+    });
+    panel.append(
+      optRow(red, lv(0)),
+      optRow(s.black, lv(1)),
+      optRow(s.watch.speed, seg<'slow' | 'normal' | 'fast'>([['slow', s.watch.slow], ['normal', s.watch.normal], ['fast', s.watch.fast]], settings.watchSpeed, v => { settings.watchSpeed = v; saveSettings(); })),
+      startBtn(s.watch.start, () => nav.go(`#/${kind}/watch`)),
+    );
   });
 
   const offline = (panel: HTMLElement) => {

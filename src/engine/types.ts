@@ -29,6 +29,14 @@ export interface SearchPosition {
   isRuleDraw(): boolean;
   /** Cheap position hash for repetition detection inside the search. */
   hash(): number;
+  /** Pseudo-legal moves; legality is checked with leftInCheck() after make(). */
+  pseudoMoves(): number[];
+  pseudoCaptures(): number[];
+  /** After make(): the move just made left the mover in check (illegal). */
+  leftInCheck(): boolean;
+  /** Pass the turn; undone by unmake(). */
+  makeNull(): void;
+  hasNonPawnMaterial(side: number): boolean;
 }
 
 export const MATE = 100000;
