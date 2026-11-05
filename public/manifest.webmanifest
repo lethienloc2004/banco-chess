@@ -1,7 +1,7 @@
 {
-  "name": "Bàn Cờ — Cờ vua, Cờ tướng, Cờ úp",
+  "name": "Bàn Cờ — Chess · Xiangqi · Jieqi",
   "short_name": "Bàn Cờ",
-  "description": "Chơi cờ vua, cờ tướng và cờ tướng úp ngay trên trình duyệt.",
+  "description": "Chess, xiangqi, jieqi and hidden chess in the browser. Cờ vua, cờ tướng, cờ úp và cờ vua úp ngay trên trình duyệt.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

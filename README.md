@@ -288,16 +288,17 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
 
 ## English
 
-**Bàn Cờ** ("chess board" in Vietnamese) is a web app to play **Chess**, **Xiangqi** (Chinese chess) and **Jieqi**
-(揭棋, xiangqi with face-down pieces): against a built-in bot, with a friend on the same device, or online.
+**Bàn Cờ** ("chess board" in Vietnamese) is a web app to play **Chess**, **Xiangqi** (Chinese chess), **Jieqi**
+(揭棋, xiangqi with face-down pieces) and **Hidden chess** (the same idea for chess): against a built-in bot, with a
+friend on the same device, or online. The whole interface is available in Vietnamese and English.
 
 - **Online on Cloudflare** (Workers + Durable Objects + D1): rated quick matchmaking (Elo), friend rooms via link,
   spectators, clocks, draw offers, rematch, emotes, reports, reconnect after reloads, abandonment claims.
-- **Authoritative server**: every move is validated with the same rules engine; in Jieqi the client never learns a
-  hidden piece before it is revealed.
+- **Authoritative server**: every move is validated with the same rules engine; in Jieqi and Hidden chess the client
+  never learns a face-down piece before it is revealed.
 - **Accounts**: play instantly as a guest, optionally sign in with Google.
 - **Full admin dashboard**:
-  - Stats, live games and replays.
+  - Stats, live games and replays (face-down pieces shown to admins).
   - Cancel games or set results.
   - Handle reports.
   - Manage players: warn, ban, rename, set rating, change roles, delete.
@@ -305,12 +306,16 @@ Nếu thấy hay, hãy cho dự án một ⭐ nhé!
   - Audit log of every admin action.
 - **Rules**: castling, en passant, promotion, FIDE draws; flying general, blocked horse/elephant, cannon screens,
   Asian-rules perpetual check / chase (simplified). Verified with standard perft counts.
-- **Stronger engine** (PVS, null move, LMR, aspiration windows, richer evaluation): +17 =2 −1 in chess and +16 =4 −0 in xiangqi
-  against the previous version at 150 ms/move (about +380 Elo). Four levels including Expert.
+- **Clocks in every mode**: Fischer increment (1+0 … 30+20), US delay (`5 d3`), Bronstein delay (`5 b3`) and FIDE
+  classical `90/40+30 +30s`, with pause and a low-time beep. Losing on time follows FIDE 6.9 (a draw if the opponent
+  cannot possibly checkmate).
+- **Stronger engine** (PVS, null move, LMR, aspiration windows, richer evaluation) with four levels up to Expert:
+  +17 =2 −1 in chess, +16 =4 −0 in xiangqi and +12 =7 −1 in jieqi against the previous version (+215 to +380 Elo).
 - **Bot vs bot** watch mode with an evaluation bar, expected line and per-move quality marks from a fixed referee engine.
-- **126 puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions. Every position was
-  found by the app's own engine in self-play and proven with an exhaustive solver (unique first move, no faster mate).
-- Many board/piece colour themes plus a custom colour picker, sound, dark mode, Vietnamese / English, PWA.
+- **126 puzzles**: mate-in-1/2/3 levels for chess and xiangqi with stars, hints and solutions, all proven unique forced mates.
+- **Sounds per piece**, synthesized with Web Audio: pawn tick, rook thud, queen chime, king bell, cannon pop / boom,
+  a horse whinny for knights and an elephant trumpet for elephants and bishops (both are "Tượng" in Vietnamese).
+- Many board/piece colour themes plus a custom colour picker, dark mode, installable PWA.
 
 ```bash
 npm install

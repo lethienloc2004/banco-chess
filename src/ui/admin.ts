@@ -21,7 +21,7 @@ interface UserRow {
   warnings: number; banned_until: number | null; ban_reason: string | null; created: number; last_seen: number; google_sub: string | null;
 }
 
-const fmtDate = (ts: number | null) => (ts ? new Date(ts).toLocaleString() : '—');
+const fmtDate = (ts: number | null) => (ts ? new Date(ts).toLocaleString(settings.lang === 'vi' ? 'vi-VN' : 'en-GB') : '—');
 
 export function adminScreen(tab: Tab | string, nav: Nav): Screen {
   const s = t();

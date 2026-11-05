@@ -28,3 +28,19 @@ npm run test:server  # nếu bạn sửa máy chủ (cần npm start đang chạ
 
 Mở một [issue](../../issues/new/choose) và ghi rõ: loại cờ, chế độ chơi, các bước để gặp lỗi, trình duyệt/thiết bị.
 Nếu là lỗi luật, ghi lại chuỗi nước đi (copy ở bảng "Nước đi") sẽ giúp sửa nhanh hơn nhiều.
+
+---
+
+## Contributing (English)
+
+```bash
+npm install
+npm start          # app + game server at http://localhost:8787
+npm test           # must pass
+npm run build      # type-checks the app and the server
+```
+
+- Keep the perft tests green when you touch the rules.
+- Every visible text lives in `src/i18n.ts`: add both Vietnamese and English.
+- Escape user-provided text with `esc()` before putting it into HTML.
+- One change per pull request, with a short description and a screenshot for UI changes.

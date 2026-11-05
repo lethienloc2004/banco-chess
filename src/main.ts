@@ -372,7 +372,7 @@ function openSettings() {
       })),
       row(s.soundStyle, soundStyleControl()),
     ),
-    group(s.chess,
+    group(`${s.chess} · ${s.hiddenchess}`,
       row(s.boardColor, palette(CHESS_BOARDS, 'chessBoard', settings.chessBoard, [C.light, C.dark], id => { settings.chessBoard = id; settingsChanged(); })),
       row(s.pieceColor, palette(CHESS_PIECES, 'chessPieces', settings.chessPieces, [C.white, C.black], id => { settings.chessPieces = id; settingsChanged(); })),
     ),
@@ -418,7 +418,7 @@ void net.init().then(ok => {
   if (me?.notice) {
     const s = t();
     openDialog({
-      title: s.noticeTitle, icon: '⚠️', body: me.notice,
+      title: s.noticeTitle, icon: '⚠️', body: me.notice === '#warning' ? s.defaultWarning : me.notice,
       actions: [{ label: s.understood, kind: 'primary', onClick: () => { void net.api('/me/notice', { method: 'DELETE' }); } }],
     });
   }

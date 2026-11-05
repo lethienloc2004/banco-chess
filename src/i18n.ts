@@ -1,7 +1,7 @@
 export type Lang = 'vi' | 'en';
 
 const vi = {
-  tagline: 'Cờ vua · Cờ tướng · Cờ úp',
+  tagline: 'Cờ vua · Cờ tướng · Cờ úp · Cờ vua úp',
   heroTitle: 'Hôm nay chơi cờ gì?',
   heroSub: 'Miễn phí, không quảng cáo, không cần tài khoản.',
   chooseGame: 'Chọn loại cờ',
@@ -179,6 +179,7 @@ const vi = {
   devAdmin: 'Đăng nhập quản trị (chỉ khi phát triển)',
   adminPanel: 'Trang quản trị',
   noticeTitle: 'Thông báo từ quản trị viên',
+  defaultWarning: 'Bạn nhận một cảnh cáo từ quản trị viên. Hãy giữ thái độ lịch sự và chơi công bằng.',
   understood: 'Tôi đã hiểu',
   custom: 'Tùy chỉnh',
   admin: {
@@ -270,7 +271,7 @@ const vi = {
 export type Strings = typeof vi;
 
 const en: Strings = {
-  tagline: 'Chess · Xiangqi · Jieqi',
+  tagline: 'Chess · Xiangqi · Jieqi · Hidden chess',
   heroTitle: 'What shall we play today?',
   heroSub: 'Free, no ads, no account needed.',
   chooseGame: 'Choose a game',
@@ -447,6 +448,7 @@ const en: Strings = {
   devAdmin: 'Admin login (development only)',
   adminPanel: 'Admin dashboard',
   noticeTitle: 'Message from the admins',
+  defaultWarning: 'You have received a warning from the admins. Please stay respectful and play fair.',
   understood: 'I understand',
   custom: 'Custom',
   admin: {

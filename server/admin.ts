@@ -167,7 +167,7 @@ export async function adminRoute(req: Request, env: Env, admin: UserRow, path: s
         await db.prepare('UPDATE users SET banned_until = NULL, ban_reason = NULL WHERE id = ?').bind(u.id).run();
         break;
       case 'warn':
-        await db.prepare('UPDATE users SET warnings = warnings + 1, notice = ? WHERE id = ?').bind(reason || 'Cảnh cáo từ quản trị viên.', u.id).run();
+        await db.prepare('UPDATE users SET warnings = warnings + 1, notice = ? WHERE id = ?').bind(reason || '#warning', u.id).run();
         break;
       case 'rename': {
         const name = cleanName(body.name ?? '');

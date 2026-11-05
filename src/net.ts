@@ -3,7 +3,7 @@
  * REST calls and auto-reconnecting WebSockets.
  */
 import type { Announcement, LobbyClientMsg, LobbyServerMsg, LobbyStats, PublicUser } from './shared/protocol';
-import { store } from './state';
+import { settings, store } from './state';
 
 /** Same origin by default; set VITE_API_URL to use a server elsewhere. */
 const API = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
@@ -76,7 +76,7 @@ class Net {
   }
 
   async newGuest() {
-    const r = await this.api<{ token: string; user: PublicUser }>('/auth/guest', { method: 'POST', auth: false });
+    const r = await this.api<{ token: string; user: PublicUser }>('/auth/guest', { method: 'POST', auth: false, body: { lang: settings.lang } });
     this.setSession(r.token, r.user);
   }
 

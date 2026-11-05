@@ -26,10 +26,10 @@ export async function authUser(req: Request, env: Env): Promise<UserRow | null> 
   return uid ? getUser(env.DB, uid) : null;
 }
 
-function guestName(): string {
+function guestName(lang = 'vi'): string {
   const n = new Uint16Array(1);
   crypto.getRandomValues(n);
-  return `Khách ${1000 + (n[0] % 9000)}`;
+  return `${lang === 'en' ? 'Guest' : 'Khách'} ${1000 + (n[0] % 9000)}`;
 }
 
 function adminEmails(env: Env): string[] {
@@ -54,7 +54,8 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
 
   // ----- Auth -----
   if (path === '/auth/guest' && method === 'POST') {
-    const user = await createUser(env.DB, randomId('u_'), guestName());
+    const body = await readJson<{ lang?: string }>(req);
+    const user = await createUser(env.DB, randomId('u_'), guestName(body?.lang));
     return session(env, user);
   }
 
@@ -87,7 +88,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     // Local development only (DEV=1 in .dev.vars): an admin account without Google.
     if (env.DEV !== '1') return fail(404, 'not-found');
     let user = await env.DB.prepare("SELECT * FROM users WHERE id = 'u_dev_admin'").first<UserRow>();
-    user ??= await createUser(env.DB, 'u_dev_admin', 'Quản trị (dev)', { role: 'admin' });
+    user ??= await createUser(env.DB, 'u_dev_admin', 'Admin (dev)', { role: 'admin' });
     return session(env, user);
   }
 
