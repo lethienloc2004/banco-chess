@@ -153,6 +153,8 @@ Chế độ chơi với máy và 2 người chạy hoàn toàn trên trình duy�
 
 > Trên Windows nên dùng **Command Prompt (cmd)**. PowerShell có thể báo lỗi "running scripts is disabled".
 
+> Dùng VS Code, WebStorm hay IDE JetBrains khác? Xem [hướng dẫn cho từng IDE](#sửa-code-bằng-vs-code-hoặc-ide-jetbrains-tùy-chọn).
+
 **Bước 4: Cài và chạy.** Gõ lần lượt từng lệnh, mỗi lệnh bấm Enter rồi chờ nó chạy xong:
 
 ```bash
@@ -254,6 +256,40 @@ Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại
 | `npm run setup` báo lỗi đăng nhập | Chạy `npx wrangler login` rồi chạy lại setup |
 
 Gói miễn phí của Cloudflare thường đủ cho một cộng đồng nhỏ. Giới hạn cụ thể xem tại [trang giá Workers](https://developers.cloudflare.com/workers/platform/pricing/).
+
+### Sửa code bằng VS Code hoặc IDE JetBrains (tùy chọn)
+
+Chỉ để chơi thì **không cần IDE**: một terminal là đủ. Khi muốn sửa code, trình soạn thảo nào cũng được. Dưới đây là cách dùng với các IDE phổ biến.
+
+#### Visual Studio Code *(miễn phí, khuyên dùng)*
+
+1. Tải tại [code.visualstudio.com](https://code.visualstudio.com) và cài đặt.
+2. Mở dự án: **File → Open Folder…** rồi chọn thư mục code. Dùng GitHub Desktop thì chọn **Repository → Open in Visual Studio Code**. Nếu được hỏi *"Do you trust the authors?"*, chọn **Yes, I trust the authors**.
+3. Mở terminal tích hợp: **Terminal → New Terminal** (hoặc **Ctrl + `**). Trên Windows, bấm mũi tên ⌄ cạnh dấu **+** của terminal rồi chọn **Command Prompt** để tránh lỗi PowerShell.
+4. Lần đầu gõ `npm ci`, sau đó gõ `npm start`. Bấm giữ **Ctrl** và nhấp vào link `http://localhost:8787` trong terminal để mở trình duyệt.
+5. Chạy lệnh bằng chuột: trong khung **Explorer** bên trái có mục **NPM Scripts**, rê chuột vào `start`, `dev` hay `test` rồi bấm ▶. Nếu chưa thấy mục này, bấm **⋯** ở đầu khung Explorer và tích **NPM Scripts**.
+
+Không cần cài thêm extension nào: VS Code đã hiểu sẵn TypeScript. Nếu thích bấm chạy từng bài test, có thể cài extension **Vitest** (`vitest.explorer`), mỗi bài test sẽ có nút ▶ ngay cạnh.
+
+> VS Code hỏi *"Select TypeScript version"* thì giữ bản **VS Code's Version**. Dự án dùng TypeScript 7 (bản viết lại bằng Go), chỉ dùng để kiểm tra khi chạy `npm run build`.
+
+#### WebStorm và các IDE JetBrains khác
+
+[WebStorm](https://www.jetbrains.com/webstorm/) miễn phí khi dùng phi thương mại (học tập, dự án cá nhân, mã nguồn mở). Các IDE JetBrains có hỗ trợ JavaScript/TypeScript như **IntelliJ IDEA**, **PhpStorm**, **Rider** hay **PyCharm** (bản Professional) thao tác giống hệt. Bản Community của IntelliJ IDEA và PyCharm không hỗ trợ TypeScript, nên không hợp với dự án này.
+
+1. Mở dự án: **File → Open…** (hoặc **Open** ở màn hình chào) rồi chọn thư mục code. Khi được hỏi, chọn **Trust Project**.
+2. IDE có thể hiện thông báo *"Run 'npm install'"*. Hãy bỏ qua thông báo đó, mở terminal (**View → Tool Windows → Terminal**, hoặc **Alt + F12**) rồi gõ `npm ci`. Như vậy `package-lock.json` không bị sửa.
+3. Chạy app bằng chuột: mở file `package.json`, bấm nút ▶ màu xanh bên trái dòng `"start"` rồi chọn **Run 'start'**. Hoặc mở **View → Tool Windows → npm** và bấm đúp vào `start`. Lần sau chỉ cần bấm ▶ ở góc trên bên phải.
+4. Mở trình duyệt vào `http://localhost:8787`. Muốn dừng app thì bấm nút ■ đỏ trong khung **Run**.
+5. Chạy test: mở một file trong thư mục `tests/`, bấm ▶ cạnh từng bài test (IDE JetBrains hỗ trợ sẵn Vitest).
+
+> Nếu IDE báo không dùng được TypeScript của dự án, vào **Settings → Languages & Frameworks → TypeScript** và chọn bản **Bundled** của IDE.
+
+#### Lưu ý chung cho mọi IDE
+
+- Muốn biết code còn lỗi không, chạy `npm run build` (kiểm tra kiểu cho cả app lẫn máy chủ) và `npm test`. Gạch đỏ trong IDE chỉ để tham khảo.
+- Gặp lỗi **EPERM** khi chạy `npm ci`: dừng app đang chạy trong IDE trước (Ctrl+C trong terminal hoặc nút ■ đỏ), rồi chạy lại.
+- Không cần commit các thư mục IDE tự tạo (`.vscode/`, `.idea/`). Chúng đã nằm trong `.gitignore`.
 
 ### Dành cho người đóng góp code
 
@@ -384,6 +420,11 @@ npm ci             # install dependencies (first time and after each update)
 npm start          # play locally at http://localhost:8787 (Ctrl+C to stop)
 npm run setup      # put your own copy online on Cloudflare: answers 3 questions, does the rest
 ```
+
+**Editors:** no IDE is needed to run the app. To edit the code, use **VS Code**: open the folder, open a terminal with
+Ctrl+`, then run `npm ci` and `npm start`. Its built-in TypeScript is enough. **WebStorm** and other JetBrains IDEs with
+JavaScript support also work: open the folder, run `npm ci` in the terminal (ignore the "npm install" prompt), then use
+the ▶ next to `"start"` in `package.json`. If the IDE cannot use the project's TypeScript 7, pick its bundled version.
 
 Or use the **Deploy to Cloudflare** button above. Details (Google sign-in, admins, custom domain, troubleshooting)
 are in the *Bắt đầu nhanh* section.
