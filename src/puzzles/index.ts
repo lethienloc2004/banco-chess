@@ -3,7 +3,7 @@ import type { XiangqiJSON } from '../engine/xiangqi';
 import { store } from '../state';
 import data from './puzzles.json';
 import holiday from './holiday.json';
-import { holidayOf, holidayPuzzles } from '../shared/quests';
+import { addDays, dayKey, holidayOf, holidayPuzzles } from '../shared/quests';
 
 export type PuzzleKind = 'chess' | 'xiangqi';
 
@@ -78,3 +78,41 @@ export function nextPuzzle(id: string): Puzzle | null {
   }
   return PUZZLES[f.kind][f.index + 1] ?? null;
 }
+
+// ---------- Today's puzzle (the same for everyone, new every day, Vietnam time) ----------
+
+const DAILY_EPOCH = '2026-11-01';
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86_400_000);
+
+/** Today's puzzle: #1 on the epoch day, chess and xiangqi in turn, spread over the whole set. */
+export function dailyPuzzle(day = dayKey()): { number: number; day: string; kind: PuzzleKind; puzzle: Puzzle } {
+  const number = Math.max(1, daysBetween(DAILY_EPOCH, day) + 1);
+  const kind: PuzzleKind = number % 2 ? 'chess' : 'xiangqi';
+  const list = PUZZLES[kind];
+  return { number, day, kind, puzzle: list[(Math.ceil(number / 2) * 37) % list.length] };
+}
+
+interface DailyState { last: string | null; streak: number; best: number; results: Record<string, number> }
+export function dailyState(): DailyState {
+  const d = store.get<DailyState>('daily') ?? { last: null, streak: 0, best: 0, results: {} };
+  // A streak that skipped yesterday is over.
+  const today = dayKey();
+  if (d.last && d.last !== today && d.last !== addDays(today, -1)) d.streak = 0;
+  return d;
+}
+/** Record solving today's puzzle (once a day; keeps the best stars). */
+export function recordDaily(day: string, stars: number): DailyState {
+  const d = dailyState();
+  if (d.last !== day) {
+    d.streak = d.last === addDays(day, -1) ? d.streak + 1 : 1;
+    d.last = day;
+    d.best = Math.max(d.best, d.streak);
+  }
+  d.results[day] = Math.max(d.results[day] ?? 0, stars);
+  for (const k of Object.keys(d.results).sort().slice(0, -60)) delete d.results[k];
+  store.set('daily', d);
+  return d;
+}
+
+/** How many of the regular puzzles are solved (holiday puzzles not counted). */
+export const solvedCount = () => { const p = progress(); return [...PUZZLES.chess, ...PUZZLES.xiangqi].filter(x => x.id in p).length; };

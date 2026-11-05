@@ -16,7 +16,7 @@ import { ACCOUNT_EVENT, accountChanged, openLogin } from './ui/login';
 import { questsScreen, seasonNow } from './ui/quests';
 import { skinTheme } from './ui/skins';
 import { applySiteTheme } from './ui/siteTheme';
-import { findPuzzle } from './puzzles';
+import { dailyPuzzle, findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
   type CustomColors, type Theme as ColorTheme,
@@ -34,7 +34,7 @@ type Route =
   | { name: 'match'; kind: GameKind }
   | { name: 'admin'; tab: string; user?: string }
   | { name: 'puzzles'; kind?: string }
-  | { name: 'puzzle'; id: string }
+  | { name: 'puzzle'; id: string; daily?: boolean }
   | { name: 'watch'; kind: GameKind }
   | { name: 'analysis' }
   | { name: 'leaderboard'; kind?: string }
@@ -52,6 +52,7 @@ function parseRoute(hash: string): Route {
   if (parts[0] === 'player' && parts[1]) return { name: 'player', id: parts[1] };
   if (parts[0] === 'admin') return { name: 'admin', tab: parts[1] ?? 'overview', user: parts[2] };
   if (parts[0] === 'puzzles') return { name: 'puzzles', kind: parts[1] };
+  if (parts[0] === 'daily') return { name: 'puzzle', id: dailyPuzzle().puzzle.id, daily: true };
   if (parts[0] === 'puzzle' && parts[1] && findPuzzle(parts[1])) return { name: 'puzzle', id: parts[1] };
   if (!KINDS.includes(kind)) return { name: 'home' };
   if (parts[1] === 'bot' || parts[1] === 'pvp') return { name: 'play', kind, mode: parts[1] };
@@ -176,7 +177,7 @@ function build(r: Route): Screen {
     case 'match': return matchScreen(r.kind, nav);
     case 'admin': return adminScreen(r.tab, nav, r.user);
     case 'puzzles': return puzzleListScreen(r.kind, nav);
-    case 'puzzle': return new PuzzleScreen(r.id, nav);
+    case 'puzzle': return new PuzzleScreen(r.id, nav, r.daily);
     case 'watch': return new WatchScreen(r.kind, nav);
     case 'analysis': return new AnalysisScreen(nav);
     case 'leaderboard': return leaderboardScreen(r.kind, nav);
@@ -230,7 +231,7 @@ function show(dir: 'forward' | 'back' | 'none' = 'none') {
 function backTarget(): string {
   switch (route.name) {
     case 'play': case 'match': case 'watch': return '#/' + route.kind;
-    case 'puzzle': return findPuzzle(route.id)?.holiday ? '#/quests' : '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
+    case 'puzzle': return route.daily ? '#/' : findPuzzle(route.id)?.holiday ? '#/quests' : '#/puzzles/' + (findPuzzle(route.id)?.kind ?? 'chess');
     case 'analysis': return pendingAnalysis()?.back ?? '#/';
     case 'player': return '#/leaderboard';
     default: return '#/';

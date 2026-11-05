@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Match } from '../src/game';
-import { HOLIDAY_PUZZLES, PUZZLES, PUZZLE_KINDS, findPuzzle } from '../src/puzzles';
+import { HOLIDAY_PUZZLES, PUZZLES, PUZZLE_KINDS, dailyPuzzle, findPuzzle } from '../src/puzzles';
+import { addDays } from '../src/shared/quests';
 import { SEASONS, holidayOf, holidayPuzzles } from '../src/shared/quests';
 import { isMated, mateMoves } from '../src/puzzles/solver';
 import type { SearchPosition } from '../src/engine/types';
@@ -49,5 +50,21 @@ describe('puzzles', () => {
     // Holiday positions are new, not copies of the normal puzzles.
     const normal = new Set([...PUZZLES.chess, ...PUZZLES.xiangqi].map(p => JSON.stringify(p.start)));
     for (const kind of PUZZLE_KINDS) for (const p of HOLIDAY_PUZZLES[kind]) expect(normal.has(JSON.stringify(p.start)), p.id).toBe(false);
+  });
+
+  it("today's puzzle: numbered from #1, chess and xiangqi in turn, a regular puzzle every day", () => {
+    expect(dailyPuzzle('2026-11-01').number).toBe(1);
+    expect(dailyPuzzle('2026-11-05').number).toBe(5);
+    const seen = new Set<string>();
+    let day = '2026-11-01';
+    for (let i = 0; i < 126; i++, day = addDays(day, 1)) {
+      const d = dailyPuzzle(day);
+      expect(d.kind).toBe(i % 2 ? 'xiangqi' : 'chess');
+      expect(findPuzzle(d.puzzle.id)?.holiday).toBe(false);
+      expect(dailyPuzzle(day).puzzle.id).toBe(d.puzzle.id); // the same for everyone
+      seen.add(d.puzzle.id);
+    }
+    // No repeats for months: the first 126 days use 120+ different puzzles.
+    expect(seen.size).toBeGreaterThan(110);
   });
 });

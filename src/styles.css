@@ -1079,3 +1079,8 @@ svg.board[data-theme] .xq-river { opacity: .9; }
 .try-board { width: min(100%, calc(100vh - 290px)); margin: 0 auto; }
 .try-board svg { width: 100%; height: auto; display: block; }
 .try-hint { margin: 0; text-align: center; }
+
+/* Today's puzzle */
+.badge.ok { background: #16a34a; color: #fff; }
+.daily-item { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow); }
+.pz-streak { font-weight: 700; font-size: 18px; margin: 4px 0 0; }

@@ -11,7 +11,7 @@ import { esc } from './util';
 import { puzzleThumb } from './puzzles';
 import { trophyThumb } from './leaderboard';
 import { claimable, loadQuests, onQuestsChange, questsThumb, seasonNow } from './quests';
-import { PUZZLES } from '../puzzles';
+import { PUZZLES, dailyPuzzle, dailyState, solvedCount as solvedPuzzles } from '../puzzles';
 
 export interface Nav {
   go(hash: string, dir?: 'forward' | 'back' | 'none'): void;
@@ -81,9 +81,20 @@ export function homeScreen(nav: Nav): Screen {
     li.querySelector('button')!.onclick = () => nav.go('#/' + kind);
     ul.appendChild(li);
   });
+  // Today's puzzle
+  const today = dailyPuzzle(), dstate = dailyState();
+  const doneToday = dstate.last === today.day;
+  const dli = document.createElement('li');
+  dli.innerHTML = `<button class="item daily-item" style="--i:${KINDS.length}">
+      <span class="thumb">${puzzleThumb()}</span>
+      <span class="txt"><b>${s.puzzles.dailyTitle(today.number)}${doneToday ? ` <em class="badge ok">✓ ${s.puzzles.dailyDone}</em>` : ''}${dstate.streak ? ` <em class="badge">${s.puzzles.dailyStreak(dstate.streak)}</em>` : ''}</b><small>${s.puzzles.dailyDesc(s[today.kind], today.puzzle.mate)}</small></span>
+      ${chevron}
+    </button>`;
+  dli.querySelector('button')!.onclick = () => nav.go('#/daily');
+  ul.appendChild(dli);
   // Puzzles
   const pli = document.createElement('li');
-  const solvedCount = Object.keys(store.get<Record<string, number>>('puzzles') ?? {}).length;
+  const solvedCount = solvedPuzzles();
   pli.innerHTML = `<button class="item" style="--i:${KINDS.length}">
       <span class="thumb">${puzzleThumb()}</span>
       <span class="txt"><b>${s.puzzles.title}${solvedCount ? ` <em class="badge">${s.puzzles.solvedBadge(solvedCount)}</em>` : ''}</b><small>${s.puzzles.homeDesc(PUZZLES.chess.length + PUZZLES.xiangqi.length)}</small></span>

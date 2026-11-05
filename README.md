@@ -10,15 +10,25 @@ Xếp hạng Elo · 150 thế cờ chiếu hết · nhiệm vụ & skin quân c�
 
 Không quảng cáo · không bắt buộc đăng ký · cài lên điện thoại như app · mã nguồn mở MIT
 
+[![Chơi ngay](https://img.shields.io/badge/▶_Chơi_ngay-banco--chess-8a5a2b?style=for-the-badge)](https://banco-chess.lethienloc.workers.dev)
+[![GitHub stars](https://img.shields.io/github/stars/lethienloc2004/banco-chess?style=for-the-badge&logo=github&label=Stars)](https://github.com/lethienloc2004/banco-chess/stargazers)
+[![MIT License](https://img.shields.io/badge/license-MIT-2ea44f?style=for-the-badge)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-blue?style=for-the-badge)](CONTRIBUTING.md)
+
 [**▶ Chơi ngay**](https://banco-chess.lethienloc.workers.dev) · [🚀 Tự chạy / Deploy](#-bắt-đầu-nhanh) · [✨ Tính năng](#-tính-năng) · [English](#english) · [Báo lỗi / góp ý](../../issues)
 
 ![Demo](docs/demo.gif)
 
+**⭐ Thấy hay thì cho dự án một sao nhé, giúp nhiều người tìm thấy Bàn Cờ hơn!**
+
 </div>
+
+<p align="center"><img src="docs/holidays.jpg" alt="Giao diện theo dịp lễ: Halloween, Giáng sinh, Tết, Trung thu" width="860" /></p>
 
 ## ✨ Tính năng
 
 - ♟️ **4 loại cờ trong một app**: Cờ vua, Cờ tướng, **Cờ tướng úp (Jieqi / 揭棋)** và **Cờ vua úp**, một biến thể cùng tinh thần cờ úp cho cờ vua. Rất hiếm có bản mã nguồn mở nào chơi được cờ úp.
+- 🧩 **Câu đố hôm nay**: mỗi ngày một thế cờ mới, giống nhau cho mọi người (xen kẽ cờ vua và cờ tướng). Giải xong giữ chuỗi 🔥 ngày liên tiếp và bấm **Thách bạn bè** để gửi kết quả kèm link, như Wordle.
 - ⚡ **Ghép ngẫu nhiên có xếp hạng (Elo)**: app tìm đối thủ có điểm gần nhất. Mỗi ván 10 phút, cộng 5 giây sau mỗi nước.
 - 🎯 **Nhiệm vụ & skin quân cờ**:
   - **3 nhiệm vụ mỗi ngày** và **2 nhiệm vụ mỗi tuần** (giống nhau cho mọi người, làm mới theo giờ Việt Nam): thắng máy, giải thế cờ, chơi online, phân tích ván… Hoàn thành được **xu**, giữ **chuỗi ngày liên tiếp**.
@@ -467,6 +477,11 @@ friend on the same device, or online. It also has Elo leaderboards, 150 checkmat
 holiday events (Halloween, Christmas, Lunar New Year, Mid-Autumn). The whole interface is available in Vietnamese and English.
 
 **▶ Play now: https://banco-chess.lethienloc.workers.dev** (everything included: bots, online play, matchmaking, leaderboards; installable as an app).
+
+**⭐ If you like it, a star on GitHub helps other players find it!**
+
+- **Daily puzzle**: a new checkmate puzzle every day, the same for everyone (chess and xiangqi in turn), with a day streak
+  and a **Challenge a friend** button that shares your result and the link, Wordle style.
 
 - **Quests & piece skins**: 3 daily and 2 weekly quests (coins, day streak), 9 achievements that each unlock a skin, a
   coin shop and holiday skins (Halloween, Christmas, Lunar New Year, Mid-Autumn) available only during their event.

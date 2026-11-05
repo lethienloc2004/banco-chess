@@ -1,7 +1,7 @@
 /** Puzzle level map and the puzzle play screen. */
 import { Match } from '../game';
 import {
-  PUZZLES, PUZZLE_KINDS, findPuzzle, group, nextPuzzle, progress, record, stars, unlocked,
+  PUZZLES, PUZZLE_KINDS, dailyPuzzle, findPuzzle, group, nextPuzzle, progress, record, recordDaily, stars, unlocked,
   type Puzzle, type PuzzleKind,
 } from '../puzzles';
 import { defenderLoses, hardestDefence, isMated } from '../puzzles/solver';
@@ -17,6 +17,7 @@ import { myBoardTheme, reportQuest, seasonNow } from './quests';
 import { holidayOf, type Season } from '../shared/quests';
 import { skinTheme } from './skins';
 import { esc } from './util';
+import { appLink, share } from './share';
 
 const STAR = '★';
 
@@ -103,12 +104,17 @@ export class PuzzleScreen implements Screen {
   private timers: number[] = [];
   private disposed = false;
 
-  constructor(id: string, private nav: Nav) {
+  /** Today's puzzle (#/daily): its number, for the title and the share text. */
+  private readonly daily: { number: number; day: string } | null;
+
+  constructor(id: string, private nav: Nav, daily = false) {
     const f = findPuzzle(id)!;
     this.kind = f.kind;
     this.puzzle = f.puzzle;
     this.index = group(f.kind, f.puzzle.mate).findIndex(p => p.id === id);
     this.holiday = f.holiday ? holidayOf(id) : null;
+    const today = daily ? dailyPuzzle() : null;
+    this.daily = today && today.puzzle.id === id ? { number: today.number, day: today.day } : null;
     this.el = document.createElement('section');
     this.el.className = 'screen game puzzle';
     this.el.dataset.kind = this.kind;
@@ -254,19 +260,24 @@ export class PuzzleScreen implements Screen {
     record(this.puzzle.id, got);
     if (this.holiday) reportQuest({ type: 'holiday-puzzle', id: this.puzzle.id });
     else reportQuest({ type: 'puzzle', id: this.puzzle.id });
+    const streak = this.daily ? recordDaily(this.daily.day, got).streak : 0;
+    const starText = STAR.repeat(got) + '☆'.repeat(3 - got);
+    const challenge = () => this.daily
+      ? share(P.shareDaily(this.daily.number, s[this.kind], this.puzzle.mate, starText, streak), appLink('#/daily'))
+      : share(P.sharePuzzle(s[this.kind], this.puzzle.mate, starText), appLink(`#/puzzle/${this.puzzle.id}`));
     if (settings.sound) playSound('solved');
     this.message = { text: P.solved, cls: 'over' };
     this.render(true);
     const next = nextPuzzle(this.puzzle.id);
     this.later(() => {
       const body = document.createElement('div');
-      body.innerHTML = `<p class="pz-result">${starsHtml(got)}</p><p>${esc(got === 3 ? P.perfect : got === 2 ? P.nice : P.done)}</p>`;
+      body.innerHTML = `<p class="pz-result">${starsHtml(got)}</p><p>${esc(got === 3 ? P.perfect : got === 2 ? P.nice : P.done)}</p>${streak ? `<p class="pz-streak">${esc(P.dailyStreak(streak))}</p>` : ''}`;
       openDialog({
         title: P.solvedTitle, icon: '🎉', className: 'over-dlg', body,
         actions: [
-          { label: this.holiday ? s.quests.title : P.levels, kind: 'ghost', onClick: () => this.nav.go(this.holiday ? '#/quests' : `#/puzzles/${this.kind}`, 'back') },
-          { label: P.retry, onClick: () => { this.mistakes = 0; this.hinted = false; this.reset(); } },
-          ...(next ? [{ label: P.next, kind: 'primary' as const, onClick: () => this.nav.go(`#/puzzle/${next.id}`) }] : []),
+          { label: this.holiday ? s.quests.title : this.daily ? P.otherPuzzles : P.levels, kind: 'ghost', onClick: () => this.nav.go(this.holiday ? '#/quests' : `#/puzzles/${this.kind}`, 'back') },
+          { label: P.challenge, kind: this.daily ? 'primary' as const : undefined, onClick: () => void challenge() },
+          ...(next && !this.daily ? [{ label: P.next, kind: 'primary' as const, onClick: () => this.nav.go(`#/puzzle/${next.id}`) }] : []),
         ],
       });
     }, 700);
@@ -305,7 +316,9 @@ export class PuzzleScreen implements Screen {
     const P = s.puzzles;
     const m = this.match;
     const flipped = this.attacker === 1;
-    this.el.querySelector('.game-title h1')!.textContent = this.holiday
+    this.el.querySelector('.game-title h1')!.textContent = this.daily
+      ? `🧩 ${P.dailyTitle(this.daily.number)} · ${s[this.kind]}`
+      : this.holiday
       ? `${this.holiday.emoji} ${s.quests.hpTitle(this.holiday.name[settings.lang])} · ${s[this.kind]}`
       : `${P.level(this.index + 1)} · ${s[this.kind]}`;
     this.el.querySelector('.mode-line')!.textContent = P.mateIn(this.puzzle.mate)
