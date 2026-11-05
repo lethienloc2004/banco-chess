@@ -15,6 +15,8 @@ export interface PublicUser {
   id: string;
   name: string;
   ratings: Ratings;
+  /** Signed in with a verified email (code or Google): may play online. */
+  member: boolean;
   games: number;
   wins: number;
   role: Role;
@@ -35,6 +37,8 @@ export interface Player {
   id: string;
   name: string;
   ratings: Ratings;
+  /** Only members take a seat or join matchmaking; guests watch. */
+  member: boolean;
 }
 
 export interface BoardEntry {
@@ -236,7 +240,8 @@ export type LobbyClientMsg =
   | { t: 'ping' };
 
 export type ErrorCode =
-  | 'banned' | 'not-your-turn' | 'illegal' | 'over' | 'not-player' | 'too-early' | 'bad-request' | 'unauthorized' | 'not-found';
+  | 'banned' | 'not-your-turn' | 'illegal' | 'over' | 'not-player' | 'too-early' | 'bad-request' | 'unauthorized' | 'not-found'
+  | 'login-required';
 
 export const EMOTES = ['👍', '😄', '😮', '😢', '🔥', '🤝', '👏', '🤔'];
 

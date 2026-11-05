@@ -61,6 +61,12 @@ export function setTomlString(toml, key, value) {
   return re.test(toml) ? toml.replace(re, `$1${JSON.stringify(value)}`) : toml;
 }
 
+/** Like setTomlString, but adds the key under [vars] when it is missing (older wrangler.toml files). */
+export function setTomlVar(toml, key, value) {
+  if (new RegExp(`^${key}\\s*=`, 'm').test(toml)) return setTomlString(toml, key, value);
+  return toml.replace(/^\[vars\]\s*$/m, m => `${m}\n${key} = ${JSON.stringify(value)}`);
+}
+
 export function setDatabase(toml, name, id) {
   toml = toml.replace(/^(database_name\s*=\s*)"[^"]*"/m, `$1${JSON.stringify(name)}`);
   if (/^database_id\s*=/m.test(toml)) return toml.replace(/^(database_id\s*=\s*)"[^"]*"/m, `$1${JSON.stringify(id)}`);
@@ -92,6 +98,9 @@ async function main() {
   const admins = await ask('Email Google của quản trị viên (nhiều email cách nhau bằng dấu phẩy, Enter để bỏ qua)', current('ADMIN_EMAILS'), 'ADMIN_EMAILS');
   console.log(c.d('  Google Client ID bật nút "Đăng nhập Google". Tạo tại https://console.cloud.google.com/apis/credentials (loại Web application).'));
   const google = await ask('Google Client ID (Enter để bỏ qua, có thể thêm sau)', current('GOOGLE_CLIENT_ID'), 'GOOGLE_CLIENT_ID');
+  console.log(c.d('  Đăng nhập bằng email cần gửi mã qua Brevo (miễn phí 300 thư/ngày): https://app.brevo.com. Hướng dẫn trong README.'));
+  const mailFrom = await ask('Email gửi mã đăng nhập, đã xác minh trong Brevo (Enter để bỏ qua)', current('MAIL_FROM'), 'MAIL_FROM');
+  const brevoKey = mailFrom ? await ask('Brevo API key (bắt đầu bằng xkeysib-; Enter để giữ khóa cũ)', '', 'BREVO_API_KEY') : '';
   rl?.close();
 
   // ---- 2. Login
@@ -126,7 +135,8 @@ async function main() {
   toml = setDatabase(toml, dbName, dbId);
   toml = setTomlString(toml, 'ADMIN_EMAILS', admins);
   toml = setTomlString(toml, 'GOOGLE_CLIENT_ID', google);
-  if (DRY) console.log(c.d(toml.split('\n').filter(l => /^(name|database_|ADMIN_EMAILS|GOOGLE_CLIENT_ID)/.test(l)).map(l => '  ' + l).join('\n')));
+  toml = setTomlVar(toml, 'MAIL_FROM', mailFrom);
+  if (DRY) console.log(c.d(toml.split('\n').filter(l => /^(name|database_|ADMIN_EMAILS|GOOGLE_CLIENT_ID|MAIL_FROM)/.test(l)).map(l => '  ' + l).join('\n')));
   else writeFileSync('wrangler.toml', toml);
   console.log(c.g('  ✓ Xong'));
 
@@ -151,6 +161,13 @@ async function main() {
   else {
     wrangler(['secret', 'put', 'AUTH_SECRET'], { input: randomBytes(32).toString('hex') + '\n' });
     console.log(c.g('  ✓ Đã tạo AUTH_SECRET ngẫu nhiên'));
+  }
+
+  if (brevoKey) {
+    wrangler(['secret', 'put', 'BREVO_API_KEY'], { input: brevoKey.trim() + '\n' });
+    console.log(c.g('  ✓ Đã lưu Brevo API key (đăng nhập bằng email đã bật)'));
+  } else if (mailFrom && !secrets.includes('BREVO_API_KEY')) {
+    console.log(c.y('  ! Chưa có Brevo API key: đăng nhập bằng email chưa chạy. Chạy lại "npm run setup" và dán khóa.'));
   }
 
   console.log(`\n${c.g(c.b('🎉 Xong!'))} Link app là dòng ${c.b('https://….workers.dev')} wrangler in ở bước 6 phía trên (dạng ${url}).\n`);

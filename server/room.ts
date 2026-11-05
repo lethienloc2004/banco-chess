@@ -103,7 +103,8 @@ export class GameRoom extends DurableObject<Env> {
       const user = JSON.parse(decodeURIComponent(request.headers.get('X-User') ?? 'null')) as Player | null;
       if (!user) return new Response('unauthorized', { status: 401 });
       let side: 0 | 1 | null = s.seats[0]?.id === user.id ? 0 : s.seats[1]?.id === user.id ? 1 : null;
-      if (side === null && s.status === 'waiting') {
+      // Guests (not signed in) only watch: they never take a seat.
+      if (side === null && s.status === 'waiting' && user.member) {
         const empty = s.seats[0] ? (s.seats[1] ? null : 1) : 0;
         if (empty !== null) {
           s.seats[empty] = { id: user.id, name: user.name, rating: user.ratings?.[s.kind] ?? DEFAULT_RATING };

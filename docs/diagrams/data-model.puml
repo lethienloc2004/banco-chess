@@ -1,7 +1,7 @@
 @startuml data-model
 !include _style.iuml
 !pragma layout smetana
-title Cơ sở dữ liệu D1 (migrations/0001–0003)
+title Cơ sở dữ liệu D1 (migrations/0001–0004)
 hide circle
 hide methods
 
@@ -11,6 +11,7 @@ entity users {
   name : TEXT
   google_sub : TEXT <<unique>>
   email : TEXT
+  email_verified : 0 | 1 (thành viên)
   role : 'user' | 'admin'
   games, wins : INTEGER
   warnings : INTEGER
@@ -78,10 +79,27 @@ entity audit {
   created : INTEGER
 }
 
+entity otp_codes {
+  * email : TEXT <<PK>>
+  --
+  code_hash : HMAC(mã, AUTH_SECRET)
+  expires : INTEGER (10 phút)
+  attempts : INTEGER (tối đa 5)
+  sent : INTEGER
+}
+
+entity rate_limits {
+  * key : "email:…" | "ip:…" <<PK>>
+  --
+  window_start : INTEGER (1 giờ)
+  count : INTEGER
+}
+
 users ||--o{ ratings : "1 dòng / loại cờ"
 users ||--o{ games : "p0_id / p1_id"
 users ||--o{ reports : "reporter / target"
 games ||--o{ reports : "game_id"
 users ||--o{ audit : "admin_id"
 users ||--o{ announcements : "created_by"
+users .. otp_codes : "email"
 @enduml

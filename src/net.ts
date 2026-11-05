@@ -8,10 +8,10 @@ import { settings, store } from './state';
 /** Same origin by default; set VITE_API_URL to use a server elsewhere. */
 const API = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 
-export interface ServerConfig { googleClientId: string | null; announcement: Announcement | null; dev: boolean }
+export interface ServerConfig { googleClientId: string | null; emailLogin?: boolean; announcement: Announcement | null; dev: boolean }
 
 export class ApiError extends Error {
-  constructor(readonly status: number, readonly code: string) { super(code); }
+  constructor(readonly status: number, readonly code: string, readonly data: Record<string, unknown> = {}) { super(code); }
 }
 
 type Listener = () => void;
@@ -86,6 +86,23 @@ class Net {
     await this.refreshMe();
   }
 
+  /** Signed in with a verified email (code or Google): may play online. */
+  get member(): boolean {
+    return !!this.me?.member;
+  }
+
+  /** Ask the server to email a sign-in code. */
+  async startEmail(email: string): Promise<{ resendIn: number; devCode?: string }> {
+    return this.api<{ resendIn: number; devCode?: string }>('/auth/email/start', { method: 'POST', auth: false, body: { email, lang: settings.lang } });
+  }
+
+  /** Check the code; signs in (or up) and keeps the current guest's name and rating when the email is new. */
+  async verifyEmail(email: string, code: string) {
+    const r = await this.api<{ token: string; user: PublicUser }>('/auth/email/verify', { method: 'POST', body: { email, code, lang: settings.lang } });
+    this.setSession(r.token, r.user);
+    await this.refreshMe();
+  }
+
   async loginDevAdmin() {
     const r = await this.api<{ token: string; user: PublicUser }>('/auth/dev-admin', { method: 'POST', auth: false });
     this.setSession(r.token, r.user);
@@ -115,7 +132,7 @@ class Net {
         signal: ctrl.signal,
       });
       const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-      if (!res.ok) throw new ApiError(res.status, data.error ?? 'error');
+      if (!res.ok) throw new ApiError(res.status, data.error ?? 'error', data as Record<string, unknown>);
       return data;
     } finally {
       clearTimeout(timer);

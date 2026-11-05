@@ -3,6 +3,7 @@ import type { GameKind } from '../engine/types';
 import { lobby, net } from '../net';
 import { RANKED_CLOCK } from '../shared/protocol';
 import { t } from '../state';
+import { openLogin } from './login';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
 
@@ -15,8 +16,16 @@ export function matchScreen(kind: GameKind, nav: Nav): Screen {
   let off: (() => void) | null = null;
   let queued = false;
 
-  const draw = (state: 'searching' | 'offline' | 'banned') => {
+  const draw = (state: 'searching' | 'offline' | 'banned' | 'login') => {
     const stats = lobby.stats;
+    if (state === 'login') {
+      el.innerHTML = `<div class="mm-card"><div class="ov-icon">🔒</div>
+        <h1>${esc(s.login.signInToPlay)}</h1><p>${esc(s.login.needed)}</p>
+        <div class="ov-actions"><button class="btn ghost" data-act="back">${esc(s.back)}</button><button class="btn primary" data-act="login">${esc(s.login.title)}</button></div></div>`;
+      el.querySelector<HTMLButtonElement>('[data-act="back"]')!.onclick = () => nav.go('#/' + kind, 'back');
+      el.querySelector<HTMLButtonElement>('[data-act="login"]')!.onclick = () => openLogin(() => void start());
+      return;
+    }
     if (state !== 'searching') {
       el.innerHTML = `<div class="mm-card"><div class="ov-icon">${state === 'banned' ? '⛔' : '📡'}</div>
         <h1>${esc(state === 'banned' ? s.bannedTitle : s.serverOffline)}</h1>
@@ -38,6 +47,7 @@ export function matchScreen(kind: GameKind, nav: Nav): Screen {
   const start = async () => {
     if (!(await net.init())) return draw('offline');
     if (net.banned) return draw('banned');
+    if (!net.member) return draw('login');
     lobby.start();
     draw('searching');
     off = lobby.on(msg => {
@@ -48,6 +58,7 @@ export function matchScreen(kind: GameKind, nav: Nav): Screen {
       }
       if (msg.t === 'hello' && queued) lobby.send({ t: 'queue', kind }); // re-queue after a reconnect
       if (msg.t === 'kicked') draw('banned');
+      if (msg.t === 'error' && msg.code === 'login-required') { queued = false; draw('login'); }
     });
     const queue = () => {
       if (lobby.connected) { lobby.send({ t: 'queue', kind }); queued = true; }

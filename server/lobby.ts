@@ -60,6 +60,7 @@ export class Lobby extends DurableObject<Env> {
       return;
     }
     if (msg.t === 'queue' && KINDS.includes(msg.kind)) {
+      if (!att.member) return this.send(ws, { t: 'error', code: 'login-required' });
       // One queue entry per user: drop it from their other tabs.
       for (const other of this.ctx.getWebSockets(att.id)) {
         if (other === ws) continue;

@@ -29,8 +29,10 @@
 
     <h2>Dữ liệu lưu trên máy chủ</h2>
     <ul>
-      <li><b>Tài khoản khách:</b> một mã ngẫu nhiên và tên hiển thị (ví dụ "Khách 1234"). Bạn đổi tên được trong Cài đặt.</li>
-      <li><b>Nếu bạn đăng nhập Google:</b> mã tài khoản Google, email (đã xác minh) và tên. Email chỉ dùng để đăng nhập và xác định quản trị viên, không hiển thị cho người khác, không gửi thư.</li>
+      <li><b>Tài khoản khách:</b> một mã ngẫu nhiên và tên hiển thị (ví dụ "Khách 1234"). Bạn đổi tên được trong Cài đặt. Khách chơi với máy và xem ván được; muốn chơi online thì cần đăng nhập.</li>
+      <li><b>Đăng nhập bằng email:</b> địa chỉ email của bạn. App chỉ gửi tới email này mã đăng nhập 6 số khi bạn yêu cầu, không gửi quảng cáo. Máy chủ chỉ lưu một bản băm của mã, mã hết hạn sau 10 phút.</li>
+      <li><b>Đăng nhập Google:</b> mã tài khoản Google, email (đã xác minh) và tên.</li>
+      <li>Email chỉ dùng để đăng nhập và xác định quản trị viên, không hiển thị cho người khác.</li>
       <li><b>Ván cờ online:</b> người chơi, nước đi, kết quả, thời gian; điểm Elo, số ván, thắng/hòa/thua.</li>
       <li><b>Báo cáo vi phạm</b> bạn gửi hoặc bị gửi, và các cảnh cáo/khóa của quản trị viên.</li>
     </ul>
@@ -45,6 +47,7 @@
     <ul>
       <li><b>Cloudflare</b> lưu trữ app và cơ sở dữ liệu; máy chủ của họ có thể ghi lại địa chỉ IP theo <a href="https://www.cloudflare.com/privacypolicy/">chính sách của Cloudflare</a>.</li>
       <li><b>Google</b> xử lý đăng nhập Google (nếu bạn dùng) và cung cấp font chữ Hán trên quân cờ tướng (Google Fonts), theo <a href="https://policies.google.com/privacy">chính sách của Google</a>.</li>
+      <li><b>Brevo</b> gửi thư chứa mã đăng nhập tới email của bạn, theo <a href="https://www.brevo.com/legal/privacypolicy/">chính sách của Brevo</a>.</li>
     </ul>
     <p>Không có quảng cáo, công cụ thống kê hay cookie theo dõi.</p>
 
@@ -61,8 +64,10 @@
     <p><b>In short:</b> free, no ads, no tracking, no data sold. Only what online play needs is stored.</p>
     <h2>Stored on the server</h2>
     <ul>
-      <li><b>Guest accounts:</b> a random ID and a display name you can change.</li>
-      <li><b>Google sign-in (optional):</b> your Google account ID, verified email and name. The email is only used to sign in and to recognise admins; it is never shown to others and no mail is sent.</li>
+      <li><b>Guest accounts:</b> a random ID and a display name you can change. Guests play the bot and watch; online play needs a sign-in.</li>
+      <li><b>Email sign-in:</b> your email address. We only email you a 6-digit sign-in code when you ask for one, never newsletters. Only a hash of the code is stored and it expires after 10 minutes.</li>
+      <li><b>Google sign-in:</b> your Google account ID, verified email and name.</li>
+      <li>Emails are only used to sign in and to recognise admins; they are never shown to others.</li>
       <li><b>Online games:</b> players, moves, results, times; Elo ratings and records.</li>
       <li><b>Reports</b> you file or receive, and admin warnings or bans.</li>
     </ul>
@@ -71,7 +76,7 @@
     <h2>Public</h2>
     <p>Display name, ratings, records and recent online games appear on leaderboards and player profiles.</p>
     <h2>Third parties</h2>
-    <p>Cloudflare hosts the app and database (<a href="https://www.cloudflare.com/privacypolicy/">policy</a>). Google handles Google sign-in and serves the Chinese font used on xiangqi pieces (<a href="https://policies.google.com/privacy">policy</a>). No ads, analytics or tracking cookies.</p>
+    <p>Cloudflare hosts the app and database (<a href="https://www.cloudflare.com/privacypolicy/">policy</a>). Google handles Google sign-in and serves the Chinese font used on xiangqi pieces (<a href="https://policies.google.com/privacy">policy</a>). Brevo delivers the sign-in code emails (<a href="https://www.brevo.com/legal/privacypolicy/">policy</a>). No ads, analytics or tracking cookies.</p>
     <h2>Deletion</h2>
     <p>Ask for your account and online data to be deleted through the <a href="https://github.com/lethienloc2004/banco-chess/issues">GitHub issues page</a> (give your display name, not your email). Clear the site data in your browser to remove what is stored locally.</p>
     <h2>Open source</h2>

@@ -3,7 +3,8 @@ import type { GameKind } from '../src/engine/types';
 import { CLOCKS, LEADERBOARD_MIN_GAMES, LEADERBOARD_SIZE, REPORT_REASONS, cleanName, type BoardEntry, type KindStats, type Leaderboard, type PlayerProfile, type ProfileGame } from '../src/shared/protocol';
 import { adminRoute } from './admin';
 import { randomId, roomId, signToken, verifyGoogleIdToken, verifyToken } from './auth';
-import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow } from './db';
+import { KINDS, RANKED, createUser, currentAnnouncement, getUser, isBanned, isMember, playerOf, publicUser, rankOf, ratingsOf, touchUser, type RatingRow, type UserRow } from './db';
+import { LIMITS, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, emailLoginEnabled, hashCode, newCode, normalizeEmail, rateHit, sameHash, sendCode } from './otp';
 import type { Env } from './env';
 import type { InitBody } from './room';
 import { CORS, fail, json } from './http';
@@ -28,6 +29,19 @@ function guestName(lang = 'vi'): string {
   const n = new Uint16Array(1);
   crypto.getRandomValues(n);
   return `${lang === 'en' ? 'Guest' : 'Khách'} ${1000 + (n[0] % 9000)}`;
+}
+
+/** A default guest name ("Khách 1234") becomes a member name ("Kỳ thủ 1234") on sign-in; chosen names stay. */
+function promoteGuestName(name: string, lang = 'vi'): string | null {
+  const m = name.match(/^(?:Khách|Guest) (\d{4})$/);
+  return m ? `${lang === 'en' ? 'Player' : 'Kỳ thủ'} ${m[1]}` : null;
+}
+
+/** Default name for an account created by email sign-in (never derived from the email, which stays private). */
+function memberName(lang = 'vi'): string {
+  const n = new Uint16Array(1);
+  crypto.getRandomValues(n);
+  return `${lang === 'en' ? 'Player' : 'Kỳ thủ'} ${1000 + (n[0] % 9000)}`;
 }
 
 function adminEmails(env: Env): string[] {
@@ -105,7 +119,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   const method = req.method;
 
   if (path === '/config' && method === 'GET') {
-    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, announcement: await currentAnnouncement(env.DB), dev: env.DEV === '1' });
+    return json({ googleClientId: env.GOOGLE_CLIENT_ID || null, emailLogin: emailLoginEnabled(env), announcement: await currentAnnouncement(env.DB), dev: env.DEV === '1' });
   }
 
   // ----- Auth -----
@@ -127,13 +141,77 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
       // Attach Google to the current guest account so rating and history are kept.
       const current = await authUser(req, env);
       if (current && !current.google_sub) {
-        await env.DB.prepare('UPDATE users SET google_sub = ?, email = ? WHERE id = ?').bind(claims.sub, email, current.id).run();
+        const name = promoteGuestName(current.name) ? cleanName(claims.name ?? '') ?? promoteGuestName(current.name)! : current.name;
+        await env.DB.prepare('UPDATE users SET google_sub = ?, email = ?, email_verified = ?, name = ? WHERE id = ?').bind(claims.sub, email, email ? 1 : 0, name, current.id).run();
         user = (await getUser(env.DB, current.id))!;
       } else {
-        user = await createUser(env.DB, randomId('u_'), cleanName(claims.name ?? '') ?? guestName(), { google_sub: claims.sub, email });
+        user = await createUser(env.DB, randomId('u_'), cleanName(claims.name ?? '') ?? guestName(), { google_sub: claims.sub, email, email_verified: email ? 1 : 0 });
       }
     }
     if (makeAdmin && user.role !== 'admin') {
+      await env.DB.prepare("UPDATE users SET role = 'admin' WHERE id = ?").bind(user.id).run();
+      user.role = 'admin';
+    }
+    return session(env, user);
+  }
+
+  // ----- Email sign-in / sign-up with a one-time code -----
+  if (path === '/auth/email/start' && method === 'POST') {
+    if (!emailLoginEnabled(env)) return fail(503, 'email-disabled');
+    const body = await readJson<{ email?: string; lang?: string }>(req);
+    const email = normalizeEmail(body?.email);
+    if (!email) return fail(400, 'bad-email');
+    const now = Date.now();
+    const pending = await env.DB.prepare('SELECT sent FROM otp_codes WHERE email = ?').bind(email).first<{ sent: number }>();
+    if (pending && now - pending.sent < OTP_RESEND_MS) return json({ error: 'wait', retryIn: Math.ceil((OTP_RESEND_MS - (now - pending.sent)) / 1000) }, 429);
+    const ip = req.headers.get('CF-Connecting-IP') ?? 'local';
+    if (!(await rateHit(env.DB, 'email:' + email, LIMITS.perEmail, now)) || !(await rateHit(env.DB, 'ip:' + ip, env.DEV === '1' ? 1000 : LIMITS.perIp, now))) return fail(429, 'too-many');
+    const code = newCode();
+    await env.DB.prepare(
+      `INSERT INTO otp_codes (email, code_hash, expires, attempts, sent) VALUES (?, ?, ?, 0, ?)
+       ON CONFLICT (email) DO UPDATE SET code_hash = excluded.code_hash, expires = excluded.expires, attempts = 0, sent = excluded.sent`,
+    ).bind(email, await hashCode(email, code, env.AUTH_SECRET), now + OTP_TTL_MS, now).run();
+    const sent = await sendCode(env, email, code, body?.lang ?? 'vi');
+    if (sent === 'failed') return fail(502, 'send-failed');
+    // Local development without Brevo: hand the code back so it can be typed in (never in production).
+    return json({ ok: true, resendIn: OTP_RESEND_MS / 1000, ...(sent === 'logged' ? { devCode: code } : {}) });
+  }
+
+  if (path === '/auth/email/verify' && method === 'POST') {
+    const body = await readJson<{ email?: string; code?: string; lang?: string }>(req);
+    const email = normalizeEmail(body?.email);
+    const code = String(body?.code ?? '').replace(/\D/g, '');
+    if (!email || code.length !== 6) return fail(400, 'bad-code');
+    const now = Date.now();
+    const row = await env.DB.prepare('SELECT * FROM otp_codes WHERE email = ?').bind(email).first<{ code_hash: string; expires: number; attempts: number }>();
+    if (!row || row.expires < now) return fail(400, 'code-expired');
+    if (row.attempts >= OTP_MAX_ATTEMPTS) {
+      await env.DB.prepare('DELETE FROM otp_codes WHERE email = ?').bind(email).run();
+      return fail(429, 'too-many-attempts');
+    }
+    if (!sameHash(row.code_hash, await hashCode(email, code, env.AUTH_SECRET))) {
+      await env.DB.prepare('UPDATE otp_codes SET attempts = attempts + 1 WHERE email = ?').bind(email).run();
+      return json({ error: 'bad-code', left: OTP_MAX_ATTEMPTS - row.attempts - 1 }, 400);
+    }
+    await env.DB.prepare('DELETE FROM otp_codes WHERE email = ?').bind(email).run();
+    // Same person = same verified email: reuse that account (also one made with Google).
+    let user = await env.DB.prepare('SELECT * FROM users WHERE email = ? AND (email_verified = 1 OR google_sub IS NOT NULL) ORDER BY created LIMIT 1')
+      .bind(email).first<UserRow>();
+    if (!user) {
+      // Upgrade the guest account in use so its name, rating and games are kept.
+      const current = await authUser(req, env);
+      if (current && !isMember(current)) {
+        const name = promoteGuestName(current.name, body?.lang) ?? current.name;
+        await env.DB.prepare('UPDATE users SET email = ?, email_verified = 1, name = ? WHERE id = ?').bind(email, name, current.id).run();
+        user = (await getUser(env.DB, current.id))!;
+      } else {
+        user = await createUser(env.DB, randomId('u_'), memberName(body?.lang), { email, email_verified: 1 });
+      }
+    } else if (!user.email_verified) {
+      await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(user.id).run();
+      user.email_verified = 1;
+    }
+    if (adminEmails(env).includes(email) && user.role !== 'admin') {
       await env.DB.prepare("UPDATE users SET role = 'admin' WHERE id = ?").bind(user.id).run();
       user.role = 'admin';
     }
@@ -189,6 +267,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
 
   // ----- Rooms -----
   if (path === '/rooms' && method === 'POST') {
+    if (!isMember(me)) return fail(403, 'login-required');
     const body = await readJson<{ kind: GameKind; side: 0 | 1 | 'random'; clock: string }>(req);
     if (!body || !KINDS.includes(body.kind)) return fail(400, 'bad-request');
     const side = body.side === 'random' ? (Math.random() < 0.5 ? 0 : 1) : body.side === 1 ? 1 : 0;
@@ -215,6 +294,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
 
   // ----- Reports -----
   if (path === '/reports' && method === 'POST') {
+    if (!isMember(me)) return fail(403, 'login-required');
     const body = await readJson<{ room: string; gameNo: number; target: string; reason: string; note?: string }>(req);
     if (!body || !REPORT_REASONS.includes(body.reason as never) || !body.target || body.target === me.id) return fail(400, 'bad-request');
     const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM reports WHERE reporter_id = ? AND created > ?')

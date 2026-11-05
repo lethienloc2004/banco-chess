@@ -820,3 +820,25 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6
 .tbl th.elo .thumb.tiny { margin-right: 6px; }
 .tbl td.elo { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tbl td.elo.muted { font-weight: 400; color: var(--muted); }
+
+/* Sign in / sign up */
+.login-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 14px; white-space: nowrap; }
+.brand strong { white-space: nowrap; }
+/* Phones: the sign-in button keeps only its icon so the header stays on one line. */
+@media (max-width: 480px) { .login-btn { padding: 0; width: 40px; height: 40px; justify-content: center; } .login-btn span { display: none; } }
+.login-dlg .dlg-body { display: flex; flex-direction: column; gap: 10px; }
+.login-body { display: flex; flex-direction: column; gap: 12px; min-width: min(360px, 80vw); }
+.login-body p { margin: 0; }
+.login-reason { font-weight: 600; }
+.login-form { display: flex; flex-direction: column; gap: 8px; }
+.login-form label { font-weight: 600; font-size: 14px; }
+.login-form .inp { width: 100%; box-sizing: border-box; font-size: 16px; }
+.code-inp { letter-spacing: 10px; font-size: 26px !important; text-align: center; font-variant-numeric: tabular-nums; font-weight: 800; }
+.login-err { color: var(--danger); font-weight: 600; font-size: 14px; }
+.login-links { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.login-links .link-btn:disabled { opacity: .55; cursor: default; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+.gbtn { min-height: 44px; display: flex; justify-content: center; }
+.lock-note { font-size: 13px; }
+.net-card .btn.primary[data-act="login"] { margin-top: 8px; width: 100%; }

@@ -29,12 +29,48 @@ ok(g1.token && g1.user.name.startsWith('Khách'), 'guest accounts created: ' + g
 ok((await api('/me', { token: 'bad' })).status === 401, 'bad token rejected');
 ok((await api('/me', { token: g1.token, method: 'PATCH', body: { name: '<b>Hùng</b>  Cờ' } })).data.user.name === 'bHùng/b Cờ', 'name sanitized');
 
+// --- Members only: guests watch, signed-in players play
+ok((await api('/config')).data.emailLogin === true, 'email sign-in available');
+ok(!g1.user.member && (await api('/rooms', { token: g1.token, method: 'POST', body: { kind: 'chess', side: 0, clock: 'none' } })).data.error === 'login-required', 'guest cannot create a room');
+{
+  const lg = await sock('/lobby/ws', g1.token);
+  await lg.wait(m => m.t === 'hello');
+  lg.send({ t: 'queue', kind: 'chess' });
+  ok((await lg.wait(m => m.t === 'error')).code === 'login-required', 'guest cannot join matchmaking');
+  lg.ws.close();
+}
+const tag = Date.now().toString(36);
+const mail1 = `p1-${tag}@example.com`, mail2 = `p2-${tag}@example.com`;
+ok((await api('/auth/email/start', { method: 'POST', body: { email: 'not-an-email' } })).data.error === 'bad-email', 'invalid email rejected');
+let st1 = (await api('/auth/email/start', { method: 'POST', body: { email: mail1.toUpperCase() } })).data;
+ok(st1.ok && /^\d{6}$/.test(st1.devCode), 'code sent (dev: returned instead of mailed)');
+ok((await api('/auth/email/start', { method: 'POST', body: { email: mail1 } })).data.error === 'wait', 'no new code within a minute');
+const wrong = String((Number(st1.devCode) + 1) % 1000000).padStart(6, '0');
+const bad = await api('/auth/email/verify', { token: g1.token, method: 'POST', body: { email: mail1, code: wrong } });
+ok(bad.status === 400 && bad.data.left === 4, 'wrong code counted, 4 tries left');
+const v1 = (await api('/auth/email/verify', { token: g1.token, method: 'POST', body: { email: mail1, code: st1.devCode } })).data;
+ok(v1.user.id === g1.user.id && v1.user.member && v1.user.name === 'bHùng/b Cờ', 'guest upgraded to a member, same account kept');
+ok((await api('/auth/email/verify', { method: 'POST', body: { email: mail1, code: st1.devCode } })).data.error === 'code-expired', 'a code works only once');
+Object.assign(g1, v1);
+const st2 = (await api('/auth/email/start', { method: 'POST', body: { email: mail2 } })).data;
+Object.assign(g2, (await api('/auth/email/verify', { token: g2.token, method: 'POST', body: { email: mail2, code: st2.devCode } })).data);
+// Signing in again with the same email from another browser reaches the same account
+const fresh = (await api('/auth/guest', { method: 'POST' })).data;
+const mail3 = `p3-${tag}@example.com`;
+const st3 = (await api('/auth/email/start', { method: 'POST', body: { email: mail3 } })).data;
+const v3 = (await api('/auth/email/verify', { method: 'POST', body: { email: mail3, code: st3.devCode } })).data;
+ok(v3.user.member && v3.user.id !== fresh.user.id && v3.user.name.startsWith('Kỳ thủ'), 'new email without a guest session: new member account');
+
 // --- Friend room (jieqi): hidden identities must not leak
 const room = (await api('/rooms', { token: g1.token, method: 'POST', body: { kind: 'jieqi', side: 0, clock: '5+3' } })).data;
 ok(/^[a-z2-9]{7}$/.test(room.id), 'room created ' + room.id);
 const a = await sock(`/rooms/${room.id}/ws`, g1.token);
 let st = (await a.wait(m => m.t === 'state')).state;
 ok(st.status === 'waiting' && st.you === 0, 'host waiting as red');
+const watcher = await sock(`/rooms/${room.id}/ws`, fresh.token);
+const ws0 = (await watcher.wait(m => m.t === 'state')).state;
+ok(ws0.you === null && ws0.status === 'waiting', 'guest who opens the link only watches (seat stays free)');
+watcher.ws.close();
 const b = await sock(`/rooms/${room.id}/ws`, g2.token);
 st = (await b.wait(m => m.t === 'state')).state;
 ok(st.status === 'playing' && st.you === 1, 'guest joined as black, game playing');

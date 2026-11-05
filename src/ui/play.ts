@@ -14,6 +14,7 @@ import { BoardRenderer, chessGlyph, xiangqiLabel } from './board';
 import { moveSfx } from './sfx';
 import { confirmDialog, openDialog, toast, type DialogAction } from './dialog';
 import { openAnalysis, type AnalysisPlayer } from './analysis';
+import { ACCOUNT_EVENT, openLogin } from './login';
 import { gameThumb, type Nav, type Screen } from './home';
 import { esc, formatClock } from './util';
 
@@ -73,6 +74,12 @@ export class PlayScreen implements Screen {
     if (e.key === 'Escape') { this.selected = null; this.pendingPromotion = null; this.render(); }
   };
   private readonly onVisible = () => { if (document.visibilityState === 'visible') this.sock?.kick(); };
+  /** Signed in or out while in a room: reconnect so the server seats (or unseats) us. */
+  private readonly onAccount = () => {
+    if (!this.online || this.disposed) return;
+    this.sock?.close();
+    this.connectRoom();
+  };
 
   constructor(private opts: PlayOptions, private nav: Nav) {
     this.el = document.createElement('section');
@@ -105,6 +112,7 @@ export class PlayScreen implements Screen {
       this.match = new Match(kind); // placeholder until the server sends the game
       this.connectRoom();
       document.addEventListener('visibilitychange', this.onVisible);
+      window.addEventListener(ACCOUNT_EVENT, this.onAccount);
       this.tick = window.setInterval(() => this.updateClocks(), 200);
     } else {
       const saved = store.get<SavedGame>('game:' + kind);
@@ -137,6 +145,7 @@ export class PlayScreen implements Screen {
 
   dispose() {
     this.disposed = true;
+    window.removeEventListener(ACCOUNT_EVENT, this.onAccount);
     this.req = -1;
     this.sock?.close();
     clearInterval(this.tick);
@@ -630,7 +639,7 @@ export class PlayScreen implements Screen {
       status = outcome.winner === null ? `${s.draw} — ${reason}` : `${s.wins(this.sideName(outcome.winner))} — ${reason}`;
       cls = 'over';
     } else if (this.online && sockStatus !== 'open') { status = s.reconnecting; cls = 'thinking'; }
-    else if (this.online && r!.status === 'waiting') { status = s.waitingFriend; cls = 'thinking'; }
+    else if (this.online && r!.status === 'waiting') { status = this.you === null ? s.waitingPlayer : s.waitingFriend; cls = 'thinking'; }
     else if (this.thinking) { status = s.thinking; cls = 'thinking'; }
     else {
       const check = m.checkedKing() !== null;
@@ -723,10 +732,16 @@ export class PlayScreen implements Screen {
         if (r.seats[this.you ^ 1]) html += `<button class="link-btn" data-act="report">${ICON.report}<span>${esc(s.reportPlayer)}</span></button>`;
       }
       if (r && r.status === 'waiting' && this.you !== null) html += this.linkBox();
-      if (r && this.you === null) html += `<p class="spectate-note">👀 ${esc(s.spectatingNote)}</p>`;
+      if (r && this.you === null) {
+        // Guests only watch; a free seat waits for them once they sign in.
+        const freeSeat = r.status === 'waiting' && (!r.seats[0] || !r.seats[1]);
+        if (!net.member) html += `<p class="spectate-note">👀 ${esc(s.login.spectatorJoin)}</p><button class="btn primary" data-act="login">${esc(s.login.signInToPlay)}</button>`;
+        else if (!freeSeat) html += `<p class="spectate-note">👀 ${esc(s.spectatingNote)}</p>`;
+      }
       nc.innerHTML = html;
       nc.querySelectorAll<HTMLButtonElement>('.emote').forEach(b => (b.onclick = () => this.sock?.send({ t: 'emote', e: b.dataset.e! })));
       nc.querySelector<HTMLButtonElement>('[data-act="report"]')?.addEventListener('click', () => this.report());
+      nc.querySelector<HTMLButtonElement>('[data-act="login"]')?.addEventListener('click', () => openLogin());
 
       if (!r && sockStatus === 'failed') {
         overlay.hidden = false;

@@ -6,6 +6,7 @@ import { KINDS, saveSettings, settings, store, t, type SavedGame } from '../stat
 import { lobby, net } from '../net';
 import { CLOCKS, RANKED_CLOCK, clockLabel } from '../shared/protocol';
 import { toast } from './dialog';
+import { requireMember } from './login';
 import { esc } from './util';
 import { puzzleThumb } from './puzzles';
 import { trophyThumb } from './leaderboard';
@@ -234,6 +235,14 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
     );
   });
 
+  /** Guests see that online play needs an account (the button then opens sign-in). */
+  const lockNote = (panel: HTMLElement) => {
+    if (net.member) return;
+    const note = document.createElement('p');
+    note.className = 'note lock-note';
+    note.textContent = `${s.login.locked}. ${s.login.needed}`;
+    panel.appendChild(note);
+  };
   const offline = (panel: HTMLElement) => {
     const note = document.createElement('p');
     note.className = 'note warn';
@@ -242,13 +251,14 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
   };
 
   expandable('⚡', s.quickMatch, s.quickMatchDesc(RANKED_CLOCK.base / 60, RANKED_CLOCK.inc), panel => {
-    const go = startBtn(s.findOpponent, () => nav.go(`#/match/${kind}`));
+    const go = startBtn(s.findOpponent, () => requireMember(() => nav.go(`#/match/${kind}`)));
     panel.append(go);
-    void net.init().then(ok => { if (!ok || net.banned) { go.disabled = true; offline(panel); } });
+    void net.init().then(ok => { if (!ok || net.banned) { go.disabled = true; offline(panel); } else lockNote(panel); });
   });
 
   expandable('🔗', s.online, s.onlineDesc, panel => {
     const create = startBtn(s.createRoom, async () => {
+      if (!net.member) { requireMember(() => create.click()); return; }
       create.disabled = true;
       try {
         const { id } = await net.api<{ id: string }>('/rooms', { method: 'POST', body: { kind, side: settings.onlineSide, clock: settings.onlineClock } });
@@ -263,7 +273,7 @@ export function modesScreen(kind: GameKind, nav: Nav): Screen {
       clockPicker(settings.onlineClock, v => { settings.onlineClock = v; saveSettings(); }),
       create,
     );
-    void net.init().then(ok => { if (!ok || net.banned) { create.disabled = true; offline(panel); } });
+    void net.init().then(ok => { if (!ok || net.banned) { create.disabled = true; offline(panel); } else lockNote(panel); });
   });
 
   return { el, dispose() {} };

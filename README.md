@@ -37,7 +37,11 @@ Không quảng cáo · không bắt buộc đăng ký · cài lên điện tho�
 - 🤝 Online có thêm: cầu hòa, đầu hàng, chơi lại (tự đổi màu quân), biểu tượng cảm xúc.
 - 🚪 **Đối thủ bỏ đi**: sau 60 giây bạn được bấm xử thắng. Sau 5 phút máy chủ tự xử.
 - 🚩 **Báo cáo người chơi**: gian lận, xúc phạm, cố tình kéo dài, tên không phù hợp.
-- 👤 **Tài khoản**: chơi ngay với tư cách khách. Đăng nhập Google nếu muốn giữ điểm và lịch sử khi đổi máy.
+- 👤 **Tài khoản**:
+  - **Không cần tài khoản** để chơi với máy, 2 người cùng máy, giải thế cờ, máy đấu máy, phân tích ván, xem ván online và bảng xếp hạng.
+  - **Chơi online** (ghép trận, phòng bạn bè) cần **đăng nhập**: bằng **Google**, hoặc bằng **email + mã 6 số** (OTP, không cần mật khẩu). Email mới thì tài khoản được tạo luôn.
+  - Đăng nhập từ tài khoản khách thì **giữ nguyên tên, điểm và lịch sử**. Khách mở link phòng sẽ được xem, đăng nhập xong là vào ghế trống.
+  - Mã OTP: hết hạn sau 10 phút, sai quá 5 lần phải xin mã mới, giới hạn số mã mỗi giờ theo email và địa chỉ IP; máy chủ chỉ lưu bản băm của mã.
 - 🧑‍⚖️ **Trang quản trị toàn quyền**:
   - Thống kê: người online, số ván, biểu đồ 7 ngày.
   - Xem ván đang chơi và xem lại từng nước, kể cả quân úp.
@@ -222,6 +226,8 @@ npm run setup
 | **Tên app** | Tên dùng trong địa chỉ web: chữ thường, số, dấu gạch ngang | `co-tuong-cua-toi` |
 | **Email quản trị** | Email Google của bạn. Đăng nhập bằng email này là có trang quản trị | `ban@gmail.com` |
 | **Google Client ID** | Có thể bỏ trống (bấm Enter). Chỉ cần nếu muốn có nút "Đăng nhập Google", xem [mục bên dưới](#đăng-nhập-google-tùy-chọn) | `1234-abc.apps.googleusercontent.com` |
+| **Email gửi mã đăng nhập** | Email đã xác minh làm người gửi trong Brevo. Bỏ trống thì không có đăng nhập bằng email, xem [mục bên dưới](#đăng-nhập-bằng-email-mã-otp-qua-brevo) | `ban@gmail.com` |
+| **Brevo API key** | Khóa API của Brevo (được lưu bí mật trên Cloudflare, không nằm trong code) | `xkeysib-…` |
 
 Phần còn lại script tự làm:
 - Mở trình duyệt để bạn đăng nhập Cloudflare.
@@ -248,10 +254,25 @@ Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại
 |---|---|
 | Thêm / bớt quản trị viên | Sửa `ADMIN_EMAILS` trong `wrangler.toml` rồi `npm run deploy`. Hoặc vào **Trang quản trị → Người chơi → Cấp quyền quản trị** |
 | Bật đăng nhập Google | Điền `GOOGLE_CLIENT_ID` trong `wrangler.toml` (hoặc chạy lại `npm run setup`) |
+| Bật / đổi đăng nhập bằng email | Chạy lại `npm run setup`, điền email người gửi và Brevo API key |
 | Nút GitHub trong app trỏ về repo của bạn | Sửa `"repository"` trong `package.json` |
 | Dùng tên miền riêng | Cloudflare Dashboard → **Workers & Pages** → app của bạn → **Settings → Domains & Routes** |
 | Cập nhật code mới lên mạng | `npm run deploy` |
 | Tự deploy mỗi khi push lên GitHub | Thêm 2 secret `CLOUDFLARE_API_TOKEN` và `CLOUDFLARE_ACCOUNT_ID` vào **Settings → Secrets and variables → Actions** của repo. Token tạo tại [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) bằng mẫu *Edit Cloudflare Workers*, thêm quyền *D1 Edit* |
+
+#### Đăng nhập bằng email: mã OTP qua Brevo
+
+Người chơi chỉ cần nhập email, app gửi một **mã 6 số** để đăng nhập (lần đầu là đăng ký luôn). Thư được gửi qua [Brevo](https://www.brevo.com), gói miễn phí **300 thư/ngày**, không cần tên miền riêng.
+
+1. Tạo tài khoản miễn phí tại **https://app.brevo.com**.
+2. Xác minh email người gửi: **Settings → Senders, domains & IPs → Senders → Add a sender**. Điền tên `Bàn Cờ` và email của bạn (ví dụ Gmail), rồi bấm mã xác minh Brevo gửi tới hộp thư đó.
+3. Tạo khóa API: **Settings → SMTP & API → API keys → Generate a new API key**. Copy khóa (dạng `xkeysib-…`). Khóa chỉ hiện một lần.
+4. Chạy `npm run setup`, điền **Email gửi mã đăng nhập** (email ở bước 2) và dán **Brevo API key**. Các câu khác bấm Enter.
+5. Mở app → **Đăng nhập** → nhập email của bạn → kiểm tra hộp thư (cả mục **Thư rác / Quảng cáo**).
+
+> Gửi từ một địa chỉ Gmail qua máy chủ khác, thư đôi khi bị vào **Thư rác**. Dặn người chơi xem cả mục đó. Muốn thư vào hộp chính ổn định hơn, hãy mua một tên miền riêng rồi xác minh tên miền đó trong Brevo (**Senders, domains & IPs → Domains**).
+>
+> Khi chạy thử trên máy (`npm start`) mà chưa có Brevo, mã được in ra terminal và điền sẵn trong hộp thoại.
 
 #### Đăng nhập Google (tùy chọn)
 
@@ -267,6 +288,9 @@ Chạy lại `npm run setup` bao nhiêu lần cũng được: script dùng lại
 | Không thấy biểu tượng khiên 🛡️ | Bạn phải **đăng nhập Google** bằng đúng email trong `ADMIN_EMAILS`, và email đó đã được deploy (`npm run deploy`) |
 | Nút "Đăng nhập Google" không hiện | `GOOGLE_CLIENT_ID` đang trống |
 | Bấm đăng nhập Google báo lỗi | Link app chưa có trong *Authorized JavaScript origins* |
+| Báo "Máy chủ chưa bật đăng nhập bằng email" | Chưa điền email người gửi hoặc Brevo API key: chạy lại `npm run setup` |
+| Báo "Không gửi được thư" | Email người gửi chưa được xác minh trong Brevo, hoặc API key sai. Xem nhật ký: `npx wrangler tail` |
+| Không nhận được mã | Xem mục **Thư rác / Quảng cáo**; trong Brevo xem **Transactional → Logs** để biết thư đã đi chưa |
 | `npm run setup` báo lỗi đăng nhập | Chạy `npx wrangler login` rồi chạy lại setup |
 
 Gói miễn phí của Cloudflare thường đủ cho một cộng đồng nhỏ. Giới hạn cụ thể xem tại [trang giá Workers](https://developers.cloudflare.com/workers/platform/pricing/).
@@ -326,7 +350,8 @@ src/
   analysis.ts     Chấm nước đi và độ chính xác cho phần phân tích ván
   ui/             Màn hình: trang chủ, chọn cách chơi, ván cờ, ghép trận, quản trị, hộp thoại, màu, giải thế cờ, phân tích ván, bảng xếp hạng
 server/
-  index.ts        API: đăng nhập khách/Google, phòng, báo cáo
+  index.ts        API: đăng nhập khách/Google/email (OTP), phòng, báo cáo, bảng xếp hạng
+  otp.ts          Mã đăng nhập 6 số: tạo, băm, giới hạn số lần, gửi qua Brevo
   room.ts         Durable Object phòng chơi
   lobby.ts        Durable Object sảnh chờ / ghép trận
   admin.ts        API quản trị
@@ -340,7 +365,7 @@ tests/            Perft chuẩn, luật, đăng nhập, bot, kiểm tra mọi th
 ## 🔒 Bảo mật & giới hạn hiện tại
 
 - Mọi nước đi online đều được máy chủ kiểm tra. Quân úp chỉ được tiết lộ khi lật. Tên người chơi được làm sạch và luôn được escape khi hiển thị.
-- Tài khoản khách gắn với trình duyệt. Người bị khóa có thể tạo tài khoản khách mới. Muốn chặn chặt hơn, có thể chỉ cho tài khoản Google chơi xếp hạng; đây là một ý tưởng đóng góp.
+- Chơi online cần email đã xác minh (mã OTP hoặc Google), nên người bị khóa không thể chỉ cần tạo tài khoản khách mới để chơi tiếp; họ vẫn có thể dùng một email khác.
 - Luật cấm đuổi dai là bản giản lược: chỉ xét quân vừa đi tấn công một quân không được bảo vệ, hoặc quân có giá trị lớn hơn. Các trường hợp đặc biệt của luật châu Á đầy đủ chưa được xử lý.
 - Chống dùng máy hỗ trợ trong lúc chơi chỉ dựa vào báo cáo và xem lại ván. App chưa tự động phát hiện.
 
@@ -369,6 +394,7 @@ Toàn bộ mã nguồn được viết mới, **không dùng thư viện cờ n�
 - **Xếp hạng**: [hệ số Elo](https://en.wikipedia.org/wiki/Elo_rating_system), K = 32.
 - **Máy chủ**: [Cloudflare Workers, Durable Objects và D1](https://developers.cloudflare.com/).
 - **Đăng nhập Google**: [Google Identity Services](https://developers.google.com/identity/gsi/web).
+- **Gửi mã đăng nhập**: [Brevo Transactional Email API](https://developers.brevo.com/reference/sendtransacemail).
 - **Font** chữ Hán trên quân: [Noto Serif SC](https://fonts.google.com/noto/specimen/Noto+Serif+SC) (SIL Open Font License), tải qua Google Fonts.
 - Quân cờ vua hiển thị bằng ký tự Unicode (♔♕♖♗♘♙), dùng font có sẵn trên máy.
 
@@ -402,7 +428,8 @@ friend on the same device, or online. The whole interface is available in Vietna
   spectators, clocks, draw offers, rematch, emotes, reports, reconnect after reloads, abandonment claims.
 - **Authoritative server**: every move is validated with the same rules engine; in Jieqi and Hidden chess the client
   never learns a face-down piece before it is revealed.
-- **Accounts**: play instantly as a guest, optionally sign in with Google.
+- **Accounts**: no account needed for bots, puzzles, analysis and watching. Online play needs a sign-in with Google or with
+  an email and a 6-digit code (passwordless OTP, sent through Brevo's free plan); a guest keeps name and rating when signing in.
 - **Full admin dashboard**:
   - Stats, live games and replays (face-down pieces shown to admins).
   - Cancel games or set results.

@@ -1,0 +1,48 @@
+@startuml login-otp
+!include _style.iuml
+title Đăng nhập / đăng ký bằng email và mã 6 số (OTP)
+
+actor "Người chơi" as U
+participant "App" as A
+participant "Worker /api" as W
+database "D1" as DB
+participant "Brevo" as B
+
+U -> A : Bấm "Đăng nhập", nhập email
+A -> W : POST /auth/email/start { email }
+W -> DB : Đã gửi mã trong 60 giây qua?\nQuá 5 mã/giờ cho email này,\n20 mã/giờ cho địa chỉ IP này?
+alt Bị giới hạn
+  W --> A : 429 (chờ / thử lại sau)
+else Được gửi
+  W -> W : Tạo mã 6 số ngẫu nhiên
+  W -> DB : Lưu HMAC(mã), hết hạn sau 10 phút
+  W -> B : Gửi thư "Mã đăng nhập Bàn Cờ: ••••••"
+  B --> U : Thư chứa mã
+  W --> A : ok (gửi lại được sau 60 giây)
+end
+
+U -> A : Nhập mã
+A -> W : POST /auth/email/verify { email, mã }\n(kèm phiên khách hiện tại)
+W -> DB : So khớp HMAC (so sánh thời gian hằng)
+alt Sai mã
+  W -> DB : attempts + 1 (quá 5 lần: hủy mã)
+  W --> A : 400 (còn N lần thử)
+else Đúng mã
+  W -> DB : Xóa mã (chỉ dùng được một lần)
+  alt Email đã có tài khoản (email hoặc Google)
+    W -> W : Dùng tài khoản đó
+  else Email mới, đang là khách
+    W -> DB : Gắn email vào tài khoản khách\n(giữ tên, điểm Elo, lịch sử)
+  else Email mới, chưa có phiên
+    W -> DB : Tạo tài khoản mới "Kỳ thủ NNNN"
+  end
+  W --> A : token phiên + người chơi (member = true)
+  A -> A : Kết nối lại sảnh và phòng:\nvào ghế trống nếu đang xem
+end
+
+note over W
+  Thành viên = email đã xác minh (mã OTP hoặc Google).
+  Chỉ thành viên tạo phòng, ngồi vào ghế, ghép trận, báo cáo.
+  Khách: chơi với máy, giải thế cờ, xem ván online.
+end note
+@enduml

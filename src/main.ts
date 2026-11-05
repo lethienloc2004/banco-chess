@@ -1,6 +1,6 @@
 import './styles.css';
 import type { GameKind } from './engine/types';
-import { lobby, net, renderGoogleButton } from './net';
+import { lobby, net } from './net';
 import { playSound, previewVoices, setSoundStyle, unlockAudio } from './sound';
 import { KINDS, saveSettings, settings, store, t } from './state';
 import { adminScreen } from './ui/admin';
@@ -12,6 +12,7 @@ import { PuzzleScreen, puzzleListScreen } from './ui/puzzles';
 import { WatchScreen } from './ui/watch';
 import { AnalysisScreen, pendingAnalysis } from './ui/analysis';
 import { leaderboardScreen, profileScreen } from './ui/leaderboard';
+import { ACCOUNT_EVENT, accountChanged, openLogin } from './ui/login';
 import { findPuzzle } from './puzzles';
 import {
   CHESS_BOARDS, CHESS_PIECES, XQ_BOARDS, XQ_PIECES, applyThemes, customTheme, findTheme,
@@ -68,6 +69,7 @@ app.innerHTML = `
       <span><strong>Bàn Cờ</strong><small id="tagline"></small></span>
     </a>
     <div class="top-actions">
+      <button class="btn primary login-btn" id="login-btn" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span></button>
       <a class="icon-btn" id="admin-btn" href="#/admin" hidden>${ICON_SHIELD}</a>
       <button class="icon-btn" id="sound-btn"></button>
       <button class="icon-btn" id="settings-btn">
@@ -122,6 +124,11 @@ function applyGlobal() {
   back.setAttribute('aria-label', s.back);
   $('#settings-btn').title = s.settings;
   $('#settings-btn').setAttribute('aria-label', s.settings);
+  const loginBtn = $<HTMLButtonElement>('#login-btn');
+  loginBtn.hidden = !(net.available && net.me && !net.member);
+  loginBtn.querySelector('span')!.textContent = s.login.headerBtn;
+  loginBtn.setAttribute('aria-label', s.login.title);
+  loginBtn.title = s.login.title;
   const adminBtn = $('#admin-btn');
   adminBtn.hidden = net.me?.role !== 'admin';
   adminBtn.title = s.adminPanel;
@@ -325,11 +332,11 @@ function accountGroup(close: () => void): HTMLElement {
   }
   g.innerHTML = `<h3>${esc(s.account)}</h3>
     <div class="acct"><span class="avatar">${esc([...me.name][0]?.toUpperCase() ?? '?')}</span>
-      <div><b>${esc(me.name)}</b><div class="muted small">${esc(me.google ? s.googleAccount : s.guestAccount)} · ${me.games} ${esc(s.admin.gamesCount)}</div></div></div>
+      <div><b>${esc(me.name)}</b><div class="muted small">${esc(me.google ? s.googleAccount : me.member ? s.login.emailAccount : s.guestAccount)} · ${me.games} ${esc(s.admin.gamesCount)}</div></div></div>
     <div class="acct-ratings">${KINDS.map(k => `<a href="#/leaderboard/${k}"><span class="thumb">${gameThumb(k)}</span><span>${esc(s[k])}</span><b>${me.ratings?.[k] ?? 1200}</b></a>`).join('')}</div>
     <p class="small"><a href="#/player/${esc(me.id)}">${esc(s.board.myProfile)}</a> · <a href="#/leaderboard">${esc(s.board.open)}</a></p>
     <div class="row"><span>${esc(s.changeName)}</span><div class="name-edit"><input class="inp" maxlength="20" value="${esc(me.name)}" /><button class="btn">${esc(s.save)}</button></div></div>
-    <div class="google-slot"></div>
+    ${me.member ? (me.email ? `<p class="muted small">${esc(s.login.signedInAs(me.email))}</p>` : '') : `<p class="note">${esc(s.login.guestNote)}</p>`}
     <div class="acct-actions"></div>`;
   // Links to the leaderboard / profile leave the settings dialog.
   g.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach(a => a.addEventListener('click', () => close()));
@@ -338,13 +345,6 @@ function accountGroup(close: () => void): HTMLElement {
     try { await net.rename(input.value); toast(s.nameSaved); lobby.restart(); } catch { toast(s.badName); }
   };
   const actions = g.querySelector<HTMLElement>('.acct-actions')!;
-  const slot = g.querySelector<HTMLElement>('.google-slot')!;
-  if (!me.google && net.config?.googleClientId) {
-    slot.innerHTML = `<p class="muted small">${esc(s.googleHint)}</p><div class="gbtn"></div>`;
-    void renderGoogleButton(slot.querySelector('.gbtn')!, async credential => {
-      try { await net.loginGoogle(credential); lobby.restart(); close(); applyGlobal(); toast('✓'); } catch { toast(s.netError); }
-    });
-  }
   const addBtn = (label: string, fn: () => void, cls = 'btn') => {
     const b = document.createElement('button');
     b.className = cls;
@@ -352,9 +352,10 @@ function accountGroup(close: () => void): HTMLElement {
     b.onclick = fn;
     actions.appendChild(b);
   };
+  if (!me.member) addBtn(s.login.title, () => { close(); openLogin(); }, 'btn primary');
   if (me.role === 'admin') addBtn(s.adminPanel, () => { close(); nav.go('#/admin'); }, 'btn primary');
-  if (me.google) addBtn(s.logout, async () => { await net.logout(); lobby.restart(); close(); applyGlobal(); });
-  if (net.config?.dev && me.role !== 'admin') addBtn(s.devAdmin, async () => { await net.loginDevAdmin(); lobby.restart(); close(); applyGlobal(); });
+  if (me.member) addBtn(s.logout, async () => { await net.logout(); accountChanged(); close(); });
+  if (net.config?.dev && me.role !== 'admin') addBtn(s.devAdmin, async () => { await net.loginDevAdmin(); accountChanged(); close(); });
   return g;
 }
 
@@ -411,6 +412,9 @@ $('#back-btn').onclick = () => nav.go(backTarget(), 'back');
 $('.brand').onclick = e => { e.preventDefault(); nav.go('#/', 'back'); };
 $('#admin-btn').onclick = e => { e.preventDefault(); nav.go('#/admin'); };
 $('#settings-btn').onclick = openSettings;
+$<HTMLButtonElement>('#login-btn').onclick = () => openLogin();
+net.onChange(() => applyGlobal());
+window.addEventListener(ACCOUNT_EVENT, () => applyGlobal());
 $('#sound-btn').onclick = () => {
   settings.sound = !settings.sound;
   if (settings.sound) { unlockAudio(); playSound('move'); }

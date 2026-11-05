@@ -24,3 +24,14 @@ describe('setup script config editing', () => {
     expect(findUuid(sample)).toBe('8f2c1a9e-5b3d-4e7f-9a1b-2c3d4e5f6a7b');
   });
 });
+
+describe('setup script vars', async () => {
+  // @ts-expect-error plain JS module without types
+  const { setTomlVar } = await import('../scripts/setup.mjs');
+  it('adds a missing var under [vars] once, then replaces it', () => {
+    const base = '[vars]\nGOOGLE_CLIENT_ID = ""\n';
+    const once = setTomlVar(base, 'MAIL_FROM', 'me@gmail.com');
+    expect(once).toBe('[vars]\nMAIL_FROM = "me@gmail.com"\nGOOGLE_CLIENT_ID = ""\n');
+    expect(setTomlVar(once, 'MAIL_FROM', 'x@y.z').match(/MAIL_FROM/g)).toHaveLength(1);
+  });
+});

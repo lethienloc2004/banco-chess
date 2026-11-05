@@ -20,6 +20,8 @@ export interface UserRow {
   ban_reason: string | null;
   /** 1 = kept off the leaderboards by an admin. */
   board_hidden: number;
+  /** 1 = the email was confirmed with a sign-in code or by Google. */
+  email_verified: number;
   created: number;
   last_seen: number;
 }
@@ -84,13 +86,18 @@ export async function rankOf(db: D1Database, kind: GameKind, rating: number, now
   return (row?.n ?? 0) + 1;
 }
 
+/** Members may play online: a verified email (code or Google), or an admin. */
+export function isMember(u: Pick<UserRow, 'google_sub' | 'email_verified' | 'role'>): boolean {
+  return !!u.google_sub || !!u.email_verified || u.role === 'admin';
+}
+
 export async function playerOf(db: D1Database, u: UserRow): Promise<Player> {
-  return { id: u.id, name: u.name, ratings: await ratingsOf(db, u.id) };
+  return { id: u.id, name: u.name, ratings: await ratingsOf(db, u.id), member: isMember(u) };
 }
 
 export function publicUser(u: UserRow, ratings: Ratings, self = false): PublicUser {
   return {
-    id: u.id, name: u.name, ratings, games: u.games, wins: u.wins, role: u.role,
+    id: u.id, name: u.name, ratings, member: isMember(u), games: u.games, wins: u.wins, role: u.role,
     google: !!u.google_sub, email: self ? u.email : undefined, notice: self ? u.notice : undefined,
   };
 }
@@ -106,8 +113,8 @@ export async function getUser(db: D1Database, id: string): Promise<UserRow | nul
 export async function createUser(db: D1Database, id: string, name: string, extra: Partial<UserRow> = {}): Promise<UserRow> {
   const now = Date.now();
   await db.prepare(
-    'INSERT INTO users (id, name, google_sub, email, role, created, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  ).bind(id, name, extra.google_sub ?? null, extra.email ?? null, extra.role ?? 'user', now, now).run();
+    'INSERT INTO users (id, name, google_sub, email, email_verified, role, created, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  ).bind(id, name, extra.google_sub ?? null, extra.email ?? null, extra.email_verified ?? 0, extra.role ?? 'user', now, now).run();
   return (await getUser(db, id))!;
 }
 

@@ -19,6 +19,7 @@ Muốn xem nhanh không cần cài gì: dán nội dung file `.puml` vào [plant
 | [Phòng bạn bè](#3-chơi-với-bạn-qua-link--friend-room) | Tạo phòng, vào bằng link, đi quân, lật quân úp, kết thúc | [online-game.puml](online-game.puml) |
 | [Vòng đời phòng](#4-vòng-đời-phòng-chơi--room-lifecycle) | waiting → playing → over, chơi lại, dọn phòng | [room-lifecycle.puml](room-lifecycle.puml) |
 | [Ghép trận và bảng xếp hạng](#5-ghép-trận-elo-và-bảng-xếp-hạng--matchmaking-ratings-leaderboard) | Hàng chờ, Elo riêng từng loại cờ, top 100, hồ sơ | [matchmaking-rating.puml](matchmaking-rating.puml) |
+| [Đăng nhập bằng email](#9-đăng-nhập-bằng-email-otp--email-sign-in) | Mã 6 số, giới hạn gửi, gắn vào tài khoản khách | [login-otp.puml](login-otp.puml) |
 | [Quản trị sửa kết quả](#6-quản-trị-viên-sửa-kết-quả--admin-corrections) | Hủy ván / đổi kết quả và trả lại điểm Elo | [admin-correction.puml](admin-correction.puml) |
 | [Máy chọn nước](#7-máy-chọn-nước-đi--how-the-bot-moves) | Tìm kiếm, PIMC cho cờ úp, mức dễ | [bot-move.puml](bot-move.puml) |
 | [Phân tích ván](#8-phân-tích-ván--post-game-analysis) | Nhóm worker, chấm nước, độ chính xác | [post-game-analysis.puml](post-game-analysis.puml) |
@@ -66,3 +67,10 @@ Máy chủ kiểm tra mọi nước bằng chính bộ luật của app. Ở c�
 ## 8. Phân tích ván / Post-game analysis
 
 ![Phân tích ván](post-game-analysis.svg)
+
+## 9. Đăng nhập bằng email (OTP) / Email sign-in
+
+Chỉ thành viên (email đã xác minh bằng mã hoặc Google) mới chơi online. Khách vẫn chơi với máy và xem ván.
+*Only members (email verified by code or Google) play online; guests play the bot and watch.*
+
+![Đăng nhập bằng email](login-otp.svg)
